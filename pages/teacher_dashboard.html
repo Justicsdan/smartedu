@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartEdu - Teacher Workspace</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* --- Variables --- */
+    :root {
+      --primary: #6366f1;
+      --secondary: #8b5cf6;
+      --accent: #ec4899;
+      --success: #10b981;
+      --bg-body: #0f172a;
+      --bg-sidebar: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --shadow-lg: 0 20px 60px -15px rgba(0, 0, 0, 0.25);
+      --radius: 20px;
+      --font-head: 'Poppins', sans-serif;
+    }
+
+    /* --- Reset --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* --- Layout --- */
+    .wrapper { display: flex; width: 100%; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-sidebar);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1.5rem;
+      box-shadow: var(--shadow-lg);
+      z-index: 10;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo-icon {
+      width: 45px;
+      height: 45px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand h2 {
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .menu-item:hover, .menu-item.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      transform: translateX(10px);
+    }
+
+    .menu-item i { width: 20px; text-align: center; }
+
+    /* --- Main Content --- */
+    .main {
+      flex: 1;
+      padding: 2.5rem;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Background Blobs */
+    .main::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--primary), transparent 70%);
+      top: -100px;
+      left: -200px;
+      z-index: 0;
+      opacity: 0.2;
+    }
+
+    /* --- Header --- */
+    .top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      padding: 0 10px;
+      animation: slideDown 0.6s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .profile-box {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius);
+      padding: 2rem;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      flex: 1;
+    }
+
+    .avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid white;
+      object-fit: cover;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-info h3 {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      color: white;
+      margin: 0 0 0.5rem 0;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .user-info p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin: 0;
+    }
+
+    /* --- Cards --- */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border-radius: var(--radius);
+      padding: 2rem;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, var(--secondary), transparent 70%);
+      top: -75px;
+      right: -75px;
+      z-index: 0;
+      opacity: 0.2;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.15);
+    }
+
+    .card:hover::before {
+      opacity: 0.4;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 1.3rem;
+      color: white;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .card-action {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .card-action:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-row:last-child { margin-bottom: 0; }
+
+    .stat-number {
+      font-family: var(--font-head);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-info { flex: 1; }
+    .stat-info h5 { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; margin: 0; }
+    .stat-info p { font-size: 1.2rem; color: white; font-weight: 600; margin: 0; }
+
+    /* --- Chart Section --- */
+    .chart-wrapper {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 2rem;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2.5rem;
+    }
+
+    .chart-wrapper h3 {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+
+    /* --- Action Buttons --- */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .action-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--secondary);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .action-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      border-radius: 16px;
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .action-title {
+      font-family: var(--font-head);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* --- Footer --- */
+    .footer {
+      margin-top: auto;
+      text-align: center;
+      padding: 2rem 0;
+      background: rgba(15, 23, 42, 0.5);
+      border-top: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+    }
+
+    .footer p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        height: 100vh;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+      }
+      .sidebar.active { transform: translateX(280px); }
+      .main { padding: 1.5rem; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    
+    <!-- 1. Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <i class="fas fa-chalkboard-teacher logo-icon"></i>
+        <h2>SmartEdu</h2>
+      </div>
+
+      <ul class="menu">
+        <li><a href="#" class="menu-item active">
+          <i class="fas fa-th-large"></i> Dashboard
+        </a></li>
+        <li><a href="#" class="menu-item">
+          <i class="fas fa-book-open"></i> My Classes
+        </a></li>
+        <li><a href="#" class="menu-item">
+          <i class="fas fa-users"></i> My Students
+        </a></li>
+        <li><a href="#" class="menu-item">
+          <i class="fas fa-calendar-alt"></i> Timetable
+        </a></li>
+        <li><a href="#" class="menu-item">
+          <i class="fas fa-chart-pie"></i> Results
+        </a></li>
+        <li><a href="#" class="menu-item">
+          <i class="fas fa-cog"></i> Settings
+        </a></li>
+        <li style="margin-top: auto;"><a href="#" class="menu-item" style="color: #ef4444;">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- 2. Main Content -->
+    <main class="main">
+      
+      <!-- Top Header -->
+      <div class="top-header">
+        <div class="profile-box">
+          <img src="https://i.pravatar.cc/150?img=12" alt="Teacher" class="avatar-large">
+          <div class="user-info">
+            <h3>Welcome back, Mr. Daniel 👋</h3>
+            <p>Science Department • Head of Class</p>
+          </div>
+        </div>
+        <div class="card-action">Edit Profile</div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Total Classes</h3>
+            <i class="fas fa-ellipsis-h card-action"></i>
+          </div>
+          <div class="stat-row">
+            <div class="stat-number">6</div>
+            <div class="stat-info">
+              <h5>Classes</h5>
+              <p>Active Now</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Total Students</h3>
+            <i class="fas fa-ellipsis-h card-action"></i>
+          </div>
+          <div class="stat-row">
+            <div class="stat-number">245</div>
+            <div class="stat-info">
+              <h5>Students</h5>
+              <p>In Your Classes</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Average Grade</h3>
+            <i class="fas fa-chart-line card-action"></i>
+          </div>
+          <div class="stat-row">
+            <div class="stat-number">B+</div>
+            <div class="stat-info">
+              <h5>Grade Point</h5>
+              <p>This Session</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Attendance</h3>
+            <i class="fas fa-calendar-check card-action"></i>
+          </div>
+          <div class="stat-row">
+            <div class="stat-number">98%</div>
+            <div class="stat-info">
+              <h5>Attendance Rate</h5>
+              <p>Excellent</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Section -->
+      <div class="chart-wrapper">
+        <h3>Performance Metrics</h3>
+        <div style="height: 300px;">
+          <canvas id="gradeChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="action-grid">
+        <div class="action-card">
+          <i class="fas fa-clipboard-list action-icon"></i>
+          <div class="action-title">Record Attendance</div>
+        </div>
+        <div class="action-card">
+          <i class="fas fa-edit action-icon"></i>
+          <div class="action-title">Enter Grades</div>
+        </div>
+        <div class="action-card">
+          <i class="fas fa-file-invoice action-icon"></i>
+          <div class="action-title">Generate Reports</div>
+        </div>
+        <div class="action-card">
+          <i class="fas fa-calendar-plus action-icon"></i>
+          <div class="action-title">View Timetable</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>SmartEdu Systems • Built for Excellence</p>
+    <p>Jos, Plateau State • 07080304822</p>
+  </div>
+
+  <!-- Chart.js Logic -->
+  <script>
+    // --- 1. Sidebar Mobile Toggle ---
+    const sidebar = document.getElementById('sidebar');
+    const main = document.querySelector('.main');
+
+    if (window.innerWidth <= 900) {
+      // Simple toggle script
+      // Click anywhere in main content to close sidebar on mobile
+      main.addEventListener('click', (e) => {
+        const isClickInsideSidebar = sidebar.contains(e.target);
+        if (!isClickInsideSidebar) {
+          sidebar.classList.remove('active');
+        }
+      });
+    }
+
+    // --- 2. Chart Initialization (Beautiful Gradient Chart) ---
+    const ctx = document.getElementById('gradeChart').getContext('2d');
+    
+    // Create Gradient for bars
+    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientFill.addColorStop(0, 'rgba(99, 102, 241, 0.8)');
+    gradientFill.addColorStop(1, 'rgba(236, 72, 153, 0.2)');
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mathematics', 'English', 'Physics', 'Chemistry', 'Biology'],
+        datasets: [{
+          label: 'Average Score (%)',
+          data: [85, 78, 92, 74, 88],
+          backgroundColor: gradientFill,
+          borderColor: '#fff',
+          borderWidth: 2,
+          borderRadius: 8,
+          barPercentage: 0.6,
+          categoryPercentage: 0.8
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e293b',
+            titleColor: '#f1f5f9',
+            bodyColor: '#f1f5f9',
+            bodyFont: { family: 'Inter' },
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false,
+            borderColor: 'rgba(255,255,255,0.1)'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            grid: {
+              color: 'rgba(255,255,255,0.05)',
+              borderDash: [5, 5],
+              drawBorder: false
+            },
+            ticks: {
+              color: '#cbd5e1',
+              font: { family: 'Inter' },
+              backdropColor: 'transparent',
+              padding: 10
+            }
+          },
+          x: {
+            grid: {
+              color: 'rgba(255,255,255,0.05)',
+              borderDash: [5, 5],
+              drawBorder: false
+            },
+            ticks: {
+              color: '#cbd5e1',
+              font: { family: 'Inter', weight: 600 }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

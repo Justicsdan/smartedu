@@ -1,0 +1,49 @@
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Prevent direct access to .env and other sensitive files
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(env|env\.example|htaccess|gitignore|md|json|lock|xml|yaml|yml|dist|log|sh|txt|php~)$ [NC]
+RewriteRule ^ - [F,L]
+
+# Block access to hidden files/folders (starting with .)
+RewriteRule ^\. - [F,L]
+
+# Block access to composer files
+RewriteRule ^(composer\.json|composer\.lock) - [F,L]
+
+# Block access to vendor directory
+RewriteRule ^vendor(/|$) - [F,L]
+
+# Block PHP files in uploads
+RewriteRule ^uploads/.*\.php$ - [F,L]
+
+# Allow access to uploaded assets (images, etc.)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Rewrite all other requests to index.php (clean URLs)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Remove server signature
+    Header unset X-Powered-By
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Gzip compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+</IfModule>

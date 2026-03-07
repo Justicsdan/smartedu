@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartEdu | Admin Workspace</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* --- Variables (Matching Tech Theme) --- */
+    :root {
+      --primary: #3b82f6;       /* Tech Blue */
+      --primary-glow: rgba(59, 130, 246, 0.4);
+      --secondary: #8b5cf6;     /* Soft Violet for contrast */
+      --accent: #06b6d4;        /* Neon Cyan */
+      --accent-glow: rgba(6, 182, 212, 0.4);
+      --success: #10b981;
+      --danger: #ef4444;
+      
+      --bg-deep: #020617;
+      --bg-panel: #0f172a;
+      
+      --glass-bg: rgba(15, 23, 42, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-highlight: rgba(255, 255, 255, 0.03);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    /* --- Global --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-body); }
+    
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* --- Tech Backgrounds --- */
+    .bg-grid {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: -1;
+    }
+    
+    .scanline {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.2) 51%);
+      background-size: 100% 4px;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.05;
+    }
+
+    /* --- Layout --- */
+    .app-container {
+      display: flex;
+      width: 100%;
+      position: relative;
+    }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      width: 280px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1.5rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 50;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 8px; /* Tech square-ish */
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .logo-text {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    /* Active State Indicator */
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 0%;
+      width: 3px;
+      background: var(--accent);
+      transition: height 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    .nav-link:hover::before, .nav-link.active::before {
+      height: 70%;
+    }
+
+    .nav-link i {
+      width: 20px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      color: var(--danger);
+    }
+    
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ff8fa3;
+    }
+
+    /* --- Main Content --- */
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .header-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .welcome-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+
+    .avatar-large {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: url('https://i.pravatar.cc/150?u=a042581f4b7267') center/cover;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .user-info h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .user-info p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-family: var(--font-code);
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    /* --- Stats Grid --- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--glass-border);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    /* Tech corner brackets for cards */
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 20px; height: 20px;
+      border-bottom: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
+      opacity: 0.3;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    .stat-value {
+      font-family: var(--font-code);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-code);
+    }
+
+    .trend-up { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .trend-down { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+    /* --- Chart Section --- */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .chart-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--glass-border);
+      min-height: 400px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .section-title::before {
+      content: '';
+      width: 4px; height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    /* --- Activity Feed --- */
+    .feed-container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .activity-list {
+      list-style: none;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--glass-border);
+      transition: background 0.2s;
+      border-radius: 8px;
+      padding: 0.8rem;
+    }
+
+    .activity-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .activity-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .bg-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+    .bg-purple { background: linear-gradient(135deg, #8b5cf6, #6366f1); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+    .bg-green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+    .bg-orange { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 0 10px rgba(249, 115, 22, 0.3); }
+
+    .activity-details h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.2rem;
+    }
+
+    .activity-details p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .activity-time {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: var(--font-code);
+    }
+
+    /* --- Quick Actions --- */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .quick-action {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quick-action:hover {
+      background: rgba(6, 182, 212, 0.05);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .quick-action i {
+      font-size: 1.4rem;
+      color: var(--accent);
+      transition: transform 0.3s;
+    }
+
+    .quick-action:hover i {
+      transform: scale(1.1);
+    }
+
+    .quick-action span {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-main);
+    }
+
+    /* --- Payment Modal --- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-box {
+      background: #0f172a;
+      width: 90%;
+      max-width: 450px;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .modal-title {
+      font-family: var(--font-heading);
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-group { margin-bottom: 1.2rem; }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-family: var(--font-code);
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--glass-border);
+      padding: 0.8rem;
+      border-radius: 8px;
+      color: white;
+      font-family: var(--font-code);
+      font-size: 0.9rem;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--glass-border);
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      color: white;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 1024px) {
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        height: 100vh;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+      }
+      .sidebar.active { transform: translateX(280px); }
+      .menu-toggle { display: block; }
+      .content-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="scanline"></div>
+
+  <div class="app-container">
+    
+    <!-- 1. Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i class="fas fa-network-wired"></i>
+        </div>
+        <span class="logo-text">SmartEdu</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#" class="nav-link active">
+          <i class="fas fa-th-large"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-link">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <span>Academics</span>
+        </a>
+        <a href="#" class="nav-link">
+          <i class="fas fa-users"></i>
+          <span>Students</span>
+        </a>
+        <a href="#" class="nav-link">
+          <i class="fas fa-file-invoice-dollar"></i>
+          <span>Finance</span>
+        </a>
+        <a href="#" class="nav-link">
+          <i class="fas fa-chart-pie"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="#" class="nav-link">
+          <i class="fas fa-cog"></i>
+          <span>System</span>
+        </a>
+        <a href="index.html" class="nav-link logout-btn">
+          <i class="fas fa-power-off"></i>
+          <span>Terminate</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 2. Main Content -->
+    <main class="main-content">
+      
+      <!-- Mobile Toggle -->
+      <div class="menu-toggle" style="position: fixed; top: 20px; left: 20px; z-index: 60; display: none;">
+        <i class="fas fa-bars" style="font-size: 1.5rem; color: white; background: var(--bg-panel); padding: 10px; border-radius: 8px;"></i>
+      </div>
+
+      <!-- Top Section -->
+      <div class="header-section">
+        <div class="welcome-card">
+          <div class="avatar-large"></div>
+          <div class="user-info">
+            <h2>Dr. Grace Johnson</h2>
+            <p>ADMIN_ID: #8821X • STATUS: ONLINE</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="icon-btn">
+            <i class="fas fa-search"></i>
+          </div>
+          <div class="icon-btn">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div class="icon-btn">
+            <i class="fas fa-envelope"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <i class="fas fa-user-graduate stat-icon"></i>
+            <div class="stat-trend trend-up">
+              <i class="fas fa-arrow-up"></i> 12%
+            </div>
+          </div>
+          <div class="stat-value" id="count-students">1,240</div>
+          <div class="stat-label">Active Nodes (Students)</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <i class="fas fa-chalkboard-teacher stat-icon"></i>
+            <div class="stat-trend trend-up">
+              <i class="fas fa-arrow-up"></i> 4%
+            </div>
+          </div>
+          <div class="stat-value">56</div>
+          <div class="stat-label">Facilitators (Teachers)</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <i class="fas fa-book stat-icon"></i>
+            <div class="stat-trend trend-down">
+              <i class="fas fa-arrow-down"></i> 2%
+            </div>
+          </div>
+          <div class="stat-value">24</div>
+          <div class="stat-label">Modules (Classes)</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <i class="fas fa-coins stat-icon"></i>
+            <div class="stat-trend trend-up">
+              <i class="fas fa-arrow-up"></i> 8%
+            </div>
+          </div>
+          <div class="stat-value">₦4.2M</div>
+          <div class="stat-label">Revenue Stream</div>
+        </div>
+      </div>
+
+      <!-- Content Split -->
+      <div class="content-grid">
+        
+        <!-- Chart -->
+        <div class="chart-container">
+          <div class="section-header">
+            <div class="section-title">Data Visualization</div>
+            <span style="font-family: var(--font-code); font-size: 0.75rem; color: var(--accent); background: rgba(6,182,212,0.1); padding: 4px 8px; border-radius: 4px;">LIVE_FEED</span>
+          </div>
+          <div style="height: 320px;">
+            <canvas id="analyticsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Feed & Actions -->
+        <div class="feed-container">
+          <div>
+            <div class="section-header">
+              <div class="section-title">System Modules</div>
+            </div>
+            <div class="action-grid">
+              <div class="quick-action" onclick="updateChart()">
+                <i class="fas fa-user-plus"></i>
+                <span>Admit Student</span>
+              </div>
+              <div class="quick-action" onclick="updateChart()">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Add Faculty</span>
+              </div>
+              <div class="quick-action" onclick="document.getElementById('paymentModal').style.display='flex'">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Process Fee</span>
+              </div>
+              <div class="quick-action">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Generate Report</span>
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 1.5rem;">
+              <div class="section-title">System Logs</div>
+            </div>
+            <ul class="activity-list">
+              <li class="activity-item">
+                <div class="activity-icon bg-purple">
+                  <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="activity-details">
+                  <h4>New Enrollment</h4>
+                  <p>Student #4921 added to JSS2.</p>
+                </div>
+                <span class="activity-time">2m ago</span>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon bg-blue">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="activity-details">
+                  <h4>Data Sync</h4>
+                  <p>Curriculum updated for Grade 10.</p>
+                </div>
+                <span class="activity-time">45m ago</span>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon bg-green">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="activity-details">
+                  <h4>Results Published</h4>
+                  <p>Mid-term results verified.</p>
+                </div>
+                <span class="activity-time">1h ago</span>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon bg-orange">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="activity-details">
+                  <h4>Payment Alert</h4>
+                  <p>Tuition due for Student #112.</p>
+                </div>
+                <span class="activity-time">3h ago</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Payment Modal -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-box">
+      <h3 class="modal-title"><i class="fas fa-university" style="color: var(--accent)"></i> Process Transaction</h3>
+      
+      <form onsubmit="handlePayment(event)">
+        <div class="input-group">
+          <label>AMOUNT (NGN)</label>
+          <input type="number" value="45000" readonly class="input-field" style="cursor: not-allowed; opacity: 0.5;">
+        </div>
+        <div class="input-group">
+          <label>PAYMENT GATEWAY</label>
+          <select class="input-field">
+            <option>SmartEdu Transfer</option>
+            <option>Paystack Secure</option>
+          </select>
+        </div>
+        
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Confirm</button>
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. Chart Configuration (Tech Style) ---
+    const ctx = document.getElementById('analyticsChart').getContext('2d');
+    
+    // Glowing Gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.8)'); // Cyan
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)'); // Transparent Blue
+
+    const analyticsChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3'],
+        datasets: [{
+          label: 'Active Users',
+          data: [120, 150, 180, 210, 190, 145],
+          backgroundColor: gradient,
+          borderColor: '#06b6d4',
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 25,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#fff',
+            bodyColor: '#cbd5e1',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            titleFont: { family: 'JetBrains Mono' },
+            bodyFont: { family: 'Inter' }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b',
+              font: { family: 'JetBrains Mono', size: 10 }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Inter', size: 11 }
+            }
+          }
+        }
+      }
+    });
+
+    // --- 2. Interactive Logic ---
+    
+    // Update chart data dynamically
+    window.updateChart = () => {
+      const currentData = analyticsChart.data.datasets[0].data;
+      const index = Math.floor(Math.random() * 6);
+      
+      // Tech animation effect: slight glitch
+      currentData[index] += Math.floor(Math.random() * 10);
+      
+      analyticsChart.update();
+      
+      // Update total counter
+      const totalEl = document.getElementById('count-students');
+      // Simple parse and add for demo
+      let currentTotal = parseInt(totalEl.innerText.replace(/,/g, ''));
+      totalEl.innerText = (currentTotal + 1).toLocaleString();
+    };
+
+    // --- 3. Modal & Sidebar Logic ---
+    const modal = document.getElementById('paymentModal');
+    
+    window.closeModal = () => {
+      modal.style.display = 'none';
+    };
+
+    window.handlePayment = (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerText;
+      
+      submitBtn.innerText = 'PROCESSING...';
+      submitBtn.style.background = 'var(--text-muted)';
+
+      setTimeout(() => {
+        submitBtn.innerText = originalText;
+        submitBtn.style.background = 'var(--primary)';
+        closeModal();
+        
+        // Tech Toast
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed; bottom: 30px; right: 30px;
+          background: #0f172a; border: 1px solid #06b6d4;
+          color: #06b6d4; padding: 15px 25px;
+          border-radius: 8px; 
+          font-family: var(--font-code);
+          box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+          animation: slideIn 0.3s;
+        `;
+        toast.innerHTML = '<i class="fas fa-check"></i> TRANSACTION_VERIFIED';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }, 1500);
+    };
+
+    // Mobile Toggle
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.querySelector('.menu-toggle');
+    
+    if (menuToggle) {
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+      });
+      document.querySelector('.main-content').addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          sidebar.classList.remove('active');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

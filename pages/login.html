@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartEdu - Secure Login</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* --- CSS Variables --- */
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4a2a5a;
+      --accent: #ffda79;
+      --glass: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      --radius: 16px;
+      --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    }
+
+    /* --- Reset & Base --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    
+    body {
+      background: var(--bg-gradient);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* --- Layout --- */
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* --- Header --- */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      font-size: 1.8rem;
+      color: var(--primary);
+    }
+
+    .logo-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .back-link {
+      text-decoration: none;
+      color: var(--accent);
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .back-link:hover { text-decoration: underline; }
+
+    /* --- Login Cards --- */
+    .login-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    .login-card {
+      background: var(--glass);
+      backdrop-filter: blur(15px);
+      border-radius: var(--radius);
+      border: 1px solid var(--glass-border);
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+      top: -50px;
+      right: -50px;
+      z-index: 0;
+      opacity: 0.3;
+    }
+
+    .login-card:hover {
+      transform: translateY(-5px);
+      background: var(--glass);
+      box-shadow: var(--shadow);
+    }
+
+    .card-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 50%;
+      color: white;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-icon i {
+      font-size: 1.5rem;
+    }
+
+    .login-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      color: white;
+      font-weight: 600;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-group i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      transition: color 0.3s;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px 1rem 45px; /* Add padding for icon */
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 15px rgba(99, 102, 241, 0.2);
+    }
+    
+    .input-group input:focus + i {
+      color: var(--primary);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 1rem;
+    }
+
+    .btn-login:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      min-height: 20px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* --- Footer --- */
+    .footer {
+      margin-top: auto;
+      background: rgba(15, 23, 42, 0.8);
+      border-top: 1px solid var(--glass-border);
+      padding: 2rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .footer p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+    
+    .footer strong { color: white; }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .footer a:hover { color: white; }
+
+    /* --- Animations --- */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .login-grid { grid-template-columns: 1fr; }
+      .container { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-area">
+        <i class="fas fa-graduation-cap logo-icon"></i>
+        <span class="logo-text">SmartEdu</span>
+      </div>
+      <a href="../index.html" class="back-link">← Back to Home</a>
+    </header>
+
+    <!-- Title -->
+    <section style="text-align: center; margin-bottom: 2rem;">
+      <h2 style="color: white; font-weight: 300; margin: 0;">Choose your portal</h2>
+      <p style="color: rgba(255,255,255,0.7);">Select your role to access your dashboard.</p>
+    </section>
+
+    <!-- Login Cards -->
+    <section class="login-grid">
+      
+      <!-- 1. Super Admin Login -->
+      <div class="login-card">
+        <div class="card-icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h3>Super Admin</h3>
+        <form class="login-form" id="form-superadmin">
+          <div class="input-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" name="email" placeholder="Admin Email" required autocomplete="email">
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-login">Login</button>
+          <div class="error-msg"></div>
+        </form>
+      </div>
+
+      <!-- 2. School Admin Login -->
+      <div class="login-card">
+        <div class="card-icon">
+          <i class="fas fa-school"></i>
+        </div>
+        <h3>School Admin</h3>
+        <form class="login-form" id="form-admin">
+          <div class="input-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" name="email" placeholder="School Admin Email" required autocomplete="email">
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-login">Login</button>
+          <div class="error-msg"></div>
+        </form>
+      </div>
+
+      <!-- 3. Teacher Login -->
+      <div class="login-card">
+        <div class="card-icon">
+          <i class="fas fa-chalkboard-teacher"></i>
+        </div>
+        <h3>Teacher</h3>
+        <form class="login-form" id="form-teacher">
+          <div class="input-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" name="email" placeholder="Teacher Email" required autocomplete="email">
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-login">Login</button>
+          <div class="error-msg"></div>
+        </form>
+      </div>
+
+      <!-- 4. Student Login -->
+      <div class="login-card">
+        <div class="card-icon">
+          <i class="fas fa-user-graduate"></i>
+        </div>
+        <h3>Student</h3>
+        <form class="login-form" id="form-student">
+          <div class="input-group">
+            <i class="fas fa-id-card"></i>
+            <input type="text" name="username" placeholder="Matric Number / Username" required autocomplete="off">
+          </div>
+          <div class="input-group">
+            <i class="fas fa-key"></i>
+            <input type="password" name="pin" placeholder="Access PIN (4 Digits)" required maxlength="4" autocomplete="off">
+          </div>
+          <button type="submit" class="btn-login">Login</button>
+          <div class="error-msg"></div>
+        </form>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>SmartEdu Systems • Jos, Plateau State</p>
+    <p>Phone: <strong>07080304822</strong></p>
+    <p>Need assistance? Contact <a href="mailto:danladiheman@gmail.com">Support</a></p>
+    <p>&copy; 2025 SmartEdu. All Rights Reserved.</p>
+  </footer>
+
+  <script>
+    /**
+     * SmartEdu Login Logic
+     * Handles all 4 portal types in one file.
+     * Super Admin & Admins use Email/Password.
+     * Teachers use Email/Password.
+     * Students use Username (Matric) & PIN.
+     */
+
+    const API_BASE_URL = 'http://localhost:8000/api'; // Update to your API URL
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initApp();
+    });
+
+    function initApp() {
+      attachListener('form-superadmin', 'superadmin');
+      attachListener('form-admin', 'admin');
+      attachListener('form-teacher', 'teacher');
+      attachListener('form-student', 'student');
+    }
+
+    function attachListener(formId, role) {
+      const form = document.getElementById(formId);
+      if (!form) return;
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 1. Get Values
+        const formData = new FormData(form);
+        
+        let payload = { role };
+        
+        // Logic based on Role
+        if (role === 'student') {
+          const username = formData.get('username');
+          const pin = formData.get('pin');
+
+          if (!username || !pin) {
+            showError(form, "Please enter Matric Number and PIN.");
+            return;
+          }
+
+          // Validate PIN is 4 digits
+          if (!/^\d{4}$/.test(pin)) {
+            showError(form, "PIN must be exactly 4 digits.");
+            return;
+          }
+
+          payload.username = username;
+          payload.password = pin; // Map PIN to 'password' field for backend
+
+        } else {
+          // Admins and Superadmins use Email + Password
+          const email = formData.get('email');
+          const password = formData.get('password');
+
+          if (!email || !password) {
+            showError(form, "Please enter Email and Password.");
+            return;
+          }
+
+          payload.email = email;
+          payload.password = password;
+        }
+
+        // 2. UI Loading State
+        setLoading(form, true);
+
+        try {
+          // 3. Send API Request
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json();
+          setLoading(form, false);
+
+          // 4. Handle Response
+          if (response.ok) {
+            // Success
+            showToast(`Welcome back, ${data.user?.name || 'User'}!`);
+
+            // Store Token
+            if (data.token) {
+              localStorage.setItem('smartedu-token', data.token);
+              localStorage.setItem('smartedu-role', data.user.role);
+              localStorage.setItem('smartedu-user', JSON.stringify(data.user));
+            }
+
+            // 5. Redirect Logic
+            setTimeout(() => {
+              if (role === 'superadmin') window.location.href = 'pages/superadmin_dashboard.html';
+              else if (role === 'admin') window.location.href = 'pages/admin_dashboard.html';
+              else if (role === 'teacher') window.location.href = 'pages/teacher_dashboard.html';
+              else if (role === 'student') window.location.href = 'pages/student_dashboard.html';
+            }, 1000);
+
+          } else {
+            // Failure
+            const message = data.message || 'Login failed. Please check your credentials.';
+            showError(form, message);
+          }
+
+        } catch (err) {
+          // Network Error
+          console.error('Login Error:', err);
+          setLoading(form, false);
+          showError(form, "Server connection failed. Please try again.");
+        }
+      });
+    }
+
+    // Helper: Toggles loading state
+    function setLoading(form, isLoading) {
+      const btn = form.querySelector('button[type="submit"]');
+      const inputs = form.querySelectorAll('input');
+
+      if (isLoading) {
+        btn.disabled = true;
+        btn.textContent = 'Authenticating...';
+        btn.style.opacity = '0.7';
+    
+        inputs.forEach(input => {
+          input.disabled = true;
+          input.style.opacity = '0.5';
+        });
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        btn.style.opacity = '1';
+        
+        inputs.forEach(input => {
+          input.disabled = false;
+          input.style.opacity = '1';
+        });
+      }
+    }
+
+    // Helper: Displays error message inside the card
+    function showError(form, message) {
+      const errorDiv = form.querySelector('.error-msg');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.opacity = '1';
+      }
+    }
+
+    // Helper: Toast Notification
+    function showToast(message, type = 'success') {
+      // Remove existing toast
+      const existingToast = document.querySelector('.toast-notification');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-notification';
+      toast.innerText = message;
+
+      // Inline Styles for Toast
+      Object.assign(toast.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        background: type === 'error' ? '#ef4444' : '#10b981',
+        color: 'white',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+        zIndex: '9999',
+        transform: 'translateX(150%)',
+        transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        fontWeight: '600',
+        fontFamily: 'Inter'
+      });
+
+      document.body.appendChild(toast);
+
+      // Animate In
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+      });
+
+      // Remove after 3 seconds
+      setTimeout(() => {
+        toast.style.transform = 'translateX(150%)';
+        setTimeout(() => toast.remove(), 400);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

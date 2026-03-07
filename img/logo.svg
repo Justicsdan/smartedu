@@ -1,0 +1,27 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Vibrant blue circular background with gradient -->
+  <defs>
+    <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#4A90E2; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E6DA4; stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  <ellipse cx="100" cy="100" rx="90" ry="90" fill="url(#grad1)" />
+
+  <!-- Stylized open book -->
+  <g transform="translate(70 70) scale(0.8)">
+    <path d="M0 0 L40 0 L50 20 L40 40 L0 40 Z" fill="#4682B4" stroke="#FFFFFF" stroke-width="2"/>
+    <path d="M10 0 L50 0 L60 20 L50 40 L10 40 Z" fill="#87CEEB" stroke="#FFFFFF" stroke-width="2"/>
+    <path d="M0 0 L10 0 L20 20 L10 40 L0 40 Z" fill="#87CEEB" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+
+  <!-- Brain icon on the book -->
+  <g transform="translate(90 85) scale(0.5)">
+    <path d="M20 20 Q30 10 40 20 Q50 10 60 20 Q70 10 80 20" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+    <path d="M25 30 Q35 20 45 30 Q55 20 65 30" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="50" cy="20" r="10" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Elegant "SmartEdu" text -->
+  <text x="100" y="160" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle" style="text-shadow: 2px 2px 4px #2E6DA4;">SmartEdu</text>
+</svg>

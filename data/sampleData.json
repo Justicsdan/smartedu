@@ -1,0 +1,69 @@
+{
+  "admins": [
+    {
+      "id": "A001",
+      "name": "Dr. Grace Johnson",
+      "email": "grace.johnson@smartedu.com",
+      "password": "admin123",
+      "role": "Admin"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "T001",
+      "name": "Mr. Daniel Ojo",
+      "email": "daniel.ojo@smartedu.com",
+      "password": "teach123",
+      "department": "Mathematics",
+      "role": "Teacher"
+    },
+    {
+      "id": "T002",
+      "name": "Mrs. Amina Yusuf",
+      "email": "amina.yusuf@smartedu.com",
+      "password": "teach123",
+      "department": "English",
+      "role": "Teacher"
+    }
+  ],
+  "students": [
+    {
+      "id": "S001",
+      "name": "David Okoro",
+      "email": "david.okoro@student.smartedu.com",
+      "password": "stud123",
+      "class": "JSS3",
+      "department": "Science"
+    },
+    {
+      "id": "S002",
+      "name": "Sarah Bello",
+      "email": "sarah.bello@student.smartedu.com",
+      "password": "stud123",
+      "class": "SS1",
+      "department": "Arts"
+    }
+  ],
+  "results": [
+    {
+      "studentId": "S001",
+      "subjects": [
+        { "name": "Mathematics", "score": 88 },
+        { "name": "English", "score": 75 },
+        { "name": "Basic Science", "score": 90 }
+      ],
+      "term": "First Term",
+      "session": "2024/2025"
+    },
+    {
+      "studentId": "S002",
+      "subjects": [
+        { "name": "English", "score": 92 },
+        { "name": "Literature", "score": 85 },
+        { "name": "Government", "score": 80 }
+      ],
+      "term": "First Term",
+      "session": "2024/2025"
+    }
+  ]
+}
