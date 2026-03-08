@@ -1,7 +1,6 @@
 {
   "name": "smartedu",
   "version": "1.0.0",
-  "type": "module",
   "description": "SmartEdu - A school management system with admin, teacher, and student dashboards.",
   "main": "backend/server.js",
   "scripts": {
@@ -24,4 +23,3 @@
     "nodemon": "^3.0.3"
   }
 }
-
