@@ -1,0 +1,70 @@
+name: smartedu
+description: SmartEdu - Global School Result Management System
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Navigation
+  go_router: ^14.0.0
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # UI Enhancements
+  fluttertoast: ^8.2.8
+  google_fonts: ^6.2.1
+  icons_plus: ^5.0.0
+  flutter_animate: ^4.5.2
+  url_launcher: ^6.3.2
+  
+  # PDF & Print (already here — school-branded result sheets)
+  pdf: ^3.12.0
+  printing: ^5.14.3
+  
+  # Backend & Auth
+  supabase_flutter: ^2.12.2
+  
+  # Image Handling
+  image_picker: ^1.2.1
+  
+  # AI Chatbot
+  google_generative_ai: ^0.4.7
+
+  # ─── ADDED: Global System Requirements ───
+  
+  # Date formatting — attendance, terms, reports (used by every feature)
+  intl: ^0.19.0
+  
+  # Cached logos — schools load their own logo repeatedly on result sheets
+  # Raw NetworkImage re-downloads every time, crashes at scale
+  cached_network_image: ^3.4.1
+  
+  # File export path — PDF result sheets need a save location
+  path_provider: ^2.1.4
+  
+  # Storage permissions — Android/iOS require this for saving PDFs
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # ─── ADDED: Asset directories ───
+  # Without this section, Flutter ignores everything in /assets
+  # Schools will store logos, stamps, signatures here
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icons/

@@ -1,0 +1,361 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:smartedu/core/school_admin_provider.dart';
+
+class PageTeachers extends StatelessWidget {
+  final List<Map<String, dynamic>> teachers;
+  final void Function(String id) onDelete;
+  final VoidCallback onAdd;
+
+  const PageTeachers({super.key, required this.teachers, required this.onDelete, required this.onAdd});
+
+  String _getName(Map<String, dynamic> t) {
+    final first = (t['first_name'] ?? '').toString().trim();
+    final last = (t['last_name'] ?? '').toString().trim();
+    if (first.isNotEmpty && last.isNotEmpty) return '$first $last';
+    if (first.isNotEmpty) return first;
+    if (last.isNotEmpty) return last;
+    return (t['name'] ?? 'No Name').toString();
+  }
+
+  String _getStaffId(Map<String, dynamic> t) {
+    return (t['staff_id'] ?? t['staffId'] ?? t['id'] ?? '').toString();
+  }
+
+  void _showManageSheet(BuildContext context, String teacherId) {
+    String? _selectedClassIdForSubject;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SchoolAdminProvider>().loadTeacherAssignments(teacherId);
+    });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (sheetContext, setSt) {
+        final provider = sheetContext.watch<SchoolAdminProvider>();
+        final teacher = provider.getTeacherById(teacherId);
+
+        if (teacher == null) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: Text('Teacher not found')),
+          );
+        }
+
+        final teacherName = _getName(teacher);
+        final teacherStaffId = _getStaffId(teacher);
+        final formTeacherClassId = teacher['formTeacherClassId']?.toString();
+        final assignedSubjects = List<Map<String, dynamic>>.from(teacher['assignedSubjects'] ?? []);
+
+        return Container(
+          height: MediaQuery.of(sheetContext).size.height * 0.85,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Manage: $teacherName", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+                      const SizedBox(height: 4),
+                      Text("Staff ID: $teacherStaffId", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    ],
+                  ),
+                  IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(sheetContext)),
+                ],
+              ),
+              const Divider(height: 32),
+
+              // FORM TEACHER
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.supervisor_account_rounded, color: Colors.green, size: 24),
+                        SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("ASSIGN AS FORM TEACHER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                            SizedBox(height: 2),
+                            Text("One form teacher per class", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: formTeacherClassId,
+                      decoration: InputDecoration(
+                        labelText: "Select Class (None = Remove)",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.class_rounded, color: Colors.green),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Not a Form Teacher')),
+                        ...provider.classes.map((c) => DropdownMenuItem(
+                          value: c['id'].toString(),
+                          child: Text("${c['name']} - ${c['section']} (${c['studentCount']} students)"),
+                        )),
+                      ],
+                      onChanged: (val) => provider.assignFormTeacher(teacherId, val),
+                    ),
+                    if (formTeacherClassId != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(8)),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text("Currently assigned as Form Teacher", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // SUBJECT TEACHER
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF1A237E).withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.menu_book_rounded, color: Color(0xFF1A237E), size: 24),
+                        SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("ASSIGN AS SUBJECT TEACHER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+                            SizedBox(height: 2),
+                            Text("Can teach multiple subjects in multiple classes", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedClassIdForSubject,
+                      decoration: InputDecoration(
+                        hintText: "Step 1: Pick a class first",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.layers_rounded, color: Color(0xFF1A237E)),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      items: provider.classes.map((c) => DropdownMenuItem(
+                        value: c['id'].toString(),
+                        child: Text("${c['name']} - ${c['section']}"),
+                      )).toList(),
+                      onChanged: (val) => setSt(() => _selectedClassIdForSubject = val),
+                    ),
+                    if (_selectedClassIdForSubject != null) ...[
+                      const SizedBox(height: 12),
+                      const Text("Step 2: Click subjects to assign/unassign:", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 12),
+                      if (provider.subjects.isEmpty)
+                        const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("No subjects added yet. Go to Classes > Subjects tab to add.", style: TextStyle(color: Colors.grey))))
+                      else
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: provider.subjects.map((subj) {
+                            final subjId = subj['id'].toString();
+                            final assigned = assignedSubjects.any((a) => a['classId'] == _selectedClassIdForSubject && a['subjectId'] == subjId);
+                            return GestureDetector(
+                              onTap: () {
+                                if (assigned) {
+                                  provider.removeSubjectFromTeacher(teacherId, subjId, _selectedClassIdForSubject!);
+                                } else {
+                                  provider.assignSubjectToTeacher(teacherId, subjId, _selectedClassIdForSubject!);
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: assigned ? const Color(0xFF1A237E) : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: assigned ? const Color(0xFF1A237E) : Colors.grey.shade300),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(assigned ? Icons.check_circle_rounded : Icons.circle_outlined, size: 18, color: assigned ? Colors.white : Colors.grey),
+                                    const SizedBox(width: 8),
+                                    Text(subj['name'], style: TextStyle(fontWeight: FontWeight.w600, color: assigned ? Colors.white : Colors.grey.shade700)),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: const Text("DONE", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        if (teachers.isEmpty)
+          const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_pin_outlined, size: 80, color: Colors.grey),
+                SizedBox(height: 16),
+                Text("No teachers registered yet", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                SizedBox(height: 8),
+                Text("Click the + button to add a teacher", style: TextStyle(fontSize: 13, color: Colors.grey)),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            padding: const EdgeInsets.all(24),
+            itemCount: teachers.length,
+            itemBuilder: (context, index) {
+              final t = teachers[index];
+              final name = _getName(t);
+              final staffId = _getStaffId(t);
+              final isFormTeacher = t['formTeacherClassId'] != null;
+              final assignedCount = List<Map<String, dynamic>>.from(t['assignedSubjects'] ?? []).length;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade100),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8)],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.orange.shade100,
+                          radius: 28,
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'T',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 20),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
+                              const SizedBox(height: 4),
+                              Text("Staff ID: $staffId", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+                        if (isFormTeacher)
+                          Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.green.shade200)),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.supervisor_account, size: 14, color: Colors.green),
+                                SizedBox(width: 4),
+                                Text("Form Teacher", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
+                              ],
+                            ),
+                          ),
+                        if (assignedCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                            child: Text("$assignedCount Subject(s)", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showManageSheet(context, t['id'].toString()),
+                            icon: const Icon(Icons.assignment_ind_rounded, size: 18),
+                            label: const Text("ASSIGN CLASSES/SUBJECTS"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A237E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 22, color: Colors.red),
+                          onPressed: () => onDelete(t['id']),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        Positioned(
+          bottom: 30,
+          right: 30,
+          child: FloatingActionButton.extended(
+            onPressed: onAdd,
+            backgroundColor: const Color(0xFF1A237E),
+            icon: const Icon(Icons.person_add_rounded, color: Colors.white),
+            label: const Text("Add Teacher", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ],
+    );
+  }
+}

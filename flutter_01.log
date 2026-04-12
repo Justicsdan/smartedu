@@ -1,0 +1,88 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter run -d chrome
+
+## exception
+
+FormatException: FormatException: Unexpected end of input (at character 1)
+
+^
+
+
+```
+#0      _ChunkedJsonParser.fail (dart:convert-patch/convert_patch.dart:1467:5)
+#1      _ChunkedJsonParser.close (dart:convert-patch/convert_patch.dart:497:7)
+#2      _parseJson (dart:convert-patch/convert_patch.dart:36:10)
+#3      JsonDecoder.convert (dart:convert/json.dart:641:36)
+#4      JsonCodec.decode (dart:convert/json.dart:223:41)
+#5      DartBuild.loadHookResult (package:flutter_tools/src/build_system/targets/native_assets.dart:132:12)
+#6      FlutterHookRunnerNative.runHooks (package:flutter_tools/src/build_system/targets/hook_runner_native.dart:58:61)
+<asynchronous suspension>
+#7      ResidentWebRunner._updateDevFS (package:flutter_tools/src/isolated/resident_web_runner.dart:762:28)
+<asynchronous suspension>
+#8      ResidentWebRunner.run.<anonymous closure> (package:flutter_tools/src/isolated/resident_web_runner.dart:326:41)
+<asynchronous suspension>
+#9      asyncGuard.<anonymous closure> (package:flutter_tools/src/base/async_guard.dart:108:24)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.38.6, on Ubuntu 24.04.4 LTS 6.8.0-106-generic,
+    locale en_GB.UTF-8) [185ms]
+    [32m•[39m Flutter version 3.38.6 on channel stable at /media/dutycall/Dutycall
+      1/flutter_sdk/flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 8b87286849 (3 months ago), 2026-01-08 10:49:17 -0800
+    [32m•[39m Engine revision 78fc3012e4
+    [32m•[39m Dart version 3.10.7
+    [32m•[39m DevTools version 2.51.1
+    [32m•[39m Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop,
+      enable-windows-desktop, enable-android, enable-ios, cli-animations,
+      enable-native-assets, omit-legacy-version-file, enable-lldb-debugging
+
+[31m[✗][39m Android toolchain - develop for Android devices [26ms]
+    [31m✗[39m Unable to locate Android SDK.
+      Install Android Studio from:
+      https://developer.android.com/studio/index.html
+      On first launch it will assist you in installing the Android SDK
+      components.
+      (or visit https://flutter.dev/to/linux-android-setup for detailed
+      instructions).
+      If the Android SDK has been installed to a custom location, please use
+      `flutter config --android-sdk` to update to that location.
+
+
+[32m[✓][39m Chrome - develop for the web [10ms]
+    [32m•[39m Chrome at google-chrome
+
+[31m[✗][39m Linux toolchain - develop for Linux desktop [73ms]
+    [31m✗[39m clang++ is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install clang),
+      or can be downloaded from https://releases.llvm.org/
+    [31m✗[39m CMake is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install cmake),
+      or can be downloaded from https://cmake.org/download/
+    [31m✗[39m ninja is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install
+      ninja-build), or can be downloaded from
+      https://github.com/ninja-build/ninja/releases
+    [31m✗[39m pkg-config is required for Linux development.
+      It is likely available from your distribution (e.g.: apt install
+      pkg-config), or can be downloaded from
+      https://www.freedesktop.org/wiki/Software/pkg-config/
+
+[32m[✓][39m Connected device (2 available) [86ms]
+    [32m•[39m Linux (desktop) • linux  • linux-x64      • Ubuntu 24.04.4 LTS
+      6.8.0-106-generic
+    [32m•[39m Chrome (web)    • chrome • web-javascript • Google Chrome 146.0.7680.164
+
+[32m[✓][39m Network resources [3.2s]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 2 categories.
+```

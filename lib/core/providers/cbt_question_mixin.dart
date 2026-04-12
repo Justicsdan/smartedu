@@ -1,0 +1,214 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'base_provider.dart';
+
+mixin CbtQuestionMixin on BaseProvider {
+  List<Map<String, dynamic>> _cbtQuestions = [];
+  List<Map<String, dynamic>> get cbtQuestions => _cbtQuestions;
+
+  Future<List<Map<String, dynamic>>> loadCbtQuestions(String examId) async {
+    try {
+      final r = await Supabase.instance.client
+          .from('cbt_questions')
+          .select()
+          .eq('school_id', schoolId)
+          .eq('exam_id', examId)
+          .order('created_at');
+      _cbtQuestions = List<Map<String, dynamic>>.from(r);
+      notifyListeners();
+      return _cbtQuestions;
+    } catch (e) {
+      print('Error loading CBT questions: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> addCbtQuestion({
+    required String examId,
+    required String questionText,
+    String? optionA,
+    String? optionB,
+    String? optionC,
+    String? optionD,
+    required String correctOption,
+    String? explanation,
+    int marks = 1,
+  }) async {
+    try {
+      final valid = {'a', 'b', 'c', 'd'};
+      if (!valid.contains(correctOption.toLowerCase())) {
+        throw Exception('correct_option must be a, b, c, or d');
+      }
+
+      final r = await Supabase.instance.client.from('cbt_questions').insert({
+        'school_id': schoolId,
+        'exam_id': examId,
+        'question_text': questionText,
+        'option_a': optionA,
+        'option_b': optionB,
+        'option_c': optionC,
+        'option_d': optionD,
+        'correct_option': correctOption.toLowerCase(),
+        'explanation': explanation,
+        'marks': marks,
+      }).select().single();
+
+      _cbtQuestions.add(r);
+      logAudit(action: 'create', tableName: 'cbt_questions', recordId: r['id']?.toString());
+      notifyListeners();
+      return r;
+    } catch (e) {
+      print('Error adding CBT question: $e');
+      return null;
+    }
+  }
+
+  Future<bool> updateCbtQuestion(String questionId, Map<String, dynamic> updates) async {
+    try {
+      final u = Map<String, dynamic>.from(updates)
+        ..remove('id')..remove('school_id')..remove('exam_id')..remove('created_at');
+
+      if (u.containsKey('correct_option')) {
+        u['correct_option'] = u['correct_option'].toString().toLowerCase();
+      }
+      if (u.isEmpty) return false;
+
+      final r = await Supabase.instance.client
+          .from('cbt_questions')
+          .update(u)
+          .eq('id', questionId)
+          .eq('school_id', schoolId)
+          .select().single();
+
+      final i = _cbtQuestions.indexWhere((q) => q['id'].toString() == questionId);
+      if (i != -1) _cbtQuestions[i] = r;
+
+      logAudit(action: 'update', tableName: 'cbt_questions', recordId: questionId, newData: u);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error updating CBT question: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteCbtQuestion(String questionId) async {
+    try {
+      await Supabase.instance.client
+          .from('cbt_questions')
+          .delete()
+          .eq('id', questionId)
+          .eq('school_id', schoolId);
+
+      _cbtQuestions.removeWhere((q) => q['id'].toString() == questionId);
+      logAudit(action: 'delete', tableName: 'cbt_questions', recordId: questionId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error deleting CBT question: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteAllCbtQuestions(String examId) async {
+    try {
+      await Supabase.instance.client
+          .from('cbt_questions')
+          .delete()
+          .eq('exam_id', examId)
+          .eq('school_id', schoolId);
+
+      _cbtQuestions.removeWhere((q) => q['exam_id'].toString() == examId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error deleting all CBT questions: $e');
+      return false;
+    }
+  }
+
+  Future<bool> bulkImportCbtQuestions(String examId, List<Map<String, dynamic>> data) async {
+    try {
+      final rows = data.map((q) => {
+        'school_id': schoolId,
+        'exam_id': examId,
+        'question_text': q['question_text'] ?? '',
+        'option_a': q['option_a'],
+        'option_b': q['option_b'],
+        'option_c': q['option_c'],
+        'option_d': q['option_d'],
+        'correct_option': (q['correct_option'] ?? 'a').toString().toLowerCase(),
+        'explanation': q['explanation'],
+        'marks': q['marks'] ?? 1,
+      }).toList();
+
+      for (int i = 0; i < rows.length; i += 50) {
+        final chunk = rows.sublist(i, i + 50 > rows.length ? rows.length : i + 50);
+        await Supabase.instance.client.from('cbt_questions').insert(chunk);
+      }
+
+      await loadCbtQuestions(examId);
+      logAudit(action: 'bulk_import', tableName: 'cbt_questions', newData: {'exam_id': examId, 'count': data.length});
+      return true;
+    } catch (e) {
+      print('Error bulk importing CBT questions: $e');
+      return false;
+    }
+  }
+
+  List<Map<String, dynamic>> getShuffledCbtQuestions() {
+    final safe = _cbtQuestions.map((q) => {
+      'id': q['id'],
+      'question_text': q['question_text'],
+      'option_a': q['option_a'],
+      'option_b': q['option_b'],
+      'option_c': q['option_c'],
+      'option_d': q['option_d'],
+      'marks': q['marks'],
+    }).toList();
+    safe.shuffle();
+    return safe;
+  }
+
+  Map<String, dynamic> calculateCbtScore(Map<String, String> answers) {
+    int correct = 0, wrong = 0, unanswered = 0, totalMarks = 0;
+    final details = <Map<String, dynamic>>[];
+
+    for (final q in _cbtQuestions) {
+      final qId = q['id'].toString();
+      final submitted = answers[qId] ?? '';
+      final correctOpt = (q['correct_option'] as String?) ?? '';
+
+      if (submitted.isEmpty) {
+        unanswered++;
+      } else if (submitted == correctOpt) {
+        correct++;
+        totalMarks += (q['marks'] as int?) ?? 1;
+      } else {
+        wrong++;
+      }
+
+      details.add({
+        'question_id': qId,
+        'submitted': submitted,
+        'correct': correctOpt,
+        'is_correct': submitted == correctOpt,
+        'marks_obtained': submitted == correctOpt ? (q['marks'] as int?) ?? 1 : 0,
+      });
+    }
+
+    return {
+      'total_questions': _cbtQuestions.length,
+      'correct': correct,
+      'wrong': wrong,
+      'unanswered': unanswered,
+      'total_marks': totalMarks,
+      'percentage': _cbtQuestions.isNotEmpty
+          ? (totalMarks / _cbtQuestions.fold<int>(0, (s, q) => s + ((q['marks'] as int?) ?? 1))) * 100
+          : 0,
+      'details': details,
+    };
+  }
+
+  int get cbtQuestionCount => _cbtQuestions.length;
+  int get cbtTotalMarks => _cbtQuestions.fold<int>(0, (sum, q) => sum + ((q['marks'] as int?) ?? 1));
+}

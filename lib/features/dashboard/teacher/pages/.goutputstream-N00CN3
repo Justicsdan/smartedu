@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
+import 'package:smartedu/utils/grading_utils.dart';
+
+class TeacherEnterScoresPage extends StatefulWidget {
+  const TeacherEnterScoresPage({super.key});
+  @override
+  State<TeacherEnterScoresPage> createState() => _TeacherEnterScoresPageState();
+}
+
+class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
+  String? _selectedClassId;
+  String? _selectedSubjectId;
+  String? _selectedTermId;
+  bool _isSaving = false;
+  final Map<String, TextEditingController> _scoreControllers = {};
+  final Map<String, TextEditingController> _behavioralControllers = {};
+  final Set<String> _prefilledStudents = {};
+
+  static const List<Map<String, String>> _behavioralFields = [
+    {'key': 'conduct', 'label': 'Conduct'},
+    {'key': 'attitude', 'label': 'Attitude'},
+    {'key': 'interest', 'label': 'Interest'},
+    {'key': 'punctuality', 'label': 'Punctuality'},
+  ];
+
+  static const List<String> _behavioralOptions = ['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'];
+
+  @override
+  void dispose() {
+    for (final c in _scoreControllers.values) c.dispose();
+    for (final c in _behavioralControllers.values) c.dispose();
+    super.dispose();
+  }
+
+  String _studentName(Map<String, dynamic> s) {
+    final first = (s['first_name'] ?? '').toString().trim();
+    final last = (s['last_name'] ?? '').toString().trim();
+    return '$first $last'.trim();
+  }
+
+  List<Map<String, dynamic>> get _assessmentTypes {
+    final provider = context.read<TeacherProvider>();
+    final types = provider.assessmentTypes;
+    if (types.isNotEmpty) return types;
+    return GradingUtils.getDefaultAssessmentTypes('WAEC');
+  }
+
+  List<Map<String, dynamic>> get _gradingSystem {
+    final provider = context.read<TeacherProvider>();
+    final gs = provider.gradingSystem;
+    if (gs.isNotEmpty) return gs;
+    return GradingUtils.getDefaultGradingSystem('WAEC');
+  }
+
+  double _getMaxForAssessment(Map<String, dynamic> assessment) {
+    return (assessment['max'] as num?)?.toDouble() ?? 100;
+  }
+
+  double get _totalMaxScore {
+    return _assessmentTypes.fold<double>(0, (sum, at) => sum + _getMaxForAssessment(at));
+  }
+
+  List<Map<String, dynamic>> get _filteredStudents {
+    if (_selectedClassId == null) return [];
+    return context.read<TeacherProvider>().getStudentsInClass(_selectedClassId!);
+  }
+
+  void _clearAllControllers() {
+    for (var c in _scoreControllers.values) c.dispose();
+    for (var c in _behavioralControllers.values) c.dispose();
+    _scoreControllers.clear();
+    _behavioralControllers.clear();
+    _prefilledStudents.clear();
+  }
+
+  TextEditingController _getScoreController(String studentId, String assessmentId) {
+    final key = '${studentId}_$assessmentId';
+    _scoreControllers[key] ??= TextEditingController();
+    return _scoreControllers[key]!;
+  }
+
+  TextEditingController _getBehavioralController(String studentId, String field) {
+    final key = '${studentId}_$field';
+    _behavioralControllers[key] ??= TextEditingController();
+    return _behavioralControllers[key]!;
+  }
+
+  double _computeStudentTotal(String studentId) {
+    double total = 0;
+    for (final at in _assessmentTypes) {
+      final aid = (at['id'] ?? '').toString();
+      total += double.tryParse(_getScoreController(studentId, aid).text) ?? 0;
+    }
+    return total;
+  }
+
+  String _calcGrade(double score) {
+    for (final g in _gradingSystem) {
+      final min = (g['min'] as num?)?.toDouble() ?? 0;
+      final max = (g['max'] as num?)?.toDouble() ?? 100;
+      if (score >= min && score <= max) return (g['grade'] ?? 'F').toString();
+    }
+    return 'F';
+  }
+
+  List<String> _validateScores() {
+    final errors = <String>[];
+    for (final student in _filteredStudents) {
+      final sid = student['id'].toString();
+      final name = _studentName(student);
+      for (final at in _assessmentTypes) {
+        final aid = (at['id'] ?? '').toString();
+        final label = (at['name'] ?? aid).toString();
+        final max = _getMaxForAssessment(at);
+        final val = double.tryParse(_getScoreController(sid, aid).text) ?? 0;
+        if (val < 0) errors.add('$name: $label cannot be negative');
+        else if (val > max) errors.add('$name: $label exceeds maximum of $max');
+      }
+      final total = _computeStudentTotal(sid);
+      if (total > _totalMaxScore) errors.add('$name: Total ($total) exceeds maximum of $_totalMaxScore');
+    }
+    return errors;
+  }
+
+  Future<void> _prefillExistingScores() async {
+    for (final student in _filteredStudents) {
+      final sid = student['id'].toString();
+      if (_prefilledStudents.contains(sid)) continue;
+      try {
+        final provider = context.read<TeacherProvider>();
+        final existing = await provider.getExistingScore(sid, _selectedSubjectId!);
+        if (existing != null) {
+          final scoresJson = existing['scores_json'] as Map<String, dynamic>? ?? {};
+          for (final at in _assessmentTypes) {
+            final aid = (at['id'] ?? '').toString().toLowerCase();
+            final val = scoresJson[aid] ?? scoresJson[at['name']] ?? 0;
+            _getScoreController(sid, aid).text = (val is num ? val : 0).toString();
+          }
+        }
+        final behavioral = await _getExistingBehavioral(sid, _selectedTermId!);
+        if (behavioral != null) {
+          for (final field in _behavioralFields) {
+            final key = field['key']!;
+            final val = behavioral[key] ?? '';
+            if (val.toString().isNotEmpty) _getBehavioralController(sid, key).text = val.toString();
+          }
+          final tc = behavioral['teacher_comment'] ?? '';
+          if (tc.toString().isNotEmpty) _getBehavioralController(sid, 'teacher_comment').text = tc.toString();
+        }
+      } catch (e) {
+        debugPrint('Error prefilling for $sid: $e');
+      }
+      _prefilledStudents.add(sid);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _getExistingBehavioral(String studentId, String termId) async {
+    try {
+      final provider = context.read<TeacherProvider>();
+      return await Supabase.instance.client.from('term_comments').select().eq('school_id', provider.schoolId).eq('student_id', studentId).eq('term_id', termId).maybeSingle();
+    } catch (e) {
+      debugPrint('Error fetching behavioral: $e');
+      return null;
+    }
+  }
+
+  Future<bool> _saveBehavioralRating({required String studentId, required String classId, required String termId, Map<String, dynamic>? behavioralData}) async {
+    try {
+      final provider = context.read<TeacherProvider>();
+      final sessionId = provider.currentSession?['id']?.toString();
+      final existing = await Supabase.instance.client.from('term_comments').select('id').eq('school_id', provider.schoolId).eq('student_id', studentId).eq('term_id', termId).eq('class_id', classId).maybeSingle();
+      final payload = <String, dynamic>{'school_id': provider.schoolId, 'student_id': studentId, 'session_id': sessionId, 'term_id': termId, 'class_id': classId};
+      if (behavioralData != null) payload.addAll(behavioralData);
+      if (existing != null) {
+        await Supabase.instance.client.from('term_comments').update(payload).eq('id', existing['id']);
+      } else {
+        payload['teacher_comment'] = '';
+        await Supabase.instance.client.from('term_comments').insert(payload);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error saving behavioral rating: $e');
+      return false;
+    }
+  }
+
+  Future<void> _onSaveScores() async {
+    final errors = _validateScores();
+    if (errors.isNotEmpty) { _showValidationErrors(errors); return; }
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Confirm Save'), content: Text('Save scores for ${_filteredStudents.length} students?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), ElevatedButton(onPressed: () => Navigator.pop(ctx, true), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1)), child: const Text('Save', style: TextStyle(color: Colors.white)))]));
+    if (confirmed != true) return;
+    setState(() => _isSaving = true);
+    try {
+      final provider = context.read<TeacherProvider>();
+      final sessionId = provider.currentSession?['id']?.toString();
+      for (final student in _filteredStudents) {
+        final sid = student['id'].toString();
+        final scoresJson = <String, dynamic>{};
+        for (final at in _assessmentTypes) {
+          final aid = (at['id'] ?? '').toString().toLowerCase();
+          scoresJson[aid] = double.tryParse(_getScoreController(sid, aid).text) ?? 0;
+        }
+        final total = _computeStudentTotal(sid);
+        final grade = _calcGrade(total);
+        await Supabase.instance.client.from('scores').insert({'school_id': provider.schoolId, 'student_id': sid, 'class_id': _selectedClassId, 'subject_id': _selectedSubjectId, 'session_id': sessionId, 'term_id': _selectedTermId, 'scores_json': scoresJson, 'total': total, 'grade': grade, 'recorded_by': provider.teacherId});
+        final behavioralData = <String, dynamic>{};
+        for (final field in _behavioralFields) {
+          final key = field['key']!;
+          final val = _getBehavioralController(sid, key).text.trim();
+          if (val.isNotEmpty) behavioralData[key] = val;
+        }
+        final comment = _getBehavioralController(sid, 'teacher_comment').text.trim();
+        if (comment.isNotEmpty) behavioralData['teacher_comment'] = comment;
+        if (behavioralData.isNotEmpty) await _saveBehavioralRating(studentId: sid, classId: _selectedClassId!, termId: _selectedTermId!, behavioralData: behavioralData);
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Scores saved successfully!"), backgroundColor: Color(0xFF2E7D32)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving: $e"), backgroundColor: Color(0xFFD32F2F)));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showValidationErrors(List<String> errors) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(title: const Row(children: [Icon(Icons.warning_amber_rounded, color: Color(0xFFD32F2F)), SizedBox(width: 8), Text('Validation Errors')]), content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Please fix:', style: TextStyle(fontSize: 13, color: Colors.grey)), const SizedBox(height: 12), ...errors.take(5).map((e) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('• ', style: TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.bold)), Expanded(child: Text(e, style: const TextStyle(fontSize: 13)))]))), if (errors.length > 5) Text('...and ${errors.length - 5} more', style: const TextStyle(fontSize: 12, color: Colors.grey))]), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fix Scores'))]));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<TeacherProvider>();
+    final assigned = provider.assignedSubjects;
+    final classIds = <String>{};
+    for (final a in assigned) {
+      final cid = a['class_id']?.toString() ?? '';
+      if (cid.isNotEmpty) classIds.add(cid);
+    }
+    final classIdList = classIds.toList();
+    final subjectsForClass = assigned.where((a) => a['class_id']?.toString() == _selectedClassId).toList();
+    final terms = provider.terms;
+    if (_selectedClassId != null && _selectedSubjectId != null && _selectedTermId != null) _prefillExistingScores();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text("Enter Scores", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+          if (_selectedClassId != null && _selectedSubjectId != null) Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade200)), child: Text('${_filteredStudents.length} student${_filteredStudents.length != 1 ? 's' : ''}', style: const TextStyle(fontSize: 13, color: Color(0xFF0D47A1), fontWeight: FontWeight.w600))),
+        ]),
+        const SizedBox(height: 24),
+        Row(children: [
+          Expanded(child: DropdownButtonFormField<String>(value: _selectedClassId, decoration: const InputDecoration(labelText: "Select Class", border: OutlineInputBorder(), prefixIcon: Icon(Icons.class_rounded, color: Color(0xFF0D47A1))), items: classIdList.map((id) => DropdownMenuItem(value: id, child: Text(provider.getClassName(id), overflow: TextOverflow.ellipsis))).toList(), onChanged: (val) { setState(() { _selectedClassId = val; _selectedSubjectId = null; _clearAllControllers(); }); })),
+          const SizedBox(width: 12),
+          Expanded(child: DropdownButtonFormField<String>(value: _selectedSubjectId, decoration: const InputDecoration(labelText: "Select Subject", border: OutlineInputBorder(), prefixIcon: Icon(Icons.menu_book, color: Color(0xFF0D47A1))), items: subjectsForClass.map((a) => DropdownMenuItem(value: a['subject_id']?.toString(), child: Text(provider.getSubjectName(a['subject_id']), overflow: TextOverflow.ellipsis))).toList(), onChanged: (val) { setState(() { _selectedSubjectId = val; _clearAllControllers(); }); })),
+          const SizedBox(width: 12),
+          Expanded(child: DropdownButtonFormField<String>(value: _selectedTermId, decoration: const InputDecoration(labelText: "Select Term", border: OutlineInputBorder(), prefixIcon: Icon(Icons.calendar_today, color: Color(0xFF0D47A1))), items: terms.map((t) => DropdownMenuItem(value: t['id']?.toString(), child: Text(t['name']?.toString() ?? '', overflow: TextOverflow.ellipsis))).toList(), onChanged: (val) { setState(() { _selectedTermId = val; _clearAllControllers(); }); })),
+        ]),
+        const SizedBox(height: 8),
+        if (_assessmentTypes.isNotEmpty) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)), child: Row(children: [Icon(Icons.info_outline, size: 16, color: Colors.orange.shade700), const SizedBox(width: 8), Expanded(child: Text('Assessment: ${_assessmentTypes.map((a) => "${a['name']}(${a['max']})").join(" + ")} = $_totalMaxScore', style: TextStyle(fontSize: 12, color: Colors.orange.shade900)))]))],
+        const SizedBox(height: 24),
+        if (_selectedClassId != null && _selectedSubjectId != null && _selectedTermId != null) ...[
+          if (_filteredStudents.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(60), child: Column(children: [Icon(Icons.people_outline, size: 80, color: Colors.grey), SizedBox(height: 16), Text("No students in this class", style: TextStyle(fontSize: 16, color: Colors.grey))])))
+          else ...[
+            Container(decoration: const BoxDecoration(color: Color(0xFF0D47A1), borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10))), child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [const SizedBox(width: 40, child: Center(child: Text('#', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))), const SizedBox(width: 160, child: Center(child: Text('Student Name', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))), ..._assessmentTypes.map((at) => SizedBox(width: 90, child: Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('${at['name']}\n(${at['max']})', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))))), const SizedBox(width: 70, child: Center(child: Text('Total', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))), const SizedBox(width: 60, child: Center(child: Text('Grade', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))))]))),
+            ..._filteredStudents.asMap().entries.map((entry) {
+              final index = entry.key;
+              final student = entry.value;
+              final sid = student['id'].toString();
+              final total = _computeStudentTotal(sid);
+              final grade = _calcGrade(total);
+              final bgColor = index % 2 == 0 ? Colors.white : Colors.grey.shade50;
+              return Container(color: bgColor, child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+                SizedBox(width: 40, child: Center(child: Text('${index + 1}', style: const TextStyle(fontSize: 12)))),
+                SizedBox(width: 160, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: Text(_studentName(student), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF1B2A4A)), overflow: TextOverflow.ellipsis))),
+                ..._assessmentTypes.map((at) { final aid = (at['id'] ?? '').toString(); return SizedBox(width: 90, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), child: TextField(controller: _getScoreController(sid, aid), keyboardType: const TextInputType.numberWithOptions(decimal: true), textAlign: TextAlign.center, style: const TextStyle(fontSize: 13), decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8), isDense: true), onChanged: (_) => setState(() {}))); }),
+                SizedBox(width: 70, child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: total >= _totalMaxScore * 0.5 ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)), child: Text(total.toStringAsFixed(0), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: total >= _totalMaxScore * 0.5 ? Colors.green.shade700 : Colors.red.shade700)))),
+                SizedBox(width: 60, child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: total >= _totalMaxScore * 0.5 ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)), child: Text(grade, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: total >= _totalMaxScore * 0.5 ? Colors.green.shade700 : Colors.red.shade700)))),
+              ])));
+            }),
+            const SizedBox(height: 24),
+            _buildBehavioralSection(),
+            const SizedBox(height: 24),
+            SizedBox(width: double.infinity, height: 50, child: ElevatedButton.icon(onPressed: _isSaving ? null : _onSaveScores, icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save_rounded), label: Text(_isSaving ? "Saving..." : "Save All Scores", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white, shape: const StadiumBorder()))),
+          ],
+        ] else if (assigned.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(60), child: Column(children: [Icon(Icons.edit_note_outlined, size: 80, color: Colors.grey), SizedBox(height: 16), Text("No subjects assigned to you yet", style: TextStyle(fontSize: 16, color: Colors.grey)), SizedBox(height: 8), Text("Contact your school admin", style: TextStyle(fontSize: 13, color: Colors.grey))])))
+        else const Center(child: Padding(padding: EdgeInsets.all(40), child: Column(children: [Icon(Icons.touch_app_outlined, size: 60, color: Colors.grey), SizedBox(height: 16), Text("Select class, subject, and term to begin", style: TextStyle(fontSize: 15, color: Colors.grey))]))),
+      ]),
+    );
+  }
+
+  Widget _buildBehavioralSection() {
+    return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [const Icon(Icons.psychology, color: Color(0xFF0D47A1), size: 20), const SizedBox(width: 8), const Text("Behavioral Ratings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0D47A1))), const Spacer(), TextButton.icon(onPressed: () { setState(() { for (final student in _filteredStudents) { final sid = student['id'].toString(); for (final field in _behavioralFields) { _getBehavioralController(sid, field['key']!).text = 'Good'; } } }); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All ratings set to "Good"'), duration: Duration(seconds: 1))); }, icon: const Icon(Icons.flash_on, size: 16), label: const Text('Quick Fill "Good"'), style: TextButton.styleFrom(foregroundColor: const Color(0xFF0D47A1)))]),
+      const SizedBox(height: 12),
+      SingleChildScrollView(scrollDirection: Axis.horizontal, child: Column(children: [
+        Row(children: [const SizedBox(width: 160, child: Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('Student', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0D47A1))))), ..._behavioralFields.map((f) => SizedBox(width: 130, child: Center(child: Text(f['label']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0D47A1)))))), const SizedBox(width: 200, child: Center(child: Text('Teacher Comment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0D47A1))))]),
+        const Divider(),
+        ..._filteredStudents.map((student) {
+          final sid = student['id'].toString();
+          final studentName = _studentName(student);
+          return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
+            SizedBox(width: 160, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(studentName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF1B2A4A)), overflow: TextOverflow.ellipsis))),
+            ..._behavioralFields.map((f) { final key = f['key']!; final controller = _getBehavioralController(sid, key); final optValue = controller.text.isNotEmpty ? controller.text : null; return SizedBox(width: 130, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: DropdownButtonFormField<String>(value: optValue, decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), isDense: true), items: _behavioralOptions.map((opt) => DropdownMenuItem(value: opt, child: Text(opt, style: const TextStyle(fontSize: 12)))).toList(), onChanged: (v) => setState(() => controller.text = v ?? '')))); }),
+            SizedBox(width: 200, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: TextField(controller: _getBehavioralController(sid, 'teacher_comment'), decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)), hintText: 'Comment...', hintStyle: const TextStyle(fontSize: 11, color: Colors.grey), contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), isDense: true), maxLines: 1))),
+          ]));
+        }),
+      ])),
+    ]));
+  }
+}
