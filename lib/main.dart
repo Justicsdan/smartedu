@@ -8,24 +8,111 @@ import 'core/providers/school_admin_provider.dart';
 import 'core/super_admin_provider.dart';
 import 'core/providers/teacher/teacher_provider.dart';
 import 'core/providers/student/student_provider.dart';
-import 'core/router.dart';
+
+import 'features/auth/login_page.dart';
+import 'features/auth/role_selection_page.dart';
+import 'features/dashboard/super_admin/super_admin_dashboard.dart';
+import 'features/dashboard/school_admin/pages/page_dashboard.dart';
+import 'features/dashboard/school_admin/pages/page_classes.dart';
+import 'features/dashboard/school_admin/pages/page_academic.dart';
+import 'features/dashboard/school_admin/pages/page_results.dart';
+import 'features/dashboard/school_admin/pages/page_publish_results.dart';
+import 'features/dashboard/school_admin/pages/page_settings.dart';
+import 'features/dashboard/school_admin/pages/page_credentials.dart';
+import 'features/dashboard/school_admin/pages/page_students.dart';
+import 'features/dashboard/school_admin/pages/page_teachers.dart';
+import 'features/dashboard/teacher/teacher_dashboard.dart';
+import 'features/dashboard/student/student_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = (details) { if (kDebugMode) FlutterError.dumpErrorToConsole(details); };
-  PlatformDispatcher.instance.onError = (error, stack) { if (kDebugMode) debugPrint('ASYNC ERROR: $error'); return true; };
-  await Supabase.initialize(url: 'https://tcjsmkhmfjigutfhjtem.supabase.co', anonKey: 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg', debug: kDebugMode);
-  try { await Supabase.instance.client.auth.signOut(); } catch (_) {}
-  runApp(MultiProvider(providers: [
-    ChangeNotifierProvider(create: (_) => SchoolAdminProvider()),
-    ChangeNotifierProvider(create: (_) => SuperAdminProvider()),
-    ChangeNotifierProvider(create: (_) => TeacherProvider()),
-    ChangeNotifierProvider(create: (_) => StudentProvider()),
-  ], child: const SmartEduApp()));
+  FlutterError.onError = (details) {
+    if (kDebugMode) FlutterError.dumpErrorToConsole(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (kDebugMode) debugPrint('ASYNC ERROR: $error');
+    return true;
+  };
+  await Supabase.initialize(
+    url: 'https://tcjsmkhmfjigutfhjtem.supabase.co',
+    anonKey: 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg',
+    debug: kDebugMode,
+  );
+  try {
+    await Supabase.instance.client.auth.signOut();
+  } catch (_) {}
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SchoolAdminProvider()),
+        ChangeNotifierProvider(create: (_) => SuperAdminProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherProvider()),
+        ChangeNotifierProvider(create: (_) => StudentProvider()),
+      ],
+      child: const SmartEduApp(),
+    ),
+  );
 }
+
+final _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/role-selection',
+    ),
+    GoRoute(
+      path: '/role-selection',
+      builder: (_, __) => const RoleSelectionPage(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (_, state) {
+        final role = state.extra as String? ?? 'Student';
+        return LoginPage(selectedRole: role);
+      },
+    ),
+    GoRoute(
+      path: '/dashboard/superadmin',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return SuperAdminDashboard(adminData: data);
+      },
+    ),
+    GoRoute(
+      path: '/dashboard/schooladmin',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return _SchoolAdminInitializer(schoolData: data);
+      },
+    ),
+    GoRoute(
+      path: '/dashboard/teacher',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return TeacherDashboard(teacherData: data);
+      },
+    ),
+    GoRoute(
+      path: '/dashboard/student',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return StudentDashboard(studentData: data);
+      },
+    ),
+    GoRoute(
+      path: '/teacher-profile',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        return TeacherDashboard(teacherData: data);
+      },
+    ),
+  ],
+);
 
 class SmartEduApp extends StatelessWidget {
   const SmartEduApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
@@ -34,7 +121,7 @@ class SmartEduApp extends StatelessWidget {
       theme: _buildTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.system,
-      routerConfig: AppRouter.router,
+      routerConfig: _router,
       builder: (context, child) {
         ErrorWidget.builder = (details) {
           return Scaffold(
@@ -45,7 +132,10 @@ class SmartEduApp extends StatelessWidget {
                 children: [
                   const Icon(Icons.bug_report_outlined, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  const Text('Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Something went wrong',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
@@ -55,7 +145,10 @@ class SmartEduApp extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(onPressed: () => context.go('/'), child: const Text('Go Home')),
+                  ElevatedButton(
+                    onPressed: () => context.go('/'),
+                    child: const Text('Go Home'),
+                  ),
                 ],
               ),
             ),
@@ -67,31 +160,419 @@ class SmartEduApp extends StatelessWidget {
   }
 }
 
+class _SchoolAdminInitializer extends StatefulWidget {
+  final Map<String, dynamic> schoolData;
+  const _SchoolAdminInitializer({required this.schoolData});
+
+  @override
+  State<_SchoolAdminInitializer> createState() => _SchoolAdminInitializerState();
+}
+
+class _SchoolAdminInitializerState extends State<_SchoolAdminInitializer> {
+  bool _ready = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final p = context.read<SchoolAdminProvider>();
+      await p.initializeFromLoginData(widget.schoolData);
+      if (mounted) setState(() => _ready = true);
+    } catch (e) {
+      debugPrint('ADMIN INIT ERR: $e');
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Color(0xFFD32F2F)),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'Failed to load school data',
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/role-selection'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A237E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                ),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F8FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+        ),
+      );
+    }
+    return const _AdminShell();
+  }
+}
+
+class _AdminShell extends StatefulWidget {
+  const _AdminShell();
+
+  @override
+  State<_AdminShell> createState() => _AdminShellState();
+}
+
+class _AdminShellState extends State<_AdminShell> {
+  int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  static const _navItems = [
+    _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
+    _NavItem(icon: Icons.people_rounded, label: 'Students'),
+    _NavItem(icon: Icons.person_pin_rounded, label: 'Teachers'),
+    _NavItem(icon: Icons.layers_rounded, label: 'Classes'),
+    _NavItem(icon: Icons.calendar_today_rounded, label: 'Academic'),
+    _NavItem(icon: Icons.edit_note_rounded, label: 'Scores'),
+    _NavItem(icon: Icons.publish_rounded, label: 'Publish'),
+    _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
+    _NavItem(icon: Icons.vpn_key_rounded, label: 'Credentials'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.watch<SchoolAdminProvider>();
+    final schoolName = p.schoolName.isNotEmpty ? p.schoolName : 'School Portal';
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFF7F8FA),
+      drawer: _buildDrawer(schoolName),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Color(0xFFE8EAED))),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.menu_rounded, size: 22, color: Color(0xFF111827)),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _navItems[_selectedIndex].label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                    tooltip: 'Logout',
+                    onPressed: () => context.go('/role-selection'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: _buildPage(p)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(String schoolName) {
+    return Drawer(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
+            decoration: const BoxDecoration(color: Color(0xFF1A237E)),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.school_rounded, size: 22, color: Colors.white70),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    schoolName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _navItems.length,
+              itemBuilder: (_, i) {
+                final item = _navItems[i];
+                final selected = i == _selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _selectedIndex = i);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: selected ? const Color(0xFFF0F4FF) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 20,
+                            color: selected ? const Color(0xFF1A237E) : const Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                              color: selected ? const Color(0xFF1A237E) : const Color(0xFF6B7280),
+                            ),
+                          ),
+                          if (selected) ...[
+                            const Spacer(),
+                            Container(
+                              width: 4,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1A237E),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/role-selection');
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.logout_rounded, size: 20, color: Color(0xFFD32F2F)),
+                  SizedBox(width: 14),
+                  Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFD32F2F),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage(SchoolAdminProvider p) {
+    switch (_selectedIndex) {
+      case 0:
+        return PageDashboard(
+          studentCount: p.students.length,
+          teacherCount: p.teacherCount,
+          classCount: p.classes.length,
+          subjectCount: p.subjectCount,
+          assignmentCount: p.assignments.length,
+          activeCbtCount: p.cbtExams.where((e) => e['is_published'] == true).length,
+          classes: p.classes,
+        );
+      case 1:
+        return PageStudents(
+          students: p.students,
+          onDelete: (id) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Delete: $id')),
+            );
+          },
+          onAdd: () {},
+          onRefresh: () {},
+        );
+      case 2:
+        return PageTeachers(
+          teachers: p.teachers,
+          onDelete: (id) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Delete: $id')),
+            );
+          },
+          onAdd: () {},
+        );
+      case 3:
+        return PageClasses(
+          classes: p.classes,
+          subjects: p.subjects,
+          assignments: p.assignments,
+          teachers: p.teachers,
+          students: p.students,
+          classSubjects: p.classSubjects,
+          onAddClassSubject: (classId, subjectId) =>
+              p.addClassSubjectToDb(classId: classId, subjectId: subjectId),
+          onRemoveClassSubject: (csId) =>
+              p.removeClassSubjectFromDb(csId),
+          onAddClass: (data) {},
+          onDeleteClass: (data) {},
+          onAddSubject: (data) {},
+          onDeleteSubject: (data) {},
+          onAddAssignment: (data) {},
+          onDeleteAssignment: (data) {},
+        );
+      case 4:
+        return PageAcademic(
+          classes: p.classes,
+          academicYears: p.sessions,
+          onYearsUpdated: (years) {},
+        );
+      case 5:
+        return PageResults(
+          classes: p.classes,
+          subjects: p.subjects,
+          classSubjects: p.classSubjects,
+          students: p.students,
+          assignments: p.assignments,
+          scores: p.scores,
+          resultsVisible: true,
+          onSaveScores: (scores) => p.saveScores(scores),
+          onToggleVisibility: (_) {},
+        );
+      case 6:
+        return const PagePublishResults();
+      case 7:
+        return PageSettings(
+          schoolName: p.schoolName,
+          schoolAddress: '',
+          schoolPhone: '',
+          schoolEmail: '',
+          onUpdate: (name, address, phone, email) {},
+        );
+      case 8:
+        return const PageCredentials();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+}
+class _NavItem {
+  final IconData icon;
+  final String label;
+  const _NavItem({required this.icon, required this.label});
+}
+
 ThemeData _buildTheme() {
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorSchemeSeed: const Color(0xFF1B2A4A),
     scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-    appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1B2A4A), foregroundColor: Colors.white, elevation: 0),
-    inputDecorationTheme: InputDecorationTheme(
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1B2A4A),
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+    inputDecorationTheme: const InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
-      border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)), borderSide: BorderSide(color: Color(0xFFE0E0E0))),
-      enabledBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)), borderSide: BorderSide(color: Color(0xFFE0E0E0))),
-      focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)), borderSide: BorderSide(color: Color(0xFF1B2A4A), width: 2)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFF1B2A4A), width: 2),
+      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
       ),
     ),
-    cardTheme: CardThemeData(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200))),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+    ),
     dividerTheme: DividerThemeData(color: Colors.grey.shade200, thickness: 1),
   );
 }
 
-ThemeData _buildDarkTheme() => ThemeData(useMaterial3: true, brightness: Brightness.dark, colorSchemeSeed: const Color(0xFF1B2A4A), scaffoldBackgroundColor: const Color(0xFF121212));
+ThemeData _buildDarkTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorSchemeSeed: const Color(0xFF1B2A4A),
+    scaffoldBackgroundColor: const Color(0xFF121212),
+  );
+}

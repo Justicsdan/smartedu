@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,7 @@ class _PageResultsState extends State<PageResults> {
   String? _selectedClassId;
   String? _selectedSubjectId;
   bool _isSaving = false;
+  bool _isExporting = false;
   final Map<String, TextEditingController> _controllers = {};
 
   String _studentName(Map<String, dynamic> s) {
@@ -68,6 +70,28 @@ class _PageResultsState extends State<PageResults> {
   List<Map<String, dynamic>> get _studentsInClass {
     if (_selectedClassId == null) return [];
     return widget.students.where((s) => s['class_id'].toString() == _selectedClassId).toList();
+  }
+
+  String _getClassName() {
+    if (_selectedClassId == null) return '';
+    try {
+      final cls = widget.classes.firstWhere((c) => c['id'].toString() == _selectedClassId);
+      final name = (cls['name'] ?? '').toString().trim();
+      final section = (cls['section'] ?? '').toString().trim();
+      return section.isNotEmpty ? '$name $section' : name;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _getSubjectName() {
+    if (_selectedClassId == null || _selectedSubjectId == null) return '';
+    try {
+      final cs = _subjectsForClass.firstWhere((c) => c['subject_id'].toString() == _selectedSubjectId);
+      return _resolveSubjectName(cs);
+    } catch (_) {
+      return '';
+    }
   }
 
   String _getClassTier() {
@@ -185,6 +209,84 @@ class _PageResultsState extends State<PageResults> {
       } catch (e) {
         debugPrint('Prefill error: $e');
       }
+    }
+  }
+
+  void _exportCsv() {
+    if (_studentsInClass.isEmpty) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final className = _getClassName();
+      final subjectName = _getSubjectName();
+      final provider = context.read<SchoolAdminProvider>();
+      final session = provider.currentSession;
+      final term = provider.currentTerm;
+      final sessionName = session?['name']?.toString() ?? '';
+      final termName = term?['name']?.toString() ?? '';
+      final assessmentHeaders = _assessmentTypes.map((a) => '${a['name']}(${a['max']})').toList();
+
+      final buffer = StringBuffer();
+      buffer.writeln('Class: $className');
+      buffer.writeln('Subject: $subjectName');
+      buffer.writeln('Session: $sessionName');
+      buffer.writeln('Term: $termName');
+      buffer.writeln('Total: $_totalMaxScore');
+      buffer.writeln();
+      buffer.writeln(['#', 'Student Name', ...assessmentHeaders, 'Total', 'Grade'].join(','));
+
+      for (var i = 0; i < _studentsInClass.length; i++) {
+        final student = _studentsInClass[i];
+        final sid = student['id'].toString();
+        final name = _studentName(student);
+        final values = <String>[];
+        values.add((i + 1).toString());
+        final escapedName = name.contains(',') || name.contains('"')
+            ? '"${name.replaceAll('"', '""')}"'
+            : name;
+        values.add(escapedName);
+        for (final at in _assessmentTypes) {
+          final key = (at['id'] ?? '').toString();
+          values.add(_getController(sid, key).text.trim());
+        }
+        final total = _getTotal(sid);
+        values.add(total.toStringAsFixed(0));
+        values.add(_getGrade(total));
+        buffer.writeln(values.join(','));
+      }
+
+      final bytes = Uint8List.fromList(buffer.toString().codeUnits);
+      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', '${className.replaceAll(' ', '_')}_${subjectName.replaceAll(' ', '_')}_scores.csv')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('CSV exported successfully!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            backgroundColor: Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('CSV EXPORT ERR: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -628,20 +730,51 @@ class _PageResultsState extends State<PageResults> {
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: _isSaving ? null : _save,
-            icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save_rounded, size: 22),
-            label: Text(_isSaving ? "Saving..." : "Save All Scores", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A237E),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _save,
+                  icon: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.save_rounded, size: 22),
+                  label: Text(
+                    _isSaving ? 'Saving...' : 'Save All Scores',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _isExporting ? null : _exportCsv,
+                icon: _isExporting
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Color(0xFF2E7D32), strokeWidth: 2))
+                    : const Icon(Icons.download_rounded, size: 22),
+                label: Text(
+                  _isExporting ? 'Exporting...' : 'Export CSV',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE8F5E9),
+                  foregroundColor: const Color(0xFF2E7D32),
+                  elevation: 0,
+                  side: const BorderSide(color: Color(0xFFA5D6A7)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

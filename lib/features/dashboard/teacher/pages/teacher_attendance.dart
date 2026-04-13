@@ -1,3 +1,8 @@
+// ==========================================
+// File: lib/features/dashboard/teacher/pages/teacher_attendance.dart
+// ==========================================
+import 'dart:typed_data';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/teacher_provider.dart';
@@ -19,6 +24,7 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
   bool _isSaving = false;
   List<Map<String, dynamic>> _summaryData = [];
   bool _summaryLoading = false;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -84,6 +90,13 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
     return '${_selectedDate.year}-'
         '${_selectedDate.month.toString().padLeft(2, '0')}-'
         '${_selectedDate.day.toString().padLeft(2, '0')}';
+  }
+
+  String _csvEscape(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 
   Future<void> _loadExisting() async {
@@ -175,6 +188,120 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
     });
   }
 
+  void _exportSummaryCsv() {
+    if (_summaryData.isEmpty) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final className = _getClasses(context.read<TeacherProvider>())
+          .where((c) => c['id']?.toString() == _selectedClassId)
+          .map(_cl)
+          .firstOrNull ?? 'Unknown';
+
+      final buffer = StringBuffer();
+      buffer.writeln('Attendance Summary — $className');
+      buffer.writeln('Student,Present,Absent,Late,Total Days');
+      for (final s in _summaryData) {
+        final name = _csvEscape(
+            '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim());
+        final present = s['present'] ?? 0;
+        final absent = s['absent'] ?? 0;
+        final late = s['late'] ?? 0;
+        final total = s['total_days'] ?? 0;
+        buffer.writeln('$name,$present,$absent,$late,$total');
+      }
+
+      final bytes = Uint8List.fromList(buffer.toString().codeUnits);
+      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final safeName = className.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', 'attendance_${safeName}.csv')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            'Exported ${_summaryData.length} student${_summaryData.length != 1 ? 's' : ''}',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFFD32F2F),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  void _exportDayCsv() {
+    final students = _getSts(context.read<TeacherProvider>());
+    if (students.isEmpty) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final className = _getClasses(context.read<TeacherProvider>())
+          .where((c) => c['id']?.toString() == _selectedClassId)
+          .map(_cl)
+          .firstOrNull ?? 'Unknown';
+
+      final buffer = StringBuffer();
+      buffer.writeln('Attendance — $className — ${_dateStr()}');
+      buffer.writeln('S/N,Student Name,Admission No,Status');
+      for (int i = 0; i < students.length; i++) {
+        final s = students[i];
+        final name = _csvEscape(_sn(s));
+        final admNo = _csvEscape((s['admission_no'] ?? '').toString().trim());
+        final status = _statusMap[s['id']?.toString() ?? ''] ?? 'present';
+        buffer.writeln('${i + 1},$name,$admNo,$status');
+      }
+
+      final bytes = Uint8List.fromList(buffer.toString().codeUnits);
+      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final safeName = className.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+      final dateSlug = _dateStr();
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', 'attendance_${safeName}_$dateSlug.csv')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            'Exported ${students.length} student${students.length != 1 ? 's' : ''}',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFFD32F2F),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   static const _sc = {
     'present': Color(0xFF2E7D32),
     'absent': Color(0xFFD32F2F),
@@ -218,6 +345,49 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
           onChanged: (v) {
             if (v != null) setState(() => _statusMap[sid] = v);
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _exportButton({required VoidCallback onTap, required bool loading}) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFA5D6A7)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: loading ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (loading)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2E7D32)),
+                  )
+                else
+                  const Icon(Icons.download_rounded, size: 16, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 6),
+                const Text(
+                  'Export',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -379,53 +549,58 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
                 top: BorderSide(color: Colors.grey.shade200),
               ),
             ),
-            child: SizedBox(
-              width: double.infinity,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isSaving ? null : _save,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: _isSaving
-                          ? const Color(0xFF1A237E)
-                              .withOpacity(0.5)
-                          : const Color(0xFF1A237E),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _isSaving ? null : _save,
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (_isSaving)
-                          const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        else
-                          const Icon(Icons.check_circle_outline,
-                              size: 18, color: Colors.white),
-                        const SizedBox(width: 10),
-                        Text(
-                          _isSaving
-                              ? 'Saving...'
-                              : 'Save Attendance',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: _isSaving
+                              ? const Color(0xFF1A237E)
+                                  .withOpacity(0.5)
+                              : const Color(0xFF1A237E),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_isSaving)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            else
+                              const Icon(Icons.check_circle_outline,
+                                  size: 18, color: Colors.white),
+                            const SizedBox(width: 10),
+                            Text(
+                              _isSaving
+                                  ? 'Saving...'
+                                  : 'Save Attendance',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                _exportButton(onTap: _exportDayCsv, loading: _isExporting),
+              ],
             ),
           ),
       ],
@@ -579,167 +754,190 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
           Icons.history_outlined,
           sub: 'Mark attendance for at least one day.');
     }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      itemCount: _summaryData.length + 1,
-      itemBuilder: (_, i) {
-        if (i == 0) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              children: [
-                SizedBox(width: 28),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text('Student',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A237E),
-                      )),
-                ),
-                SizedBox(
-                  width: 60,
-                  child: Text('Present',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A237E),
-                      )),
-                ),
-                SizedBox(
-                  width: 60,
-                  child: Text('Absent',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A237E),
-                      )),
-                ),
-                SizedBox(
-                  width: 60,
-                  child: Text('Late',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A237E),
-                      )),
-                ),
-                SizedBox(
-                  width: 60,
-                  child: Text('Total',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A237E),
-                      )),
-                ),
-              ],
-            ),
-          );
-        }
-        final s = _summaryData[i - 1];
-        final nm =
-            '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
-        return Container(
-          margin: const EdgeInsets.only(bottom: 4),
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: (i - 1).isEven
-                ? Colors.white
-                : const Color(0xFFFAFBFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFF0F0F0)),
-          ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
           child: Row(
             children: [
-              SizedBox(
-                width: 28,
-                child: Text(
-                  '$i',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade400,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
+              Text(
+                '${_summaryData.length} Student${_summaryData.length != 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111827),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  nm,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF111827),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  '${s['present'] ?? 0}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  '${s['absent'] ?? 0}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFD32F2F),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  '${s['late'] ?? 0}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFE65100),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  '${s['total_days'] ?? 0}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ),
+              const Spacer(),
+              _exportButton(onTap: _exportSummaryCsv, loading: _isExporting),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            itemCount: _summaryData.length + 1,
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      SizedBox(width: 28),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text('Student',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E),
+                            )),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: Text('Present',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E),
+                            )),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: Text('Absent',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E),
+                            )),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: Text('Late',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E),
+                            )),
+                      ),
+                      SizedBox(
+                        width: 60,
+                        child: Text('Total',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E),
+                            )),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final s = _summaryData[i - 1];
+              final nm =
+                  '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
+              return Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: (i - 1).isEven
+                      ? Colors.white
+                      : const Color(0xFFFAFBFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFF0F0F0)),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        '$i',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        nm,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF111827),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        '${s['present'] ?? 0}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        '${s['absent'] ?? 0}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD32F2F),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        '${s['late'] ?? 0}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFE65100),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        '${s['total_days'] ?? 0}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

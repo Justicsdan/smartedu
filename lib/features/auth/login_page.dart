@@ -112,21 +112,17 @@ class _LoginPageState extends State<LoginPage> {
     return list.first as Map<String, dynamic>;
   }
 
-  // ── Student: direct .eq() (PINs are plain text) ──
+  // ── Student: RPC (bcrypt or plain text) ──
 
   Future<void> _loginStudent() async {
     final admissionNo = _fieldOneController.text.trim();
     final pin = _fieldTwoController.text.trim();
 
-    final response = await Supabase.instance.client
-        .from('students')
-        .select('id, school_id, first_name, last_name, class_id, is_active')
-        .eq('admission_no', admissionNo)
-        .eq('pin', pin)
-        .limit(1);
-
-    if (response.isEmpty) throw Exception('Invalid credentials');
-    final r = response.first;
+    final r = await _rpcLogin('login_student', {
+      'p_admission_no': admissionNo,
+      'p_pin': pin,
+    });
+    if (r == null) throw Exception('Invalid credentials');
     if (r['is_active'] == false) throw Exception('Account deactivated');
 
     if (mounted) {

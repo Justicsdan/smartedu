@@ -402,8 +402,8 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
           ],
         ),
         Positioned(
-          bottom: 24,
-          right: 24,
+          bottom: 80,
+          right: 80,
           child: GestureDetector(
             onTap: () => _showAddSheet(context, provider),
             child: Container(

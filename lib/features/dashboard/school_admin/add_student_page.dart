@@ -1,3 +1,6 @@
+// ==========================================
+// File: lib/features/dashboard/school_admin/add_student_page.dart
+// ==========================================
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -179,6 +182,18 @@ class _AddStudentPageState extends State<AddStudentPage> {
     }
   }
 
+  // ─── DUPLICATE CHECK ─────────────────────────────────────────
+
+  Future<bool> _admissionNoExists(String admissionNo, String schoolId) async {
+    final res = await Supabase.instance.client
+        .from('students')
+        .select('id')
+        .eq('school_id', schoolId)
+        .eq('admission_no', admissionNo)
+        .limit(1);
+    return res.isNotEmpty;
+  }
+
   // ─── VALIDATORS ──────────────────────────────────────────────
 
   String? _vAdm(String? v) {
@@ -245,6 +260,36 @@ class _AddStudentPageState extends State<AddStudentPage> {
       return;
     }
 
+    // ── Duplicate admission number check ──
+    final admNo = (_data['admission_no'] ?? '').toString().trim();
+    final provider = context.read<SchoolAdminProvider>();
+    final schoolId = _getSchoolId(provider);
+
+    setState(() => _isUploading = true);
+    try {
+      final exists = await _admissionNoExists(admNo, schoolId);
+      if (exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Admission number "$admNo" already exists in this school.')),
+            ]),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ));
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint('DUP CHECK ERR: $e');
+      // Don't block on network error — let the DB unique constraint handle it
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+
     final fn = (_data['first_name'] ?? '').toString().trim();
     final ln = (_data['last_name'] ?? '').toString().trim();
 
@@ -254,7 +299,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('Confirm Addition'),
-        content: Text('Add $fn $ln (${_data['admission_no']})?'),
+        content: Text('Add $fn $ln ($admNo)?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -275,8 +320,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
     setState(() => _isUploading = true);
     try {
-      final provider = context.read<SchoolAdminProvider>();
-      final schoolId = _getSchoolId(provider);
       if (schoolId.isEmpty) {
         if (mounted)
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -338,8 +381,13 @@ class _AddStudentPageState extends State<AddStudentPage> {
     } catch (e) {
       debugPrint('SAVE ERR: $e');
       if (mounted) {
+        final msg = e.toString();
+        String display = msg;
+        if (msg.contains('duplicate') || msg.contains('unique') || msg.contains('students_admission_no_key')) {
+          display = 'Admission number "$admNo" already exists.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: SelectableText(e.toString(),
+          content: SelectableText(display,
               style: const TextStyle(fontSize: 11)),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,

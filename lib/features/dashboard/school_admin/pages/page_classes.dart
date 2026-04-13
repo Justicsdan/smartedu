@@ -110,6 +110,17 @@ class _PageClassesState extends State<PageClasses>
     }
   }
 
+  bool _classExists(String name, String section) {
+    return widget.classes.any((c) =>
+        c['name']?.toString().trim().toLowerCase() == name.trim().toLowerCase() &&
+        c['section']?.toString().trim().toLowerCase() == section.trim().toLowerCase());
+  }
+
+  bool _subjectExists(String name) {
+    return widget.subjects.any((s) =>
+        s['name']?.toString().trim().toLowerCase() == name.trim().toLowerCase());
+  }
+
   // ── Bottom Sheet: Class Details (Students) ───────────────
 
   void _showClassDetails(Map<String, dynamic> classData) {
@@ -753,6 +764,7 @@ class _PageClassesState extends State<PageClasses>
         builder: (context, setDialogState) {
           String? selectedClass, selectedSubject, selectedTeacher;
           String? selectedCategory = 'Senior School (SSS)';
+          String? dialogError;
 
           return AlertDialog(
             backgroundColor: Colors.white,
@@ -797,6 +809,26 @@ class _PageClassesState extends State<PageClasses>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (dialogError != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFECACA)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, size: 18, color: Color(0xFFDC2626)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(dialogError, style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626), height: 1.3)),
+                          ),
+                        ],
+                      ),
+                    ),
                   TextField(
                     controller: nameCtrl,
                     style: const TextStyle(
@@ -948,34 +980,46 @@ class _PageClassesState extends State<PageClasses>
               ),
               ElevatedButton(
                 onPressed: () {
-                  if (nameCtrl.text.isNotEmpty) {
-                    final id = DateTime.now()
-                        .millisecondsSinceEpoch
-                        .toString();
-                    if (type == "Class") {
-                      widget.onAddClass({
-                        'id': id,
-                        'name': nameCtrl.text,
-                        'section': sectionCtrl.text.isEmpty
-                            ? 'A'
-                            : sectionCtrl.text,
-                        'studentCount': 0,
-                        'category': selectedCategory == 'Junior School (JSS)'
-                            ? 'JSS'
-                            : 'SSS'
-                      });
-                    } else if (type == "Subject") {
-                      widget.onAddSubject(
-                          {'id': id, 'name': nameCtrl.text});
-                    } else {
-                      widget.onAddAssignment({
-                        'id': id,
-                        'title': nameCtrl.text,
-                        'classId': selectedClass,
-                        'subjectId': selectedSubject,
-                        'teacherId': selectedTeacher
-                      });
+                  final name = nameCtrl.text.trim();
+                  if (name.isEmpty) {
+                    setDialogState(() => dialogError = 'Name is required.');
+                    return;
+                  }
+
+                  if (type == "Class") {
+                    final section = sectionCtrl.text.trim().isEmpty
+                        ? 'A'
+                        : sectionCtrl.text.trim();
+                    if (_classExists(name, section)) {
+                      setDialogState(() => dialogError = 'Class "$name - $section" already exists.');
+                      return;
                     }
+                    final id = DateTime.now().millisecondsSinceEpoch.toString();
+                    widget.onAddClass({
+                      'id': id,
+                      'name': name,
+                      'section': section,
+                      'studentCount': 0,
+                      'category': selectedCategory == 'Junior School (JSS)' ? 'JSS' : 'SSS'
+                    });
+                    Navigator.pop(ctx);
+                  } else if (type == "Subject") {
+                    if (_subjectExists(name)) {
+                      setDialogState(() => dialogError = 'Subject "$name" already exists.');
+                      return;
+                    }
+                    final id = DateTime.now().millisecondsSinceEpoch.toString();
+                    widget.onAddSubject({'id': id, 'name': name});
+                    Navigator.pop(ctx);
+                  } else {
+                    final id = DateTime.now().millisecondsSinceEpoch.toString();
+                    widget.onAddAssignment({
+                      'id': id,
+                      'title': name,
+                      'classId': selectedClass,
+                      'subjectId': selectedSubject,
+                      'teacherId': selectedTeacher
+                    });
                     Navigator.pop(ctx);
                   }
                 },

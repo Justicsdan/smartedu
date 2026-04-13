@@ -90,6 +90,19 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   }
 
   // =========================================================
+  // DUPLICATE CHECK
+  // =========================================================
+
+  Future<bool> _adminUsernameExists(String username) async {
+    final res = await Supabase.instance.client
+        .from('schools')
+        .select('id')
+        .eq('admin_username', username.toLowerCase())
+        .limit(1);
+    return res.isNotEmpty;
+  }
+
+  // =========================================================
   // VALIDATION
   // =========================================================
 
@@ -217,12 +230,39 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       return;
     }
 
+    // ── Pre-check: duplicate admin username ──
+    final username = _adminUsernameController.text.trim().toLowerCase();
+    setState(() => _isUploading = true);
+    try {
+      final exists = await _adminUsernameExists(username);
+      if (exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Admin username "$username" already exists. Use a different username.')),
+            ]),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ));
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint('USERNAME CHECK ERR: $e');
+      // Don't block on network error — let the DB unique constraint handle it
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+
     // Confirm
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Create School?'),
-        content: Text('Create "${_schoolNameController.text.trim()}" with admin username "${_adminUsernameController.text.trim()}"?'),
+        content: Text('Create "${_schoolNameController.text.trim()}" with admin username "$username"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
@@ -252,7 +292,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
             'school_type': dbType,
             'is_active': true,
             'has_paid_current_term': false,
-            'admin_username': _adminUsernameController.text.trim().toLowerCase(),
+            'admin_username': username,
             'admin_password': _adminPasswordController.text.trim(),
           })
           .select()
@@ -314,7 +354,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       if (mounted) {
         String msg = 'Error creating school';
         if (e.code == '23505') {
-          msg = 'Admin username "${_adminUsernameController.text.trim()}" already exists. Use a different username.';
+          msg = 'Admin username "$username" already exists. Use a different username.';
         } else if (e.message?.contains('admin_username') == true) {
           msg = 'Admin username already taken.';
         }
@@ -637,7 +677,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                   Expanded(child: _buildTextField('State', _stateController)),
                 ],
               ),
-              _buildTextField('Country', _cityController, hintText: 'e.g. Nigeria, Ghana, Kenya'),
+              _buildTextField('Country', _countryController, hintText: 'e.g. Nigeria, Ghana, Kenya'),
 
               _buildTextField('WhatsApp / Phone *', _whatsappController,
                   keyboardType: TextInputType.phone,
@@ -670,7 +710,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'The admin will use these credentials to log in and manage their school independently.',
+                        'The admin will use these credentials to log in and manage their school independently. Each admin username must be unique across all schools.',
                         style: TextStyle(color: Colors.orange.shade700, fontSize: 13),
                       ),
                     ),

@@ -1,3 +1,6 @@
+// ==========================================
+// File: lib/features/dashboard/school_admin/add_teacher_page.dart
+// ==========================================
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -58,6 +61,20 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
   String? _validateDropdown(String? value) {
     if (value == null || value.trim().isEmpty) return 'Required';
     return null;
+  }
+
+  // =========================================================
+  // DUPLICATE CHECKS
+  // =========================================================
+
+  Future<bool> _staffIdExists(String staffId, String schoolId) async {
+    final res = await Supabase.instance.client
+        .from('teachers')
+        .select('id')
+        .eq('school_id', schoolId)
+        .eq('staff_id', staffId)
+        .limit(1);
+    return res.isNotEmpty;
   }
 
   // =========================================================
@@ -208,13 +225,51 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
 
     final firstName = (_data['first_name'] ?? '').toString().trim();
     final lastName = (_data['last_name'] ?? '').toString().trim();
+    final staffId = (_data['staff_id'] ?? '').toString().trim();
+
+    // ── Duplicate staff_id check ──
+    setState(() => _isUploading = true);
+    try {
+      final provider = context.read<SchoolAdminProvider>();
+      final schoolId = provider.schoolId;
+      if (schoolId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('FATAL: School ID missing. Log out and back in.'),
+              backgroundColor: Colors.red));
+        }
+        return;
+      }
+
+      final exists = await _staffIdExists(staffId, schoolId);
+      if (exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Staff ID "$staffId" already exists in this school.')),
+            ]),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ));
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint('DUP CHECK ERR: $e');
+      // Don't block on network error — let the DB unique constraint handle it
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text('Confirm Addition'),
-        content: Text('Add $firstName $lastName (${_data['staff_id']})?'),
+        content: Text('Add $firstName $lastName ($staffId)?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -283,9 +338,14 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
     } catch (e) {
       debugPrint('TEACHER SAVE ERROR: $e');
       if (mounted) {
+        final msg = e.toString();
+        String display = msg;
+        if (msg.contains('duplicate') || msg.contains('unique') || msg.contains('staff_id') || msg.contains('username')) {
+          display = 'A teacher with this Staff ID or username already exists.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: SelectableText(e.toString(),
+              content: SelectableText(display,
                   style: const TextStyle(fontSize: 11)),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 15)),

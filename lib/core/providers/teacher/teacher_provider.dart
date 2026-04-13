@@ -1,3 +1,6 @@
+// ==========================================
+// File: lib/core/providers/teacher/teacher_provider.dart
+// ==========================================
 import 'teacher_base.dart';
 import 'teacher_classes_mixin.dart';
 import 'teacher_scores_mixin.dart';
@@ -14,7 +17,7 @@ class TeacherProvider extends TeacherBase
   @override
   Future<void> loadTeacherData() async {
     await super.loadTeacherData();
-    await loadMyScores();
+    await loadMyAssignments();
   }
 
   /// Returns the current active academic session ID.

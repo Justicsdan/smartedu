@@ -1,6 +1,8 @@
 // ==========================================
 // File: lib/features/dashboard/school_admin/pages/page_teachers.dart
 // ==========================================
+import 'dart:typed_data';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,6 +30,10 @@ class _PageTeachersState extends State<PageTeachers> {
   String _searchQuery = '';
   bool _showSearch = false;
 
+  static const int _pageSize = 50;
+  int _displayCount = _pageSize;
+  bool _isExporting = false;
+
   List<Map<String, dynamic>> get _filteredTeachers {
     if (_searchQuery.isEmpty) return widget.teachers;
     final q = _searchQuery.toLowerCase();
@@ -47,6 +53,14 @@ class _PageTeachersState extends State<PageTeachers> {
     }).toList();
   }
 
+  List<Map<String, dynamic>> get _displayedTeachers {
+    final filtered = _filteredTeachers;
+    if (filtered.length <= _displayCount) return filtered;
+    return filtered.sublist(0, _displayCount);
+  }
+
+  bool get _hasMore => _filteredTeachers.length > _displayCount;
+
   String _getName(Map<String, dynamic> t) {
     final first = (t['first_name'] ?? '').toString().trim();
     final last = (t['last_name'] ?? '').toString().trim();
@@ -58,6 +72,82 @@ class _PageTeachersState extends State<PageTeachers> {
 
   String _getStaffId(Map<String, dynamic> t) {
     return (t['staff_id'] ?? t['staffId'] ?? t['id'] ?? '').toString();
+  }
+
+  String _csvEscape(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
+  }
+
+  void _exportCsv() {
+    if (_filteredTeachers.isEmpty) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final buffer = StringBuffer();
+      buffer.writeln('Staff ID,Full Name,Gender,Email,Phone,Department,Qualification,Role(s)');
+
+      for (var i = 0; i < _filteredTeachers.length; i++) {
+        final t = _filteredTeachers[i];
+        final isFormTeacher = t['formTeacherClassId'] != null;
+        final assigned = List<Map<String, dynamic>>.from(t['assignedSubjects'] ?? []);
+        final roles = <String>[];
+        if (isFormTeacher) roles.add('Form Teacher');
+        if (assigned.isNotEmpty) roles.add('${assigned.length} Subject Teacher${assigned.length != 1 ? 's' : ''}');
+        final roleStr = roles.isEmpty ? 'None' : roles.join(' / ');
+
+        final row = [
+          _csvEscape(_getStaffId(t)),
+          _csvEscape(_getName(t)),
+          _csvEscape((t['gender'] ?? '').toString().trim()),
+          _csvEscape((t['email'] ?? '').toString().trim()),
+          _csvEscape((t['phone'] ?? '').toString().trim()),
+          _csvEscape((t['department'] ?? '').toString().trim()),
+          _csvEscape((t['qualification'] ?? '').toString().trim()),
+          _csvEscape(roleStr),
+        ];
+        buffer.writeln(row.join(','));
+      }
+
+      final bytes = Uint8List.fromList(buffer.toString().codeUnits);
+      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final suffix = _searchQuery.isNotEmpty ? '_filtered' : '';
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', 'teachers${suffix}.csv')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Exported ${_filteredTeachers.length} teacher${_filteredTeachers.length != 1 ? 's' : ''}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('CSV EXPORT ERR: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   @override
@@ -234,7 +324,7 @@ class _PageTeachersState extends State<PageTeachers> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'ASSIGN AS FORM TEACHER',
                                         style: TextStyle(
                                           fontSize: 15,
@@ -353,7 +443,7 @@ class _PageTeachersState extends State<PageTeachers> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'ASSIGN AS SUBJECT TEACHER',
                                         style: TextStyle(
                                           fontSize: 15,
@@ -601,7 +691,7 @@ class _PageTeachersState extends State<PageTeachers> {
         radius: 26,
         backgroundColor: Colors.grey.shade200,
         backgroundImage: NetworkImage(url),
-        onBackgroundImageError: (_, __) {},
+        onBackgroundImageError: url.isNotEmpty ? (_, __) {} : null,
       );
     }
 
@@ -679,6 +769,7 @@ class _PageTeachersState extends State<PageTeachers> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredTeachers;
+    final displayed = _displayedTeachers;
     final hasSearch = _searchQuery.isNotEmpty;
     final totalCount = widget.teachers.length;
     final formMasterCount = widget.teachers
@@ -694,7 +785,6 @@ class _PageTeachersState extends State<PageTeachers> {
       backgroundColor: const Color(0xFFF7F8FA),
       body: Column(
         children: [
-          // ── Fixed Header ──
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -738,7 +828,49 @@ class _PageTeachersState extends State<PageTeachers> {
                         ],
                       ),
                     ),
-                    // Search toggle
+                    Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFA5D6A7)),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _isExporting ? null : _exportCsv,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isExporting)
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Color(0xFF2E7D32)),
+                                  )
+                                else
+                                  const Icon(Icons.download_rounded,
+                                      size: 18, color: Color(0xFF2E7D32)),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Export',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF2E7D32),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
                       height: 40,
                       decoration: BoxDecoration(
@@ -762,6 +894,7 @@ class _PageTeachersState extends State<PageTeachers> {
                               if (!_showSearch) {
                                 _searchController.clear();
                                 _searchQuery = '';
+                                _displayCount = _pageSize;
                               }
                             });
                             if (_showSearch) {
@@ -800,7 +933,6 @@ class _PageTeachersState extends State<PageTeachers> {
                   ],
                 ),
 
-                // Animated search bar
                 AnimatedSize(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
@@ -831,6 +963,7 @@ class _PageTeachersState extends State<PageTeachers> {
                               onChanged: (value) {
                                 setState(() {
                                   _searchQuery = value.trim();
+                                  _displayCount = _pageSize;
                                 });
                               },
                               decoration: InputDecoration(
@@ -861,6 +994,7 @@ class _PageTeachersState extends State<PageTeachers> {
                                           _searchController.clear();
                                           setState(() {
                                             _searchQuery = '';
+                                            _displayCount = _pageSize;
                                           });
                                         },
                                       )
@@ -879,7 +1013,6 @@ class _PageTeachersState extends State<PageTeachers> {
             ),
           ),
 
-          // ── Stats strip ──
           if (!_showSearch)
             Container(
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -929,7 +1062,6 @@ class _PageTeachersState extends State<PageTeachers> {
               ),
             ),
 
-          // ── Teacher List ──
           Expanded(
             child: widget.teachers.isEmpty
                 ? _emptyState(
@@ -952,22 +1084,25 @@ class _PageTeachersState extends State<PageTeachers> {
                           _searchController.clear();
                           setState(() {
                             _searchQuery = '';
+                            _displayCount = _pageSize;
                           });
                         },
                       )
                     : ListView.builder(
                         padding:
                             const EdgeInsets.fromLTRB(16, 12, 16, 90),
-                        itemCount: filtered.length,
+                        itemCount: displayed.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final t = filtered[index];
+                          if (index == displayed.length) {
+                            return _loadMoreIndicator(filtered.length);
+                          }
+                          final t = displayed[index];
                           return _teacherCard(t, index);
                         },
                       ),
           ),
         ],
       ),
-      // ── FAB ──
       floatingActionButton: Container(
         height: 52,
         decoration: BoxDecoration(
@@ -1008,6 +1143,38 @@ class _PageTeachersState extends State<PageTeachers> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _loadMoreIndicator(int totalFiltered) {
+    final remaining = totalFiltered - _displayCount;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () {
+            setState(() {
+              _displayCount += _pageSize;
+            });
+          },
+          icon: Icon(Icons.expand_more, size: 18, color: Colors.grey.shade500),
+          label: Text(
+            'Show $remaining more',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1428,7 +1595,6 @@ class _PageTeachersState extends State<PageTeachers> {
               ),
             ),
             const SizedBox(height: 20),
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -1438,7 +1604,7 @@ class _PageTeachersState extends State<PageTeachers> {
                           radius: 30,
                           backgroundColor: Colors.grey.shade200,
                           backgroundImage: NetworkImage(passportUrl),
-                          onBackgroundImageError: (_, __) {},
+                          onBackgroundImageError: passportUrl.isNotEmpty ? (_, __) {} : null,
                         )
                       : CircleAvatar(
                           radius: 30,
@@ -1505,7 +1671,6 @@ class _PageTeachersState extends State<PageTeachers> {
             ),
             const SizedBox(height: 20),
             const Divider(height: 1, color: Color(0xFFF0F0F0)),
-            // Detail rows
             if (gender.isNotEmpty)
               _detailRow(
                 icon: Icons.wc_rounded,
@@ -1554,7 +1719,6 @@ class _PageTeachersState extends State<PageTeachers> {
                 label: 'Home Address',
                 value: homeAddress,
               ),
-            // Assigned subjects summary
             if (assignedSubjects.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
@@ -1602,7 +1766,6 @@ class _PageTeachersState extends State<PageTeachers> {
               ),
             ],
             const SizedBox(height: 8),
-            // Action buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Row(

@@ -4,11 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Master Plan Check: PASSED (After Fix)
-/// - Zero platform branding shown to end users.
-/// - Purely acts as a generic "School Portal" gateway.
-/// - Routes cleanly to login page with role payload.
-
 class RoleSelectionPage extends StatelessWidget {
   const RoleSelectionPage({super.key});
 
@@ -57,8 +52,6 @@ class RoleSelectionPage extends StatelessWidget {
                   const Icon(Icons.menu_book_rounded, size: 50, color: Colors.white),
                   const SizedBox(height: 12),
                   const Text(
-                    // CRITICAL FIX: Removed "Smart EDU" to enforce White-Label Master Plan.
-                    // Schools must not see the platform name. This acts as a generic portal.
                     "School Portal",
                     style: TextStyle(
                       color: Colors.white,
@@ -72,8 +65,6 @@ class RoleSelectionPage extends StatelessWidget {
                     style: TextStyle(color: Colors.white60, fontSize: 15),
                   ),
                   const SizedBox(height: 50),
-
-                  // Role Cards
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),

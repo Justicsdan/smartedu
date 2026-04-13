@@ -1,30 +1,13 @@
+// ==========================================
+// File: lib/core/providers/student/student_base.dart
+// ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Student base class.
-/// Holds student profile, school branding, academic context.
-/// All mixins (Results, Attendance, CBT, Fees) extend this.
-///
-/// MASTER PLAN:
-/// - Student login fetches school branding for print isolation
-/// - initialize() uses pre-fetched login data (zero extra queries)
-/// - schoolName, schoolLogoUrl etc. come from THIS school only
-/// - Student cannot change current term globally — only local view
-/// - V4: Added supabase getter so child mixins can access DB
-/// - V4: Added locale/currency/branding colors for school-independent printing
-
 abstract class StudentBase extends ChangeNotifier {
 
-  // ==========================================
-  // SUPABASE CLIENT
-  // Child mixins (Results, Attendance, CBT, Fees) all need this.
-  // Without it, every mixin throws "getter 'supabase' isn't defined".
-  // ==========================================
   SupabaseClient get supabase => Supabase.instance.client;
 
-  // ==========================================
-  // CORE STATE
-  // ==========================================
   String _schoolId = '';
   String get schoolId => _schoolId;
 
@@ -34,9 +17,6 @@ abstract class StudentBase extends ChangeNotifier {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
-  // ==========================================
-  // ACADEMIC CONTEXT
-  // ==========================================
   Map<String, dynamic>? _currentSession;
   Map<String, dynamic>? get currentSession => _currentSession;
 
@@ -55,9 +35,6 @@ abstract class StudentBase extends ChangeNotifier {
   String _currentTermName = '';
   String get currentTermName => _currentTermName;
 
-  // ==========================================
-  // STUDENT PROFILE
-  // ==========================================
   String _firstName = '';
   String _lastName = '';
   String _middleName = '';
@@ -67,6 +44,7 @@ abstract class StudentBase extends ChangeNotifier {
   String _classId = '';
   String _className = '';
   String _classSection = '';
+  String? _classTier;
   String _parentPhone = '';
   String _parentName = '';
   String _parentEmail = '';
@@ -90,21 +68,14 @@ abstract class StudentBase extends ChangeNotifier {
   String get parentEmail => _parentEmail;
   String get passportUrl => _passportUrl;
 
-  /// Display name for UI: "Alice Johnson (ADM001)"
   String get studentName => _admissionNo.isNotEmpty ? '$fullName ($_admissionNo)' : fullName;
 
-  /// Class display: "SS1 A" or "SS1"
   String get classDisplay {
     if (_className.isEmpty) return '';
     if (_classSection.isNotEmpty) return '$_className $_classSection';
     return _className;
   }
 
-  // ==========================================
-  // SCHOOL BRANDING (for print isolation)
-  /// These come from the student's school — NEVER from the platform.
-  /// Used when student views/prints their own results.
-  // ==========================================
   String _schoolName = '';
   String _schoolLogoUrl = '';
   String _schoolMotto = '';
@@ -131,8 +102,6 @@ abstract class StudentBase extends ChangeNotifier {
   bool get hasSchoolLogo => _schoolLogoUrl.isNotEmpty;
   bool get hasPassport => _passportUrl.isNotEmpty;
 
-  /// Export identity for student's own result prints.
-  /// Zero platform branding — only this school's identity.
   Map<String, dynamic> get schoolInfoMap => {
     'id': _schoolId,
     'name': _schoolName,
@@ -147,7 +116,6 @@ abstract class StudentBase extends ChangeNotifier {
     'principal_signature_url': _principalSignatureUrl ?? '',
     'school_stamp_url': _schoolStampUrl ?? '',
     'school_type': _schoolType,
-    // [V4] Branding colors for school-independent printing
     'primary_color': _primaryColor,
     'secondary_color': _secondaryColor,
     'accent_color': _accentColor,
@@ -156,15 +124,11 @@ abstract class StudentBase extends ChangeNotifier {
     'header_text_color': _headerTextColor,
     'font_family': _fontFamily,
     'result_watermark_text': _resultWatermarkText,
-    // [V4] Locale & currency
     'locale': _locale,
     'currency_code': _currencyCode,
     'currency_symbol': _currencySymbol,
   };
 
-  // ==========================================
-  // SCHOOL SETTINGS (from school_settings table)
-  // ==========================================
   List<Map<String, dynamic>> _gradingSystem = [];
   List<Map<String, dynamic>> _assessmentTypes = [];
   int _subjectMaxScore = 100;
@@ -173,7 +137,6 @@ abstract class StudentBase extends ChangeNotifier {
   String _dateFormat = 'dd/MM/yyyy';
   String _examTemplate = 'WAEC';
 
-  // Result layout
   bool _showTeacherComment = true;
   bool _showPrincipalComment = true;
   bool _showConduct = true;
@@ -188,19 +151,15 @@ abstract class StudentBase extends ChangeNotifier {
   String _resultHeaderText = '';
   String _resultFooterText = '';
 
-  // Academic
   bool _autoComputePositions = true;
   double _passMark = 40;
 
-  // [V4] Cumulative
   bool _showCumulative = false;
 
-  // [V4] Locale & currency
   String _locale = 'en';
   String _currencyCode = 'NGN';
   String _currencySymbol = '₦';
 
-  // [V4] Branding colors
   String _primaryColor = '#1a237e';
   String _secondaryColor = '#ffffff';
   String _accentColor = '#ff6f00';
@@ -246,19 +205,12 @@ abstract class StudentBase extends ChangeNotifier {
   String get resultWatermarkText => _resultWatermarkText;
   int get totalMaxScore => _assessmentTypes.fold<int>(0, (sum, t) => sum + ((t['max'] as num?)?.toInt() ?? 0));
 
-  // ==========================================
-  // SESSIONS & TERMS LISTS
-  // ==========================================
   List<Map<String, dynamic>> _sessions = [];
   List<Map<String, dynamic>> _terms = [];
 
   List<Map<String, dynamic>> get sessions => _sessions;
   List<Map<String, dynamic>> get terms => _terms;
 
-  // ==========================================
-  // LOGIN
-  // Fetches student + joins classes + schools for branding.
-  // ==========================================
   Future<bool> login(String username, String pin) async {
     try {
       final r = await supabase
@@ -315,7 +267,7 @@ abstract class StudentBase extends ChangeNotifier {
 
       await _loadSessions();
       await _loadSettings();
-      await _loadStudentData();
+      await loadStudentData();
 
       _isInitialized = true;
       notifyListeners();
@@ -326,9 +278,6 @@ abstract class StudentBase extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // INITIALIZE FROM LOGIN DATA (preferred — no extra DB queries)
-  // ==========================================
   Future<void> initialize(String schoolId, String studentId, Map<String, dynamic>? data) async {
     try {
       _schoolId = schoolId;
@@ -342,7 +291,7 @@ abstract class StudentBase extends ChangeNotifier {
       _admissionNo = data['admission_no']?.toString() ?? '';
       _gender = data['gender']?.toString() ?? '';
       _dateOfBirth = data['date_of_birth']?.toString() ?? '';
-      _classId = data['class_id']?.toString() ?? '';
+      _classId = data['classId']?.toString() ?? data['class_id']?.toString() ?? '';
       _parentPhone = data['parent_phone']?.toString() ?? '';
       _parentName = data['parent_name']?.toString() ?? '';
       _parentEmail = data['parent_email']?.toString() ?? '';
@@ -365,9 +314,18 @@ abstract class StudentBase extends ChangeNotifier {
       _principalSignatureUrl = data['principalSignatureUrl']?.toString();
       _schoolStampUrl = data['schoolStampUrl']?.toString();
 
+      if (_classId.isNotEmpty && _className.isEmpty) {
+        await _loadClassName();
+      }
+
       await _loadSessions();
+
+      if (_schoolName.isEmpty) {
+        await _loadSchoolInfo();
+      }
+
       await _loadSettings();
-      await _loadStudentData();
+      await loadStudentData();
 
       _isInitialized = true;
       notifyListeners();
@@ -376,9 +334,53 @@ abstract class StudentBase extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // SESSIONS & TERMS LOADERS
-  // ==========================================
+  Future<void> _loadSchoolInfo() async {
+    try {
+      final r = await supabase
+          .from('schools')
+          .select('name, logo_url, motto, address, official_phone, official_email, website, school_type, principal_signature_url, school_stamp_url, whatsapp')
+          .eq('id', _schoolId)
+          .maybeSingle();
+
+      if (r != null) {
+        _schoolName = r['name']?.toString() ?? '';
+        _schoolLogoUrl = r['logo_url']?.toString() ?? '';
+        _schoolMotto = r['motto']?.toString() ?? '';
+        _schoolAddress = r['address']?.toString() ?? '';
+        _schoolPhone = (r['official_phone']?.toString() ?? '').isNotEmpty
+            ? r['official_phone'].toString()
+            : (r['whatsapp']?.toString() ?? '');
+        _schoolEmail = r['official_email']?.toString() ?? '';
+        _schoolWebsite = r['website']?.toString() ?? '';
+        _schoolType = r['school_type']?.toString() ?? 'secondary';
+        _principalSignatureUrl = r['principal_signature_url']?.toString();
+        _schoolStampUrl = r['school_stamp_url']?.toString();
+        debugPrint('Student school info loaded: $_schoolName');
+      }
+    } catch (e) {
+      debugPrint('Error loading school info: $e');
+    }
+  }
+
+  Future<void> _loadClassName() async {
+    try {
+      final r = await supabase
+          .from('classes')
+          .select('name, section, tier')
+          .eq('id', _classId)
+          .maybeSingle();
+
+      if (r != null) {
+        _className = r['name']?.toString() ?? '';
+        _classSection = r['section']?.toString() ?? '';
+        _classTier = r['tier'] as String?;
+        debugPrint('Student class loaded: $_className tier=$_classTier');
+      }
+    } catch (e) {
+      debugPrint('Error loading class name: $e');
+    }
+  }
+
   Future<void> _loadSessions() async {
     try {
       final r = await supabase
@@ -434,9 +436,6 @@ abstract class StudentBase extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // SETTINGS LOADER
-  // ==========================================
   Future<void> _loadSettings() async {
     try {
       final r = await supabase
@@ -446,14 +445,24 @@ abstract class StudentBase extends ChangeNotifier {
           .maybeSingle();
 
       if (r != null) {
-        _gradingSystem = _parseJsonList(r['grading_system']);
-        _assessmentTypes = _parseJsonList(r['assessment_types']);
+        _examTemplate = r['exam_template'] as String? ?? 'WAEC';
+        _principalName = r['principal_name'] as String? ?? '';
+
+        if (_classTier == 'JSS' && r['grading_system_jss'] != null) {
+          _gradingSystem = _parseJsonList(r['grading_system_jss']);
+          _assessmentTypes = _parseJsonList(r['assessment_types_jss']);
+        } else if (_classTier == 'PRIMARY' && r['grading_system_primary'] != null) {
+          _gradingSystem = _parseJsonList(r['grading_system_primary']);
+          _assessmentTypes = _parseJsonList(r['assessment_types_primary']);
+        } else {
+          _gradingSystem = _parseJsonList(r['grading_system']);
+          _assessmentTypes = _parseJsonList(r['assessment_types']);
+        }
+
         _subjectMaxScore = r['subject_max_score'] as int? ?? 100;
         _showPosition = r['show_position'] as bool? ?? true;
         _showGradeOnly = r['show_grade_only'] as bool? ?? false;
         _dateFormat = r['date_format'] as String? ?? 'dd/MM/yyyy';
-        _examTemplate = r['exam_template'] as String? ?? 'WAEC';
-        _principalName = r['principal_name'] as String? ?? '';
 
         _showTeacherComment = r['show_teacher_comment'] as bool? ?? true;
         _showPrincipalComment = r['show_principal_comment'] as bool? ?? true;
@@ -472,7 +481,6 @@ abstract class StudentBase extends ChangeNotifier {
         _autoComputePositions = r['auto_compute_positions'] as bool? ?? true;
         _passMark = (r['pass_mark'] as num?)?.toDouble() ?? 40;
 
-        // [V4] New fields
         _showCumulative = r['show_cumulative'] as bool? ?? false;
         _locale = r['locale'] as String? ?? 'en';
         _currencyCode = r['currency_code'] as String? ?? 'NGN';
@@ -485,6 +493,8 @@ abstract class StudentBase extends ChangeNotifier {
         _headerTextColor = r['header_text_color'] as String? ?? '#ffffff';
         _fontFamily = r['font_family'] as String? ?? 'default';
         _resultWatermarkText = r['result_watermark_text'] as String? ?? '';
+
+        debugPrint('Student settings loaded: template=$_examTemplate tier=$_classTier grading=${_gradingSystem.length} assessment=${_assessmentTypes.length}');
       }
     } catch (e) {
       debugPrint('Error loading student settings: $e');
@@ -499,25 +509,20 @@ abstract class StudentBase extends ChangeNotifier {
     return [];
   }
 
-  // ==========================================
-  // SET CURRENT TERM (local view only)
-  // ==========================================
   Future<bool> setCurrentTerm(String termId) async {
     try {
-      // [FIX] orElse returns null, then check for null before accessing
       final term = _terms.cast<Map<String, dynamic>?>().firstWhere(
         (t) => t?['id']?.toString() == termId,
         orElse: () => null,
       );
 
-      // [FIX] Null check before isEmpty and [] access
       if (term == null) return false;
 
       _currentTerm = term;
       _currentTermId = term['id']?.toString() ?? '';
       _currentTermName = term['name']?.toString() ?? '';
 
-      await _loadStudentData();
+      await loadStudentData();
       notifyListeners();
       return true;
     } catch (e) {
@@ -526,9 +531,6 @@ abstract class StudentBase extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // GRADE COMPUTATION
-  // ==========================================
   String calculateGrade(double total) {
     for (final g in _gradingSystem) {
       final min = (g['min'] as num?)?.toDouble();
@@ -560,22 +562,13 @@ abstract class StudentBase extends ChangeNotifier {
     return 0;
   }
 
-  // ==========================================
-  // STUB — implemented by mixins
-  // ==========================================
-  Future<void> _loadStudentData() async {}
+  Future<void> loadStudentData() async {}
 
-  // ==========================================
-  // DASHBOARD STUBS — implemented by mixins
-  // ==========================================
   List<Map<String, dynamic>> get scores => [];
   List<Map<String, dynamic>> get assignments => [];
   List<Map<String, dynamic>> get cbtExams => [];
   double getOverallAverage() => 0.0;
 
-  // ==========================================
-  // RESET (on logout)
-  // ==========================================
   void reset() {
     _schoolId = '';
     _studentId = '';
@@ -595,6 +588,7 @@ abstract class StudentBase extends ChangeNotifier {
     _classId = '';
     _className = '';
     _classSection = '';
+    _classTier = null;
     _parentPhone = '';
     _parentName = '';
     _parentEmail = '';
@@ -616,7 +610,6 @@ abstract class StudentBase extends ChangeNotifier {
     _showPosition = true;
     _sessions = [];
     _terms = [];
-    // [V4] Reset new fields
     _locale = 'en';
     _currencyCode = 'NGN';
     _currencySymbol = '₦';
