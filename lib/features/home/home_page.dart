@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 
 class HomePage extends StatefulWidget {
@@ -55,6 +56,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _openWhatsApp() async {
+    final Uri uri = Uri.parse("https://wa.me/2347080304822");
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -63,7 +71,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
-          // Full-screen gradient — fills every pixel on all platforms
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -81,7 +88,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
 
-          // Decorative glowing orbs
           Positioned(
             top: size.height * 0.08,
             right: size.width * 0.1,
@@ -107,7 +113,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
 
-          // Content
           Positioned.fill(
             child: SafeArea(
               child: Center(
@@ -127,7 +132,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           children: [
                             SizedBox(height: isWide ? 40 : 20),
 
-                            // Floating logo with glow
                             AnimatedBuilder(
                               animation: _floatAnimation,
                               builder: (context, child) {
@@ -169,7 +173,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                             SizedBox(height: isWide ? 48 : 36),
 
-                            // Title
                             Text(
                               "SmartEdu",
                               style: TextStyle(
@@ -183,7 +186,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                             const SizedBox(height: 14),
 
-                            // Subtitle
                             Text(
                               "Global School Management System",
                               style: TextStyle(
@@ -196,7 +198,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                             SizedBox(height: isWide ? 70 : 50),
 
-                            // Feature pills row
                             if (isWide)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 40),
@@ -213,7 +214,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 ),
                               ),
 
-                            // Get Started button
                             MouseRegion(
                               onEnter: (_) => setState(() => _isButtonHovering = true),
                               onExit: (_) => setState(() => _isButtonHovering = false),
@@ -259,16 +259,52 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               ),
                             ),
 
-                            SizedBox(height: isWide ? 100 : 60),
+                            SizedBox(height: isWide ? 80 : 50),
 
-                            // Footer
-                            const Text(
-                              "Secure \u2022 Fast \u2022 Reliable",
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 14,
+                            // WhatsApp contact
+                            InkWell(
+                              onTap: _openWhatsApp,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF25D366).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: const Color(0xFF25D366).withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.chat_bubble_rounded,
+                                        color: Color(0xFF25D366), size: 20),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      "WhatsApp No: 07080304822",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
+
+                            const SizedBox(height: 20),
+
+                            // Copyright
+                            const Text(
+                              "\u00A9 2025 SmartEdu. All rights reserved.",
+                              style: TextStyle(
+                                color: Colors.white30,
+                                fontSize: 12,
+                              ),
+                            ),
+
                             const SizedBox(height: 8),
                           ],
                         ),
@@ -280,6 +316,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openWhatsApp,
+        backgroundColor: const Color(0xFF25D366),
+        child: const Icon(Icons.chat, color: Colors.white),
       ),
     );
   }
