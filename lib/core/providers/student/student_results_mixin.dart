@@ -105,6 +105,7 @@ mixin StudentResultsMixin on StudentBase {
   Future<void> loadMyTermSummary() async {
     if (currentSessionId == null || currentTermId == null) {
       _myTermSummary = null;
+      debugPrint("STUDENT RESULTS DEBUG: schoolId=$schoolId studentId=$studentId sessionId=$currentSessionId termId=$currentTermId");
       notifyListeners();
       return;
     }
@@ -131,8 +132,10 @@ mixin StudentResultsMixin on StudentBase {
 
   Future<void> loadAllResults() async {
     _myScores = [];
+    debugPrint("STUDENT RESULTS: loadStudentData() called");
     _myTermSummary = null;
     notifyListeners();
+    debugPrint("STUDENT RESULTS: loadAllResults() called");
 
     await loadMyTermSummary();
 

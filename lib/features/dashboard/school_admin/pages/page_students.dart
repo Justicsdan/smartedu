@@ -43,11 +43,7 @@ class _PageStudentsState extends State<PageStudents> {
       final last = (s['last_name'] ?? '').toString().trim().toLowerCase();
       final admNo = (s['admission_no'] ?? '').toString().trim().toLowerCase();
       final parent = (s['parent_name'] ?? '').toString().trim().toLowerCase();
-      return '$first $last'.contains(q) ||
-          first.contains(q) ||
-          last.contains(q) ||
-          admNo.contains(q) ||
-          parent.contains(q);
+      return '$first $last'.contains(q) || first.contains(q) || last.contains(q) || admNo.contains(q) || parent.contains(q);
     }).toList();
   }
 
@@ -106,24 +102,14 @@ class _PageStudentsState extends State<PageStudents> {
       final bytes = Uint8List.fromList(buffer.toString().codeUnits);
       final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
       final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute('download', 'students.csv')
-        ..click();
+      html.AnchorElement(href: url)..setAttribute('download', 'students.csv')..click();
       html.Url.revokeObjectUrl(url);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Export successful'),
-            backgroundColor: Color(0xFF2E7D32),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export successful', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)), backgroundColor: Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)))));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)))));
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -135,11 +121,7 @@ class _PageStudentsState extends State<PageStudents> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return _PromoteSheetBody(onComplete: () {
-          widget.onRefresh?.call();
-        });
-      },
+      builder: (ctx) => _PromoteSheetBody(onComplete: () { widget.onRefresh?.call(); }),
     );
   }
 
@@ -150,65 +132,102 @@ class _PageStudentsState extends State<PageStudents> {
     super.dispose();
   }
 
-  Widget _headerBtn({
-    required IconData icon,
-    required String label,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
+  Widget _buildStudentAvatar(String name, String photo, bool isFemale) {
+    final url = photo.trim();
+    final ringColor = isFemale ? const Color(0xFFE91E63) : const Color(0xFF1565C0);
     return Container(
-      height: 40,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.5)),
+        gradient: LinearGradient(colors: [ringColor, ringColor.withOpacity(0.5)]),
+        shape: BoxShape.circle,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 18, color: color),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: url.isNotEmpty
+          ? CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.grey.shade100,
+              backgroundImage: NetworkImage(url),
+              onBackgroundImageError: url.isNotEmpty ? (_, __) {} : null)
+          : CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.white,
+              child: Icon(isFemale ? Icons.girl : Icons.boy, size: 18, color: ringColor)),
     );
   }
 
-  Widget _stat(
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-    Color bg,
-  ) {
+  TextSpan _buildHighlightedName(String text) {
+    if (_searchQuery.isEmpty) {
+      return TextSpan(
+        text: text.isNotEmpty ? text : 'Unknown',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF111827),
+        ),
+      );
+    }
+    final q = _searchQuery.toLowerCase();
+    final lower = text.toLowerCase();
+    final idx = lower.indexOf(q);
+    if (idx == -1) {
+      return TextSpan(
+        text: text.isNotEmpty ? text : 'Unknown',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF111827),
+        ),
+      );
+    }
+    return TextSpan(
+      children: [
+        if (idx > 0)
+          TextSpan(
+            text: text.substring(0, idx),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+            ),
+          ),
+        TextSpan(
+          text: text.substring(idx, idx + _searchQuery.length),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A237E),
+            backgroundColor: Color(0xFFE8EAF6),
+          ),
+        ),
+        if (idx + _searchQuery.length < text.length)
+          TextSpan(
+            text: text.substring(idx + _searchQuery.length),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _statPill({
+    required IconData icon,
+    required String label,
+    required String value,
+    required LinearGradient gradient,
+  }) {
     return Expanded(
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(8),
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 16, color: color),
+            child: Icon(icon, size: 17, color: Colors.white),
           ),
           const SizedBox(width: 10),
           Column(
@@ -216,10 +235,10 @@ class _PageStudentsState extends State<PageStudents> {
             children: [
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
                   height: 1.2,
                 ),
               ),
@@ -238,26 +257,7 @@ class _PageStudentsState extends State<PageStudents> {
     );
   }
 
-  Widget _loadMoreBtn() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Center(
-        child: TextButton(
-          onPressed: () => setState(() => _displayCount += _pageSize),
-          child: const Text(
-            'Show more',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B7280),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _card(Map<String, dynamic> s, int i) {
+  Widget _studentCard(Map<String, dynamic> s, int index) {
     final name = _getName(s);
     final classInfo = _getClassInfo(s);
     final admNo = _getStudentId(s);
@@ -265,102 +265,100 @@ class _PageStudentsState extends State<PageStudents> {
     final parent = (s['parent_name'] ?? '').toString().trim();
     final photo = (s['passport_url'] ?? '').toString().trim();
     final isFemale = gender == 'female';
+    final accentColor = isFemale ? const Color(0xFFE91E63) : const Color(0xFF1565C0);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: i.isOdd ? const Color(0xFFFAFBFC) : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE8EAED)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: isFemale
-                    ? const Color(0xFFFCE4EC)
-                    : const Color(0xFFE3F2FD),
-                backgroundImage:
-                    photo.isNotEmpty ? NetworkImage(photo) : null,
-                onBackgroundImageError: photo.isNotEmpty ? (_, __) {} : null,
-                child: photo.isEmpty
-                    ? Icon(
-                        isFemale ? Icons.girl : Icons.boy,
-                        size: 20,
-                        color: isFemale
-                            ? const Color(0xFFE91E63)
-                            : const Color(0xFF1565C0),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name.isNotEmpty ? name : 'Unknown',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        if (admNo.isNotEmpty)
-                          _badge(
-                            admNo,
-                            const Color(0xFF1A237E),
-                            const Color(0xFFF0F4FF),
-                          ),
-                        if (classInfo.isNotEmpty)
-                          _badge(
-                            classInfo,
-                            const Color(0xFF7B1FA2),
-                            const Color(0xFFF3E5F5),
-                          ),
-                        if (parent.isNotEmpty)
-                          _badge(
-                            parent,
-                            Colors.grey.shade600,
-                            const Color(0xFFF5F5F5),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              SizedBox(
-                width: 34,
-                height: 34,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: 18,
-                    color: Colors.red.shade400,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
-                  ),
-                  onPressed: () => widget.onDelete(s['id']),
-                ),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-        ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 76,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(12),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(12),
+                ),
+                onTap: () {},
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      _buildStudentAvatar(name, photo, isFemale),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                              text: _buildHighlightedName(name),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                if (admNo.isNotEmpty)
+                                  _badge(admNo, const Color(0xFF1A237E), const Color(0xFFF0F4FF)),
+                                if (classInfo.isNotEmpty)
+                                  _badge(classInfo, const Color(0xFF7B1FA2), const Color(0xFFF3E5F5)),
+                                if (parent.isNotEmpty)
+                                  _badge(parent, Colors.grey.shade600, const Color(0xFFF5F5F5)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        width: 34,
+                        height: 34,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: Colors.red.shade400,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 30,
+                            minHeight: 30,
+                          ),
+                          onPressed: () => widget.onDelete(s['id']),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -368,10 +366,7 @@ class _PageStudentsState extends State<PageStudents> {
   Widget _badge(String text, Color color, Color bg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(5),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
       child: Text(
         text,
         style: TextStyle(
@@ -385,7 +380,15 @@ class _PageStudentsState extends State<PageStudents> {
     );
   }
 
-  Widget _empty(IconData icon, String title, String sub) {
+  Widget _emptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Color? iconBg,
+    Color? iconColor,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -394,29 +397,22 @@ class _PageStudentsState extends State<PageStudents> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: iconBg ?? Colors.grey.shade100,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(icon, size: 32, color: Colors.grey.shade400),
+            child: Icon(icon, size: 32, color: iconColor ?? Colors.grey.shade400),
           ),
           const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
+          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
           const SizedBox(height: 6),
-          Text(
-            sub,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF9CA3AF),
+          Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)), textAlign: TextAlign.center),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: onAction,
+              child: Text(actionLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
             ),
-            textAlign: TextAlign.center,
-          ),
+          ],
         ],
       ),
     );
@@ -427,204 +423,213 @@ class _PageStudentsState extends State<PageStudents> {
     final displayed = _displayedStudents;
     final hasSearch = _searchQuery.isNotEmpty;
     final total = widget.students.length;
-    final unassigned = widget.students
-        .where((s) => s['class_id'] == null)
-        .length;
+    final unassigned = widget.students.where((s) => s['class_id'] == null).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       body: Column(
         children: [
+          // Gradient header
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1A237E), Color(0xFF283593)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0F4FF),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
-                      child: const Icon(
-                        Icons.school_rounded,
-                        size: 22,
-                        color: Color(0xFF1A237E),
-                      ),
+                      child: const Icon(Icons.school_rounded, size: 24, color: Colors.white),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Students',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF111827),
-                              letterSpacing: -0.5,
-                            ),
-                          ),
+                          const Text('Students', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5)),
                           const SizedBox(height: 2),
-                          Text(
-                            hasSearch
-                                ? '${_filteredStudents.length} of $total found'
-                                : '$total registered',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF9CA3AF),
-                            ),
-                          ),
+                          Text(hasSearch ? '${_filteredStudents.length} of $total found' : '$total registered', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7))),
                         ],
                       ),
                     ),
-                    _headerBtn(
-                      icon: Icons.trending_up_rounded,
-                      label: 'Promote',
-                      color: const Color(0xFF2E7D32),
-                      onTap: _showPromoteSheet,
+                    // Promote
+                    Container(
+                      height: 38,
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white.withOpacity(0.2))),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _showPromoteSheet,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.trending_up_rounded, size: 17, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text('Promote', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    _headerBtn(
-                      icon: Icons.download_rounded,
-                      label: 'Export',
-                      color: const Color(0xFF2E7D32),
-                      onTap: _isExporting ? null : _exportCsv,
+                    // Export
+                    Container(
+                      height: 38,
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white.withOpacity(0.2))),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _isExporting ? null : _exportCsv,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isExporting)
+                                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                else
+                                  const Icon(Icons.download_rounded, size: 17, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text('Export', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    _headerBtn(
-                      icon: Icons.search_rounded,
-                      label: _showSearch ? 'Close' : 'Search',
-                      color: _showSearch
-                          ? const Color(0xFF1A237E)
-                          : const Color(0xFF6B7280),
-                      onTap: () {
-                        setState(() {
-                          _showSearch = !_showSearch;
-                          if (!_showSearch) {
-                            _searchController.clear();
-                            _searchQuery = '';
-                            _displayCount = _pageSize;
-                          }
-                        });
-                        if (_showSearch) {
-                          FocusScope.of(context)
-                              .requestFocus(_searchFocusNode);
-                        }
-                      },
+                    // Search toggle
+                    Container(
+                      height: 38,
+                      decoration: BoxDecoration(color: _showSearch ? Colors.white : Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: _showSearch ? Colors.white : Colors.white.withOpacity(0.2))),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            setState(() {
+                              _showSearch = !_showSearch;
+                              if (!_showSearch) {
+                                _searchController.clear();
+                                _searchQuery = '';
+                                _displayCount = _pageSize;
+                              }
+                            });
+                            if (_showSearch) FocusScope.of(context).requestFocus(_searchFocusNode);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.search_rounded, size: 17, color: _showSearch ? const Color(0xFF1A237E) : Colors.white),
+                                if (!_showSearch) ...[
+                                  const SizedBox(width: 6),
+                                  Text('Search', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                if (_showSearch)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14, bottom: 16),
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      autofocus: true,
-                      onChanged: (v) {
-                        setState(() {
-                          _searchQuery = v.trim();
-                          _displayCount = _pageSize;
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Search by name, admission no...',
-                        prefixIcon: Icon(Icons.search_rounded, size: 20),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                            vertical: 10, horizontal: 14),
-                        isDense: true,
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(height: 16),
+                // Search field
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: _showSearch
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 14),
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))]),
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              autofocus: true,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF111827), height: 1.4),
+                              onChanged: (v) { setState(() { _searchQuery = v.trim(); _displayCount = _pageSize; }); },
+                              decoration: InputDecoration(
+                                hintText: 'Search by name, admission no, parent...',
+                                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400, height: 1.4),
+                                prefixIcon: Icon(Icons.search_rounded, size: 20, color: _searchQuery.isNotEmpty ? const Color(0xFF1A237E) : Colors.grey.shade400),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF9CA3AF)), padding: const EdgeInsets.only(right: 4), constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () { _searchController.clear(); setState(() { _searchQuery = ''; _displayCount = _pageSize; }); })
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        )
+                      : const SizedBox(height: 16),
+                ),
               ],
             ),
           ),
+          // Stat pills
           if (!_showSearch)
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE8EAED)),
-              ),
+              margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8EAED)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))]),
               child: Row(
                 children: [
-                  _stat(
-                    Icons.people_rounded,
-                    'Total',
-                    '$total',
-                    const Color(0xFF1A237E),
-                    const Color(0xFFF0F4FF),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: const Color(0xFFE8EAED),
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  _stat(
-                    Icons.check_circle_outline_rounded,
-                    'Assigned',
-                    '${total - unassigned}',
-                    const Color(0xFF2E7D32),
-                    const Color(0xFFF0FFF4),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: const Color(0xFFE8EAED),
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  _stat(
-                    Icons.person_off_rounded,
-                    'Unassigned',
-                    '$unassigned',
-                    const Color(0xFFE65100),
-                    const Color(0xFFFFF3E0),
-                  ),
+                  _statPill(icon: Icons.people_rounded, label: 'Total', value: '$total', gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF283593)])),
+                  Container(width: 1, height: 32, color: const Color(0xFFE8EAED), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                  _statPill(icon: Icons.check_circle_outline_rounded, label: 'Assigned', value: '${total - unassigned}', gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)])),
+                  Container(width: 1, height: 32, color: const Color(0xFFE8EAED), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                  _statPill(icon: Icons.person_off_rounded, label: 'Unassigned', value: '$unassigned', gradient: const LinearGradient(colors: [Color(0xFFE65100), Color(0xFFEF6C00)])),
                 ],
               ),
             ),
+          // List
           Expanded(
             child: widget.students.isEmpty
-                ? _empty(
-                    Icons.people_outline_rounded,
-                    'No students yet',
-                    'Tap Add New to register',
-                  )
+                ? _emptyState(icon: Icons.people_outline_rounded, title: 'No students yet', subtitle: 'Tap Add New to register')
                 : hasSearch && _filteredStudents.isEmpty
-                    ? _empty(
-                        Icons.search_off_rounded,
-                        'No match found',
-                        'Try different search',
-                      )
+                    ? _emptyState(icon: Icons.search_off_rounded, iconBg: const Color(0xFFFFF3E0), iconColor: const Color(0xFFE65100), title: 'No match found', subtitle: 'Try different search', actionLabel: 'Clear search', onAction: () { _searchController.clear(); setState(() { _searchQuery = ''; _displayCount = _pageSize; }); })
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                            16,
-                            12,
-                            16,
-                            90,
-                        ),
-                        itemCount:
-                            displayed.length + (_hasMore ? 1 : 0),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                        itemCount: displayed.length + (_hasMore ? 1 : 0),
                         itemBuilder: (_, i) {
                           if (i == displayed.length) {
-                            return _loadMoreBtn();
+                            final remaining = _filteredStudents.length - _displayCount;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Center(
+                                child: TextButton.icon(
+                                  onPressed: () => setState(() => _displayCount += _pageSize),
+                                  icon: Icon(Icons.expand_more, size: 18, color: Colors.grey.shade500),
+                                  label: Text('Show $remaining more', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Colors.grey.shade300))),
+                                ),
+                              ),
+                            );
                           }
-                          return _card(displayed[i], i);
+                          return _studentCard(displayed[i], i);
                         },
                       ),
           ),
@@ -632,17 +637,7 @@ class _PageStudentsState extends State<PageStudents> {
       ),
       floatingActionButton: Container(
         height: 52,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A237E),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1A237E).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF283593)]), borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -652,20 +647,9 @@ class _PageStudentsState extends State<PageStudents> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(width: 16),
-                Icon(
-                  Icons.person_add_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                Icon(Icons.person_add_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text(
-                  'Add New',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('Add New', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                 SizedBox(width: 16),
               ],
             ),
@@ -677,9 +661,12 @@ class _PageStudentsState extends State<PageStudents> {
   }
 }
 
+// =========================================================
+// PROMOTE SHEET
+// =========================================================
+
 class _PromoteSheetBody extends StatefulWidget {
   final VoidCallback onComplete;
-
   const _PromoteSheetBody({required this.onComplete});
 
   @override
@@ -702,17 +689,8 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
   Future<void> _loadClasses() async {
     try {
       final p = context.read<SchoolAdminProvider>();
-      final r = await Supabase.instance.client
-          .from('classes')
-          .select('id, name, section, student_count, tier')
-          .eq('school_id', p.schoolId)
-          .order('name');
-      if (mounted) {
-        setState(() {
-          _classes = List<Map<String, dynamic>>.from(r);
-          _loading = false;
-        });
-      }
+      final r = await Supabase.instance.client.from('classes').select('id, name, section, student_count, tier').eq('school_id', p.schoolId).order('name');
+      if (mounted) setState(() { _classes = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('ERR: $e');
       if (mounted) setState(() => _loading = false);
@@ -732,16 +710,12 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
   int get _fromCount {
     final p = context.read<SchoolAdminProvider>();
     if (_fromId == null) return 0;
-    return p.students
-        .where((s) => s['class_id'].toString() == _fromId)
-        .length;
+    return p.students.where((s) => s['class_id'].toString() == _fromId).length;
   }
 
   List<Map<String, dynamic>> get _toOptions {
     if (_fromId == null) return [];
-    return _classes
-        .where((c) => c['id'].toString() != _fromId)
-        .toList();
+    return _classes.where((c) => c['id'].toString() != _fromId).toList();
   }
 
   Future<void> _doPromote() async {
@@ -750,26 +724,15 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
     final toId = _toId!;
     setState(() => _promoting = true);
     try {
-      await Supabase.instance.client
-          .from('students')
-          .update({'class_id': toId})
-          .eq('class_id', fromId);
+      await Supabase.instance.client.from('students').update({'class_id': toId}).eq('class_id', fromId);
       if (mounted) {
         Navigator.pop(context);
         widget.onComplete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Students promoted!'),
-            backgroundColor: Color(0xFF2E7D32),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Students promoted!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)), backgroundColor: Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)))));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e', style: const TextStyle(color: Colors.white)), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)))));
       }
     } finally {
       if (mounted) setState(() => _promoting = false);
@@ -781,245 +744,95 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
     if (_loading) {
       return Container(
         height: 300,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF2E7D32),
-          ),
-        ),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        child: const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32))),
       );
     }
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Row(
+      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24)), boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 20, offset: Offset(0, -4))]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Gradient header
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+            decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+            child: Column(
               children: [
-                Icon(
-                  Icons.trending_up_rounded,
-                  size: 28,
-                  color: Color(0xFF2E7D32),
-                ),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bulk Promote Students',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF111827),
-                        ),
-                      ),
-                      Text(
-                        'Move all students from one class to another',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                    ],
-                  ),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(4))),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(0.2))), child: const Icon(Icons.trending_up_rounded, size: 22, color: Colors.white)),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Bulk Promote Students', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)), const SizedBox(height: 2), Text('Move all students from one class to another', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7)))])),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Divider(
-              height: 1,
-              color: Color(0xFFF0F0F0),
-            ),
-            const SizedBox(height: 16),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'FROM CLASS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF9CA3AF),
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String?>(
-              value: _fromId,
-              decoration: const InputDecoration(
-                hintText: 'Select source class',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                isDense: true,
-              ),
-              items: _classes
-                  .map((c) => DropdownMenuItem(
-                        value: c['id'].toString(),
-                        child: Text(
-                          _label(c),
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                setState(() {
-                  _fromId = v;
-                  _toId = null;
-                });
-              },
-            ),
-            if (_fromId != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FFF4),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$_fromCount student${_fromCount != 1 ? 's' : ''} will be moved',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 16),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'TO CLASS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF9CA3AF),
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String?>(
-              value: _toId,
-              decoration: InputDecoration(
-                hintText: _fromId == null
-                    ? 'Select source first'
-                    : 'Select destination',
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                isDense: true,
-              ),
-              items: _toOptions
-                  .map((c) => DropdownMenuItem(
-                        value: c['id'].toString(),
-                        child: Text(
-                          _label(c),
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ))
-                  .toList(),
-              onChanged: _fromId == null
-                  ? null
-                  : (v) {
-                      setState(() => _toId = v);
-                    },
-            ),
-            const SizedBox(height: 20),
-            Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ),
+                const Align(alignment: Alignment.centerLeft, child: Text('FROM CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF), letterSpacing: 0.5))),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String?>(
+                  value: _fromId,
+                  decoration: InputDecoration(hintText: 'Select source class', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC8E6C9))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_upward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
+                  items: _classes.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
+                  onChanged: (v) { setState(() { _fromId = v; _toId = null; }); },
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: (_fromId != null &&
-                              _toId != null &&
-                              _fromCount > 0 &&
-                              !_promoting)
-                          ? _doPromote
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
-                        disabledBackgroundColor: Colors.grey.shade200,
-                        disabledForegroundColor: Colors.grey.shade400,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                if (_fromId != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)]), borderRadius: BorderRadius.all(Radius.circular(8))),
+                    child: Text('$_fromCount student${_fromCount != 1 ? 's' : ''} will be moved', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ),
+                const SizedBox(height: 16),
+                const Align(alignment: Alignment.centerLeft, child: Text('TO CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF), letterSpacing: 0.5))),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String?>(
+                  value: _toId,
+                  decoration: InputDecoration(hintText: _fromId == null ? 'Select source first' : 'Select destination', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC8E6C9))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
+                  items: _toOptions.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
+                  onChanged: _fromId == null ? null : (v) { setState(() => _toId = v); },
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                          child: Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
                         ),
                       ),
-                      child: _promoting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              'Promote${_fromCount > 0 ? ' $_fromCount Students' : ''}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: (_fromId != null && _toId != null && _fromCount > 0 && !_promoting) ? _doPromote : null,
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), disabledBackgroundColor: Colors.grey.shade200, disabledForegroundColor: Colors.grey.shade400, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                          child: _promoting
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : Text('Promote${_fromCount > 0 ? ' $_fromCount Students' : ''}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

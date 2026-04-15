@@ -9,6 +9,7 @@ import 'core/super_admin_provider.dart';
 import 'core/providers/teacher/teacher_provider.dart';
 import 'core/providers/student/student_provider.dart';
 
+import 'features/home/home_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/role_selection_page.dart';
 import 'features/dashboard/super_admin/super_admin_dashboard.dart';
@@ -59,7 +60,7 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      redirect: (_, __) => '/role-selection',
+      builder: (_, __) => const HomePage(),
     ),
     GoRoute(
       path: '/role-selection',
@@ -97,7 +98,7 @@ final _router = GoRouter(
       path: '/dashboard/student',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
-        return StudentDashboard(studentData: data);
+        return _StudentInitializer(studentData: data);
       },
     ),
     GoRoute(
@@ -120,7 +121,7 @@ class SmartEduApp extends StatelessWidget {
       title: 'SmartEdu',
       theme: _buildTheme(),
       darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       routerConfig: _router,
       builder: (context, child) {
         ErrorWidget.builder = (details) {
@@ -130,16 +131,20 @@ class SmartEduApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.bug_report_outlined, size: 64, color: Colors.red),
+                  const Icon(Icons.bug_report_outlined,
+                      size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   const Text(
                     'Something went wrong',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
-                      kDebugMode ? details.exception.toString() : 'An unexpected error occurred',
+                      kDebugMode
+                          ? details.exception.toString()
+                          : 'An unexpected error occurred',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
@@ -165,7 +170,8 @@ class _SchoolAdminInitializer extends StatefulWidget {
   const _SchoolAdminInitializer({required this.schoolData});
 
   @override
-  State<_SchoolAdminInitializer> createState() => _SchoolAdminInitializerState();
+  State<_SchoolAdminInitializer> createState() =>
+      _SchoolAdminInitializerState();
 }
 
 class _SchoolAdminInitializerState extends State<_SchoolAdminInitializer> {
@@ -198,23 +204,22 @@ class _SchoolAdminInitializerState extends State<_SchoolAdminInitializer> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Color(0xFFD32F2F)),
+              const Icon(Icons.error_outline,
+                  size: 48, color: Color(0xFFD32F2F)),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'Failed to load school data',
-                  style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
-                ),
+                child: Text('Failed to load school data',
+                    style: TextStyle(
+                        fontSize: 15, color: Colors.grey.shade600)),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => context.go('/role-selection'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                ),
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    elevation: 0),
                 child: const Text('Go Back'),
               ),
             ],
@@ -260,7 +265,8 @@ class _AdminShellState extends State<_AdminShell> {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<SchoolAdminProvider>();
-    final schoolName = p.schoolName.isNotEmpty ? p.schoolName : 'School Portal';
+    final schoolName =
+        p.schoolName.isNotEmpty ? p.schoolName : 'School Portal';
 
     return Scaffold(
       key: _scaffoldKey,
@@ -274,26 +280,29 @@ class _AdminShellState extends State<_AdminShell> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(bottom: BorderSide(color: Color(0xFFE8EAED))),
+                border: Border(
+                    bottom: BorderSide(color: Color(0xFFE8EAED))),
               ),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.menu_rounded, size: 22, color: Color(0xFF111827)),
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                    icon: const Icon(Icons.menu_rounded,
+                        size: 22, color: Color(0xFF111827)),
+                    onPressed: () =>
+                        _scaffoldKey.currentState?.openDrawer(),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _navItems[_selectedIndex].label,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111827)),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                    icon: const Icon(Icons.logout_rounded,
+                        size: 20, color: Color(0xFF9CA3AF)),
                     tooltip: 'Logout',
                     onPressed: () => context.go('/role-selection'),
                   ),
@@ -323,17 +332,17 @@ class _AdminShellState extends State<_AdminShell> {
                     color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.school_rounded, size: 22, color: Colors.white70),
+                  child: const Icon(Icons.school_rounded,
+                      size: 22, color: Colors.white70),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     schoolName,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -349,7 +358,8 @@ class _AdminShellState extends State<_AdminShell> {
                 final item = _navItems[i];
                 final selected = i == _selectedIndex;
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: () {
@@ -357,25 +367,32 @@ class _AdminShellState extends State<_AdminShell> {
                       setState(() => _selectedIndex = i);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: selected ? const Color(0xFFF0F4FF) : Colors.transparent,
+                        color: selected
+                            ? const Color(0xFFF0F4FF)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            item.icon,
-                            size: 20,
-                            color: selected ? const Color(0xFF1A237E) : const Color(0xFF6B7280),
-                          ),
+                          Icon(item.icon,
+                              size: 20,
+                              color: selected
+                                  ? const Color(0xFF1A237E)
+                                  : const Color(0xFF6B7280)),
                           const SizedBox(width: 14),
                           Text(
                             item.label,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                              color: selected ? const Color(0xFF1A237E) : const Color(0xFF6B7280),
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: selected
+                                  ? const Color(0xFF1A237E)
+                                  : const Color(0xFF6B7280),
                             ),
                           ),
                           if (selected) ...[
@@ -407,15 +424,15 @@ class _AdminShellState extends State<_AdminShell> {
               padding: EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.logout_rounded, size: 20, color: Color(0xFFD32F2F)),
+                  Icon(Icons.logout_rounded,
+                      size: 20, color: Color(0xFFD32F2F)),
                   SizedBox(width: 14),
                   Text(
                     'Logout',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFFD32F2F),
-                    ),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFFD32F2F)),
                   ),
                 ],
               ),
@@ -433,18 +450,18 @@ class _AdminShellState extends State<_AdminShell> {
           studentCount: p.students.length,
           teacherCount: p.teacherCount,
           classCount: p.classes.length,
-          subjectCount: p.subjectCount,
+          subjectCount: p.subjects.length,
           assignmentCount: p.assignments.length,
-          activeCbtCount: p.cbtExams.where((e) => e['is_published'] == true).length,
+          activeCbtCount:
+              p.cbtExams.where((e) => e['is_published'] == true).length,
           classes: p.classes,
         );
       case 1:
         return PageStudents(
           students: p.students,
           onDelete: (id) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Delete: $id')),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('Delete: $id')));
           },
           onAdd: () {},
           onRefresh: () {},
@@ -453,9 +470,8 @@ class _AdminShellState extends State<_AdminShell> {
         return PageTeachers(
           teachers: p.teachers,
           onDelete: (id) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Delete: $id')),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('Delete: $id')));
           },
           onAdd: () {},
         );
@@ -512,8 +528,86 @@ class _AdminShellState extends State<_AdminShell> {
         return const SizedBox.shrink();
     }
   }
-
 }
+
+class _StudentInitializer extends StatefulWidget {
+  final Map<String, dynamic> studentData;
+  const _StudentInitializer({required this.studentData});
+
+  @override
+  State<_StudentInitializer> createState() => _StudentInitializerState();
+}
+
+class _StudentInitializerState extends State<_StudentInitializer> {
+  bool _ready = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final p = context.read<StudentProvider>();
+      final schoolId = widget.studentData['schoolId']?.toString() ?? '';
+      final studentId = widget.studentData['id']?.toString() ?? '';
+      if (schoolId.isEmpty || studentId.isEmpty) {
+        throw Exception('Missing school or student ID');
+      }
+      await p.initialize(schoolId, studentId, widget.studentData);
+      if (mounted) setState(() => _ready = true);
+    } catch (e) {
+      debugPrint('STUDENT INIT ERR: $e');
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: Color(0xFFD32F2F)),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text('Failed to load student data',
+                    style: TextStyle(
+                        fontSize: 15, color: Colors.grey.shade600)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/role-selection'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    elevation: 0),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F8FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+        ),
+      );
+    }
+    return StudentDashboard(studentData: widget.studentData);
+  }
+}
+
 class _NavItem {
   final IconData icon;
   final String label;
@@ -546,15 +640,16 @@ ThemeData _buildTheme() {
         borderRadius: BorderRadius.all(Radius.circular(10)),
         borderSide: BorderSide(color: Color(0xFF1B2A4A), width: 2),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
-        ),
+            borderRadius: BorderRadius.all(Radius.circular(10))),
       ),
     ),
     cardTheme: CardThemeData(
@@ -564,7 +659,8 @@ ThemeData _buildTheme() {
         side: BorderSide(color: Colors.grey.shade200),
       ),
     ),
-    dividerTheme: DividerThemeData(color: Colors.grey.shade200, thickness: 1),
+    dividerTheme:
+        DividerThemeData(color: Colors.grey.shade200, thickness: 1),
   );
 }
 

@@ -10,7 +10,8 @@ class ManageSubjectsPage extends StatefulWidget {
   const ManageSubjectsPage({super.key});
 
   @override
-State<ManageSubjectsPage> createState() => _ManageSubjectsPageState();
+  State<ManageSubjectsPage> createState() =>
+      _ManageSubjectsPageState();
 }
 
 class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
@@ -27,7 +28,8 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _init());
   }
 
   void _init() {
@@ -47,12 +49,32 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     super.dispose();
   }
 
+  void _snack(String message, {bool success = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor:
+            success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.only(
+            bottom: 24, left: 16, right: 16),
+      ),
+    );
+  }
+
   Future<void> _fetchAll() async {
     if (_schoolId.isEmpty) {
       setState(() => _isLoading = false);
       return;
     }
-
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
@@ -68,51 +90,47 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
             .order('name'),
         Supabase.instance.client
             .from('class_subjects')
-            .select('id, class_id, subject_id, teacher_id, is_compulsory')
+            .select(
+                'id, class_id, subject_id, teacher_id, is_compulsory')
             .eq('school_id', _schoolId),
       ]);
-
       setState(() {
         _subjects = List<Map<String, dynamic>>.from(results[0]);
         _classes = List<Map<String, dynamic>>.from(results[1]);
-        _classSubjects = List<Map<String, dynamic>>.from(results[2]);
+        _classSubjects =
+            List<Map<String, dynamic>>.from(results[2]);
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching data: $e');
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Error: $e', success: false);
     }
   }
 
-  /// Get subject IDs linked to the selected class.
   Set<String> _getLinkedSubjectIds() {
     if (_selectedClassId == null) return {};
     return _classSubjects
-        .where((cs) => cs['class_id']?.toString() == _selectedClassId)
+        .where((cs) =>
+            cs['class_id']?.toString() == _selectedClassId)
         .map((cs) => cs['subject_id']?.toString() ?? '')
         .where((id) => id.isNotEmpty)
         .toSet();
   }
 
-  /// Get class display name by class_id.
   String _className(String? classId) {
     if (classId == null) return '';
     try {
-      final c = _classes.firstWhere((c) => c['id'] == classId);
+      final c = _classes
+          .firstWhere((c) => c['id'] == classId);
       final n = (c['name'] ?? '').toString();
       final s = (c['section'] ?? '').toString();
-      return s.isNotEmpty ? '$n - $s' : n;
+      return s.isNotEmpty ? '$n — $s' : n;
     } catch (_) {
       return '';
     }
   }
 
-  /// Get teacher name by teacher_id.
   String _teacherName(String? teacherId) {
     if (teacherId == null) return '';
     try {
@@ -120,7 +138,9 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
           .read<SchoolAdminProvider>()
           .teachers
           .cast<Map<String, dynamic>?>()
-          .firstWhere((t) => t?['id']?.toString() == teacherId,
+          .firstWhere(
+              (t) =>
+                  t?['id']?.toString() == teacherId,
               orElse: () => null)
           ?.let((t) =>
               '${t['first_name']} ${t['last_name']}') ??
@@ -130,21 +150,20 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     }
   }
 
-  /// Get list of class names a subject belongs to (for non-filtered view).
   List<String> _subjectClassNames(String subjectId) {
     return _classSubjects
-        .where((cs) => cs['subject_id']?.toString() == subjectId)
-        .map((cs) => _className(cs['class_id']?.toString()))
+        .where((cs) =>
+            cs['subject_id']?.toString() == subjectId)
+        .map((cs) =>
+            _className(cs['class_id']?.toString()))
         .where((n) => n.isNotEmpty)
         .toList();
   }
 
   Future<void> _addSubject() async {
     if (!_formKey.currentState!.validate()) return;
-
     final name = _subjectController.text.trim();
     if (name.isEmpty) return;
-
     try {
       final exists = await Supabase.instance.client
           .from('subjects')
@@ -152,59 +171,110 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
           .eq('school_id', _schoolId)
           .eq('name', name)
           .maybeSingle();
-
       if (exists != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Subject already exists'), backgroundColor: Colors.orange),
-          );
-        }
+        _snack('Subject already exists!', success: false);
         return;
       }
-
       await Supabase.instance.client.from('subjects').insert({
         'name': name,
         'school_id': _schoolId,
       });
-
       _subjectController.clear();
       _fetchAll();
-
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Subject added'), backgroundColor: Colors.green),
-        );
+        _snack('Subject added successfully!');
       }
     } catch (e) {
       debugPrint('Error adding subject: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Error: $e', success: false);
     }
   }
 
   Future<void> _deleteSubject(String id, String name) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Subject?'),
-        content: Text('Delete "$name"? This cannot be undone.\n\nNote: This will also remove the subject from all classes.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.delete_outline_rounded,
+                    size: 24, color: Color(0xFFDC2626)),
+              ),
+              const SizedBox(height: 16),
+              const Text('Delete Subject?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                  'Delete "$name"? This cannot be undone.\n\nNote: This will also remove the subject from all classes.',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600),
+                      textAlign: TextAlign.center),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                            color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFFD32F2F),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Delete',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
-
     if (confirmed != true) return;
-
     try {
       await Supabase.instance.client
           .from('class_subjects')
@@ -216,21 +286,11 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
           .delete()
           .eq('id', id)
           .eq('school_id', _schoolId);
-
       _fetchAll();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Subject deleted'), backgroundColor: Colors.green),
-        );
-      }
+      _snack('Subject deleted successfully!');
     } catch (e) {
       debugPrint('Error deleting subject: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Error: $e', success: false);
     }
   }
 
@@ -238,43 +298,133 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     _subjectController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Subject', style: TextStyle(fontSize: 16)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        content: Form(
-          key: _formKey,
-          child: TextFormField(
-            controller: _subjectController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Subject Name',
-              labelStyle: TextStyle(fontSize: 13),
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              isDense: true,
-            ),
-            style: const TextStyle(fontSize: 14),
-            validator: (val) => val == null || val.trim().isEmpty ? 'Enter subject name' : null,
-            onFieldSubmitted: (_) => _addSubject(),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FFF4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.menu_book_rounded,
+                        size: 22, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(width: 14),
+                  const Text('Add New Subject',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  controller: _subjectController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Subject Name',
+                    labelStyle: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500),
+                    hintText: 'e.g. Mathematics',
+                    hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade400),
+                    prefixIcon: const Icon(Icons.book_outlined,
+                        size: 20,
+                        color: Color(0xFF1A237E)),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                          color: Color(0xFF1A237E), width: 2),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFFAFBFC),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                  ),
+                  validator: (val) =>
+                      val == null || val.trim().isEmpty
+                          ? 'Enter subject name'
+                          : null,
+                  onFieldSubmitted: (_) => _addSubject(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                            color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding:
+                            const EdgeInsets.symmetric(
+                                vertical: 12),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _addSubject();
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFF1A237E),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding:
+                            const EdgeInsets.symmetric(
+                                vertical: 12),
+                      ),
+                      child: const Text('Add Subject',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          SizedBox(
-            height: 36,
-            child: ElevatedButton(
-              onPressed: _addSubject,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3C72),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Add', style: TextStyle(fontSize: 13)),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -283,149 +433,354 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
   Widget build(BuildContext context) {
     if (_schoolId.isEmpty && !_isLoading) {
       return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
-          title: const Text('Manage Subjects', style: TextStyle(color: Colors.white)),
-          backgroundColor: const Color(0xFF1E3C72),
-          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text('Manage Subjects',
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white)),
+          backgroundColor: const Color(0xFF1A237E),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          iconTheme:
+              const IconThemeData(color: Colors.white),
         ),
-        body: const Center(
-          child: Text('Session error. Log out and log in again.', style: TextStyle(color: Colors.red)),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(Icons.error_outline_rounded,
+                    size: 36, color: Colors.red.shade400),
+              ),
+              const SizedBox(height: 16),
+              const Text('Session error',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  )),
+              const SizedBox(height: 8),
+              Text('Log out and log in again.',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 13,
+                  )),
+            ],
+          ),
         ),
       );
     }
 
     final linkedIds = _getLinkedSubjectIds();
     final isFiltered = _selectedClassId != null;
-
-    // When filtered, show only subjects linked to the selected class
     final displaySubjects = isFiltered
-        ? _subjects.where((s) => linkedIds.contains(s['id']?.toString())).toList()
+        ? _subjects
+              .where(
+                  (s) =>
+                      linkedIds.contains(s['id']?.toString()))
+              .toList()
         : _subjects;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
         title: Text(
-          _schoolName.isNotEmpty ? 'Subjects - $_schoolName' : 'Manage Subjects',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          _schoolName.isNotEmpty
+              ? 'Subjects — $_schoolName'
+              : 'Manage Subjects',
+          style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              fontSize: 16),
         ),
-        backgroundColor: const Color(0xFF1E3C72),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color(0xFF1A237E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        iconTheme:
+            const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: _showAddDialog,
-            tooltip: 'Add Subject',
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: _showAddDialog,
+              child: Container(
+                height: 36,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded,
+                        size: 18, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('Add Subject',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 3))
           : Column(
               children: [
-                // Class filter dropdown
+                // Class filter
                 Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.fromLTRB(
+                      16, 0, 16, 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: const Color(0xFFE8EAED)),
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.filter_list, size: 20, color: const Color(0xFF1E3C72)),
-                      const SizedBox(width: 10),
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedClassId,
-                          decoration: InputDecoration(
-                            labelText: 'Filter by Class',
-                            labelStyle: const TextStyle(fontSize: 12),
-                            border: const OutlineInputBorder(),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            isDense: true,
+                        child: Container(
+                          height: 40,
+                          padding: const EdgeInsets.only(
+                              left: 12, right: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFAFBFC),
+                            borderRadius:
+                                BorderRadius.circular(8),
+                            border: Border.all(
+                                color: const Color(0xFFE8EAED)),
                           ),
-                          items: [
-                            const DropdownMenuItem(
-                              value: null,
-                              child: Text('All Subjects',
+                          alignment: Alignment.centerLeft,
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedClassId,
+                              hint: Text('Filter by Class',
                                   style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black)),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color:
+                                        Colors.grey.shade500)),
+                              icon: const Icon(Icons.filter_list_rounded,
+                                  size: 18,
+                                  color:
+                                      Color(0xFF1A237E)
+                                          .withOpacity(0.7)),
+                              isExpanded: true,
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Text('All Subjects',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight:
+                                              FontWeight.w600,
+                                          color: Color(
+                                              0xFF111827))),
+                                ),
+                                ..._classes.map((c) {
+                                  final display =
+                                      _className(
+                                          c['id']
+                                              ?.toString());
+                                  return DropdownMenuItem(
+                                    value:
+                                        c['id']
+                                            ?.toString(),
+                                    child: Text(display,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight:
+                                                FontWeight.w600,
+                                            color: Color(
+                                                0xFF111827)),
+                                        overflow:
+                                            TextOverflow
+                                                .ellipsis)),
+                                  );
+                                }),
+                              ],
+                              onChanged: (v) => setState(
+                                  () =>
+                                      _selectedClassId = v),
                             ),
-                            ..._classes.map((c) {
-                              final display = _className(c['id']?.toString());
-                              return DropdownMenuItem(
-                                value: c['id']?.toString(),
-                                child: Text(display,
-                                    style: const TextStyle(fontSize: 13)),
-                              );
-                            }),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _selectedClassId = v),
+                          ),
                         ),
                       ),
                       if (isFiltered)
-                        TextButton.icon(
-                          onPressed: () =>
-                              setState(() => _selectedClassId = null),
-                          icon: const Icon(Icons.clear, size: 16),
-                          label: const Text('Clear',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF1E3C72)),
+                        InkWell(
+                          borderRadius:
+                              BorderRadius.circular(6),
+                          onTap: () => setState(
+                              () =>
+                                  _selectedClassId =
+                                      null),
+                          child: Container(
+                            height: 28,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1A237E)
+                                  .withOpacity(0.08),
+                              borderRadius:
+                                  BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize:
+                                  MainAxisSize.min,
+                              children: [
+                                Icon(
+                                    Icons.clear_rounded,
+                                    size: 14,
+                                    color: const Color(
+                                        0xFF1A237E)),
+                                SizedBox(width: 4),
+                                Text('Clear',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight:
+                                          FontWeight.w600,
+                                      color: const Color(
+                                          0xFF1A237E)),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                     ],
                   ),
                 ),
-                // Info bar when filtered
+                // Filter info
                 if (isFiltered) ...[
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E3C72).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF1A237E)
+                          .withOpacity(0.06),
+                      borderRadius:
+                          BorderRadius.circular(8),
+                      border: Border.all(
+                          color: const Color(0xFF1A237E)
+                              .withOpacity(0.12)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, size: 16, color: const Color(0xFF1E3C72)),
+                        Icon(Icons.info_outline_rounded,
+                            size: 15,
+                            color: const Color(0xFF1A237E)
+                                .withOpacity(0.6)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Showing ${displaySubjects.length} of ${_subjects.length} subjects assigned to ${_className(_selectedClassId)}',
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1E3C72)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1A237E)
+                                  .withOpacity(0.7),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-                // Subject list
+                // List
                 Expanded(
                   child: displaySubjects.isEmpty
                       ? Center(
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment:
+                                MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.menu_book, size: 56, color: Colors.grey[400]),
-                              const SizedBox(height: 12),
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.grey.shade100,
+                                  borderRadius:
+                                      BorderRadius.circular(18),
+                                ),
+                                child: Icon(
+                                    Icons
+                                        .menu_book_outlined,
+                                    size: 36,
+                                    color:
+                                        Colors.grey.shade400),
+                              ),
+                              const SizedBox(height: 16),
                               Text(
-                                isFiltered
-                                    ? 'No subjects assigned to this class'
-                                    : 'No subjects yet',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                  isFiltered
+                                      ? 'No subjects assigned to this class'
+                                      : 'No subjects yet',
+                                  style: TextStyle(
+                                    color:
+                                        Colors.grey.shade700,
+                                    fontSize: 15,
+                                    fontWeight:
+                                        FontWeight.w500,
+                                  ),
                               ),
                               if (!isFiltered) ...[
                                 const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 36,
-                                  child: ElevatedButton(
-                                    onPressed: _showAddDialog,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1E3C72),
-                                      foregroundColor: Colors.white,
+                                InkWell(
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                  onTap: _showAddDialog,
+                                  child: Container(
+                                    height: 42,
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 20),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                          0xFF1A237E),
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(8),
                                     ),
-                                    child: const Text('Add Subject',
-                                        style: TextStyle(fontSize: 13)),
+                                    child: const Row(
+                                      mainAxisSize:
+                                          MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                            Icons.add_rounded,
+                                            size: 18,
+                                            color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text(
+                                            'Add Subject',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight:
+                                                  FontWeight.w600,
+                                              color: Colors
+                                                  .white),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -433,146 +788,261 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          itemCount: displaySubjects.length,
-                          itemBuilder: (context, index) {
-                            final subject = displaySubjects[index];
-                            final name = subject['name']?.toString() ?? 'Unknown';
-                            final id = subject['id']?.toString() ?? '';
-                            final code = (subject['code'] ?? '').toString().trim();
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12),
+                          itemCount:
+                              displaySubjects.length,
+                          itemBuilder:
+                              (context, index) {
+                            final subject =
+                                displaySubjects[index];
+                            final name = subject['name']
+                                    ?.toString() ??
+                                'Unknown';
+                            final id = subject['id']
+                                    ?.toString() ??
+                                '';
+                            final code =
+                                (subject['code'] ?? '')
+                                    .toString()
+                                    .trim();
 
-                            // Find the class_subjects row for this subject+class combo
-                            Map<String, dynamic>? csRow;
-                            if (isFiltered && _selectedClassId != null) {
+                            Map<String, dynamic>?
+                                csRow;
+                            if (isFiltered &&
+                                _selectedClassId !=
+                                    null) {
                               try {
-                                csRow = _classSubjects.firstWhere((cs) =>
-                                    cs['subject_id']?.toString() == id &&
-                                    cs['class_id']?.toString() == _selectedClassId);
+                                csRow = _classSubjects
+                                    .firstWhere((cs) =>
+                                        cs['subject_id']
+                                                ?.toString() ==
+                                            id &&
+                                        cs['class_id']
+                                                ?.toString() ==
+                                            _selectedClassId);
                               } catch (_) {}
                             }
 
-                            final isCompulsory = csRow?['is_compulsory'] == true;
-                            final teacherId = csRow?['teacher_id']?.toString();
-                            final teacherName = _teacherName(teacherId);
+                            final isCompulsory =
+                                csRow?['is_compulsory'] ==
+                                    true;
+                            final teacherId =
+                                csRow?['teacher_id']
+                                    ?.toString();
+                            final teacherName =
+                                _teacherName(teacherId);
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 6),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 18,
-                                      backgroundColor:
-                                          isCompulsory
-                                              ? const Color(0xFF1E3C72)
-                                              : Colors.orange.shade100,
+                            final bgColor = index % 2 == 0
+                                ? Colors.white
+                                : const Color(0xFFFAFBFC);
+
+                            return Container(
+                              margin:
+                                  const EdgeInsets.only(
+                                      bottom: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12),
+                              decoration: BoxDecoration(
+                                color: bgColor,
+                                borderRadius:
+                                    BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color(
+                                        0xFFE8EAED)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration:
+                                        BoxDecoration(
+                                      color: isCompulsory
+                                          ? const Color(
+                                              0xFF1A237E)
+                                          : const Color(
+                                              0xFFFFF3E0),
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(10),
+                                    ),
+                                    child: Center(
                                       child: Text(
-                                        name.substring(0, 1).toUpperCase(),
+                                        name.isNotEmpty
+                                            ? name.substring(
+                                                0, 1)
+                                                .toUpperCase()
+                                            : '?',
                                         style: TextStyle(
-                                            color: isCompulsory
-                                                ? Colors.white
-                                                : Colors.orange.shade800,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold),
+                                          fontSize: 16,
+                                          fontWeight:
+                                              FontWeight.bold,
+                                          color: isCompulsory
+                                              ? Colors.white
+                                              : const Color(
+                                                  0xFFE65100),
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.black),
-                                          ),
-                                          if (code.isNotEmpty) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment
+                                              .start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight:
+                                                FontWeight.w600,
+                                            color: Color(
+                                                0xFF111827)),
+                                        overflow:
+                                            TextOverflow
+                                                .ellipsis,
+                                      ),
+                                        if (code.isNotEmpty)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(
+                                                    top: 2),
+                                            child: Text(
                                               code,
-                                              style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Color(0xFF555555)),
+                                              style:
+                                                  const TextStyle(
+                                                    fontSize: 11,
+                                                    color: Color(
+                                                        0xFF9CA3AF)),
                                             ),
-                                          ],
-                                          if (isFiltered) ...[
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                      horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
+                                          ),
+                                        if (isFiltered) ...[
+                                          const SizedBox(
+                                              height: 6),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets
+                                                        .symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2),
+                                                decoration:
+                                                    BoxDecoration(
+                                                  color: isCompulsory
+                                                      ? const Color(
+                                                          0xFF1A237E)
+                                                          .withOpacity(
+                                                              0.1)
+                                                      : Colors
+                                                          .orange
+                                                              .shade50,
+                                                  borderRadius:
+                                                      BorderRadius
+                                                          .circular(
+                                                              4),
+                                                ),
+                                                child: Text(
+                                                  isCompulsory
+                                                      ? 'Core'
+                                                      : 'Elective',
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        10,
+                                                    fontWeight:
+                                                        FontWeight.w600,
                                                     color: isCompulsory
-                                                        ? const Color(0xFF1E3C72)
-                                                            .withOpacity(0.1)
-                                                        : Colors.orange.shade50,
-                                                    borderRadius:
-                                                        BorderRadius.circular(4),
-                                                  child: Text(
-                                                    isCompulsory
-                                                        ? 'Core'
-                                                        : 'Elective',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: isCompulsory
-                                                          ? const Color(0xFF1E3C72)
-                                                          : Colors.orange),
+                                                        ? const Color(
+                                                            0xFF1A237E)
+                                                        : const Color(
+                                                            0xFFE65100),
                                                   ),
                                                 ),
-                                                if (teacherName.isNotEmpty) ...[
-                                                  const SizedBox(width: 6),
-                                                  Icon(Icons.person_outline,
-                                                      size: 13,
-                                                      color: Colors.grey.shade500),
-                                                  const SizedBox(width: 3),
-                                                  Expanded(
-                                                    child: Text(
-                                                      teacherName,
-                                                      style: const TextStyle(
-                                                          fontSize: 11,
-                                                          color:
-                                                              Color(0xFF555555),
+                                              ),
+                                              if (teacherName
+                                                  .isNotEmpty) ...[
+                                                const SizedBox(
+                                                    width: 6),
+                                                Icon(
+                                                    Icons
+                                                        .person_outline,
+                                                    size: 13,
+                                                    color: Colors
+                                                        .grey
+                                                        .shade500),
+                                                ),
+                                                const SizedBox(
+                                                    width: 3),
+                                                Expanded(
+                                                  child: Text(
+                                                    teacherName,
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color:
+                                                          Color(
+                                                              0xFF555555),
                                                       overflow:
                                                           TextOverflow
                                                               .ellipsis),
                                                     ),
                                                   ),
-                                                ],
+                                                ),
                                               ],
                                             ),
                                           ],
                                         ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                      width: 8),
+                                  InkWell(
+                                    borderRadius:
+                                        BorderRadius
+                                            .circular(6),
+                                    onTap: () =>
+                                        _deleteSubject(
+                                            id, name),
+                                    child: Container(
+                                      height: 32,
+                                      width: 32,
+                                      decoration:
+                                          BoxDecoration(
+                                            border: Border.all(
+                                              color: Colors
+                                                  .red.shade400
+                                                  .withOpacity(
+                                                      0.3)),
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                          6),
+                                            ),
+                                      child: const Icon(
+                                        Icons
+                                            .delete_outline_rounded,
+                                        size: 16,
+                                        color: Colors
+                                            .red.shade400,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline,
-                                          color: Colors.red, size: 20),
-                                      onPressed: () =>
-                                          _deleteSubject(id, name),
-                                      tooltip: 'Delete subject from all classes',
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                            ],
+                          ),
+                        );
+                  },
                 ),
-                ],
-              ),
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: _showAddDialog,
-        backgroundColor: const Color(0xFF1E3C72),
-        child: const Icon(Icons.add, color: Colors.white, size: 20),
+              ],
+            );
       ),
     );
   }

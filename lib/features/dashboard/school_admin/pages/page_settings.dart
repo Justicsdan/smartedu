@@ -46,6 +46,18 @@ class _PageSettingsState extends State<PageSettings>
   String _gradingTier = 'SSS';
   String _assessmentTier = 'SSS';
 
+  static const _tiers = ['SSS', 'JSS', 'PRIMARY'];
+  static const _tierLabels = {
+    'SSS': 'Senior Secondary (WAEC)',
+    'JSS': 'Junior Secondary (BECE)',
+    'PRIMARY': 'Primary School (5-point)',
+  };
+  static const _tierColors = {
+    'SSS': Color(0xFF1A237E),
+    'JSS': Color(0xFFE65100),
+    'PRIMARY': Color(0xFF2E7D32),
+  };
+
   @override
   void initState() {
     super.initState();
@@ -79,36 +91,119 @@ class _PageSettingsState extends State<PageSettings>
     }
   }
 
+  void _snack(String message, {bool success = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+            success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+      ),
+    );
+  }
+
+  Future<bool?> _showConfirmDialog({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    Color confirmColor = Colors.red,
+    IconData icon = Icons.warning_amber_rounded,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: confirmColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: confirmColor, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: confirmColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(confirmLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _emailController.text.trim();
-
     if (name.isEmpty || address.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('School name and address are required'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _snack('School name and address are required', success: false);
       return;
     }
-
     setState(() => _isSaving = true);
     final provider = context.read<SchoolAdminProvider>();
     final success =
         await provider.updateSchoolSettings(name, address, phone, email);
     setState(() => _isSaving = false);
-
     if (mounted) {
       widget.onUpdate(name, address, phone, email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? 'Profile updated!' : 'Failed to update'),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
+      _snack(success ? 'Profile updated successfully!' : 'Failed to update');
     }
   }
 
@@ -120,14 +215,8 @@ class _PageSettingsState extends State<PageSettings>
       principalName: _principalController.text.trim(),
     );
     setState(() => _isSaving = false);
-
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? 'Branding updated!' : 'Failed to update'),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
+      _snack(success ? 'Branding updated successfully!' : 'Failed to update');
     }
   }
 
@@ -135,318 +224,296 @@ class _PageSettingsState extends State<PageSettings>
   Widget build(BuildContext context) {
     final provider = context.watch<SchoolAdminProvider>();
     _initBrandingControllers(provider);
-
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+    return Container(
+      color: const Color(0xFFF7F8FA),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: const Color(0xFF1A237E),
+              unselectedLabelColor: Colors.grey.shade500,
+              indicatorColor: const Color(0xFF1A237E),
+              indicatorSize: TabBarIndicatorSize.label,
+              indicatorWeight: 2.5,
+              isScrollable: true,
+              labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600, fontSize: 14),
+              unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500, fontSize: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tabAlignment: TabAlignment.start,
+              tabs: const [
+                Tab(text: 'Profile'),
+                Tab(text: 'Branding'),
+                Tab(text: 'Grading'),
+                Tab(text: 'Assessment'),
+              ],
+            ),
           ),
-          child: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFF1A237E),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF1A237E),
-            indicatorSize: TabBarIndicatorSize.label,
-            indicatorWeight: 3,
-            isScrollable: true,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            tabs: const [
-              Tab(text: 'Profile'),
-              Tab(text: 'Branding'),
-              Tab(text: 'Grading'),
-              Tab(text: 'Assessment'),
-            ],
+          const SizedBox(height: 16),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildProfileTab(provider),
+                _buildBrandingTab(provider),
+                _buildGradingTab(provider),
+                _buildAssessmentTab(provider),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // SHARED BUILDERS
+  // ═══════════════════════════════════════════
+
+  Widget _pageHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111827),
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildProfileTab(provider),
-              _buildBrandingTab(provider),
-              _buildGradingTab(provider),
-              _buildAssessmentTab(provider),
-            ],
-          ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 13, color: Colors.grey),
         ),
       ],
     );
   }
 
-  // =========================================================
-  // PROFILE TAB
-  // =========================================================
-
-  Widget _buildProfileTab(SchoolAdminProvider provider) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "School Profile",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
-            ),
+  Widget _sectionHeader({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    String? count,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            "Basic information about your school",
-            style: TextStyle(fontSize: 13, color: Colors.grey),
+          child: Icon(icon, size: 17, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111827),
           ),
-          const SizedBox(height: 24),
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: provider.schoolLogoUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            provider.schoolLogoUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                _buildLogoPlaceholder(),
-                          ),
-                        )
-                      : _buildLogoPlaceholder(),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => _pickAndUploadLogo(provider),
-                  icon: const Icon(Icons.upload, size: 16),
-                  label: const Text('Upload Logo'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A237E),
-                    side: const BorderSide(color: Color(0xFF1A237E)),
-                  ),
-                ),
-                if (provider.schoolLogoUrl.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _removeLogo(provider),
-                    icon: const Icon(Icons.delete_outline,
-                        size: 14, color: Colors.red),
-                    label: const Text('Remove Logo',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.red)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          _buildSectionTitle('School Information'),
-          const SizedBox(height: 12),
-          _buildTextField(_nameController, 'School Name', Icons.school),
-          const SizedBox(height: 16),
-          _buildTextField(
-            _addressController,
-            'Address / Location',
-            Icons.location_on,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            _phoneController,
-            'Phone / WhatsApp',
-            Icons.phone,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            _emailController,
-            'Email Address',
-            Icons.email,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : _saveProfile,
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded),
-              label: Text(
-                _isSaving ? 'Saving...' : 'Save Profile',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.blue.shade300,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================
-  // BRANDING TAB
-  // =========================================================
-
-  Widget _buildBrandingTab(SchoolAdminProvider provider) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "School Branding",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            "These appear on printed result sheets and documents",
-            style: TextStyle(fontSize: 13, color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle('Examination Template'),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: GradingUtils.availableTemplates.map((template) {
-              final isSelected = provider.examTemplate == template;
-              return _ExamTemplateCard(
-                title: template,
-                subtitle: GradingUtils.getTemplateLabel(template),
-                icon: _getTemplateIcon(template),
-                isSelected: isSelected,
-                onTap: () async {
-                  setState(() => _isSaving = true);
-                  await provider.updateSchoolBranding(examTemplate: template);
-                  setState(() => _isSaving = false);
-                },
-                compact: true,
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 32),
-          _buildSectionTitle('School Motto'),
-          const SizedBox(height: 12),
-          _buildTextField(
-            _mottoController,
-            'Enter school motto',
-            Icons.format_quote,
-            maxLength: 100,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Prints below school name on result sheets',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle('Principal Name'),
-          const SizedBox(height: 12),
-          _buildTextField(
-            _principalController,
-            'Enter principal\'s full name',
-            Icons.person,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Prints on the signature block of result sheets',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 32),
-          _buildSectionTitle('Display Options'),
-          const SizedBox(height: 12),
+        ),
+        if (count != null) ...[
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Text(
+              count,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _textField(TextEditingController controller, String label,
+      IconData icon,
+      {TextInputType? keyboardType, int? maxLength}) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(
+          icon,
+          size: 20,
+          color: const Color(0xFF1A237E).withOpacity(0.7),
+        ),
+        labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2),
+        ),
+        filled: true,
+        fillColor: const Color(0xFFFAFBFC),
+        counterText: '',
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+
+  Widget _saveBtn({
+    required String label,
+    required bool loading,
+    required VoidCallback? onTap,
+    Color? bg,
+  }) {
+    final c = bg ?? const Color(0xFF1A237E);
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2))
+            : const Icon(Icons.check_rounded, size: 20),
+        label: Text(
+          loading ? 'Saving...' : label,
+          style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: c,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: c.withOpacity(0.5),
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionPill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withOpacity(0.4)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toggleRow({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required Color activeColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SwitchListTile(
-                  title: const Text('Show Student Position'),
-                  subtitle: const Text(
-                      'Display position in class on result sheets'),
-                  value: provider.schoolSettings?['show_position'] ?? true,
-                  activeColor: const Color(0xFF1A237E),
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) =>
-                      provider.updateSchoolBranding(showPosition: val),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111827),
+                  ),
                 ),
-                const Divider(),
-                SwitchListTile(
-                  title: const Text('Show Grade Only'),
-                  subtitle: const Text(
-                      'Hide individual scores, show only grade'),
-                  value: provider.schoolSettings?['show_grade_only'] ?? false,
-                  activeColor: const Color(0xFF1A237E),
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: (val) async {
-                    await provider.updateSchoolBranding(showGradeOnly: val);
-                  },
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : _saveBranding,
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded),
-              label: Text(
-                _isSaving ? 'Saving...' : 'Save Branding',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.blue.shade300,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: activeColor,
+            inactiveTrackColor: Colors.grey.shade300,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoCallout(String text, {Color? accent}) {
+    final c = accent ?? const Color(0xFF1A237E);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded,
+              size: 15, color: c.withOpacity(0.6)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12, color: c.withOpacity(0.7)),
             ),
           ),
         ],
@@ -454,25 +521,33 @@ class _PageSettingsState extends State<PageSettings>
     );
   }
 
-  // =========================================================
-  // GRADING TAB — TIER AWARE
-  // =========================================================
+  Widget _logoPlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.add_photo_alternate_outlined,
+              size: 22, color: Colors.grey.shade400),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'No Logo',
+          style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
 
-  static const _tiers = ['SSS', 'JSS', 'PRIMARY'];
-
-  static const _tierLabels = {
-    'SSS': 'Senior Secondary (WAEC)',
-    'JSS': 'Junior Secondary (BECE)',
-    'PRIMARY': 'Primary School (5-point)',
-  };
-
-  static const _tierColors = {
-    'SSS': Color(0xFF1A237E),
-    'JSS': Color(0xFFE65100),
-    'PRIMARY': Color(0xFF2E7D32),
-  };
-
-  Widget _buildTierSelector(String selectedTier, void Function(String) onChanged) {
+  Widget _tierSelector(String selected, void Function(String) changed) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -481,19 +556,24 @@ class _PageSettingsState extends State<PageSettings>
       ),
       child: Row(
         children: _tiers.map((tier) {
-          final selected = selectedTier == tier;
-          final color = _tierColors[tier]!;
+          final on = selected == tier;
+          final c = _tierColors[tier]!;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onChanged(tier),
+              onTap: () => changed(tier),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selected ? color : Colors.transparent,
+                  color: on ? c : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: selected
-                      ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))]
+                  boxShadow: on
+                      ? [
+                          BoxShadow(
+                              color: c.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2))
+                        ]
                       : null,
                 ),
                 child: Text(
@@ -501,8 +581,8 @@ class _PageSettingsState extends State<PageSettings>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                    color: selected ? Colors.white : const Color(0xFF555555),
+                    fontWeight: on ? FontWeight.w700 : FontWeight.w600,
+                    color: on ? Colors.white : const Color(0xFF555555),
                   ),
                 ),
               ),
@@ -513,121 +593,580 @@ class _PageSettingsState extends State<PageSettings>
     );
   }
 
+  Widget _standardCard({
+    required String title,
+    required String sub,
+    required IconData icon,
+    required bool on,
+    required VoidCallback tap,
+  }) {
+    return GestureDetector(
+      onTap: tap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: on ? const Color(0xFFF0F4FF) : const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: on ? const Color(0xFF1A237E) : const Color(0xFFE8EAED),
+            width: on ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: on
+                      ? const Color(0xFF1A237E)
+                      : Colors.grey.shade400,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: on
+                        ? const Color(0xFF1A237E)
+                        : const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sub,
+              style: TextStyle(
+                fontSize: 11,
+                color: on ? Colors.blue.shade400 : Colors.grey.shade400,
+              ),
+            ),
+            if (on)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        size: 14, color: Color(0xFF2E7D32)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Active',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(IconData icon, String title, String sub) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(60),
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(icon, size: 36, color: Colors.grey.shade400),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              sub,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _rowActions({
+    required VoidCallback onEdit,
+    VoidCallback? onDelete,
+  }) {
+    return SizedBox(
+      width: 68,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          InkWell(
+            onTap: onEdit,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: const Color(0xFF1A237E).withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.edit_outlined,
+                  size: 14, color: Color(0xFF1A237E)),
+            ),
+          ),
+          if (onDelete != null) ...[
+            const SizedBox(width: 4),
+            InkWell(
+              onTap: onDelete,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: Colors.red.shade400.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(Icons.delete_outline,
+                    size: 14, color: Colors.red.shade400),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // PROFILE TAB
+  // ═══════════════════════════════════════════
+
+  Widget _buildProfileTab(SchoolAdminProvider provider) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _pageHeader('School Profile', 'Basic information about your school'),
+          const SizedBox(height: 28),
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F8FA),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: provider.schoolLogoUrl.isNotEmpty
+                          ? const Color(0xFFE8EAED)
+                          : Colors.grey.shade300,
+                      width: 2,
+                    ),
+                    boxShadow: provider.schoolLogoUrl.isNotEmpty
+                        ? [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4))
+                          ]
+                        : null,
+                  ),
+                  child: provider.schoolLogoUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.network(
+                            provider.schoolLogoUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _logoPlaceholder(),
+                          ),
+                        )
+                      : _logoPlaceholder(),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _actionPill(
+                      icon: Icons.cloud_upload_outlined,
+                      label: 'Upload Logo',
+                      color: const Color(0xFF1A237E),
+                      onTap: () => _pickAndUploadLogo(provider),
+                    ),
+                    if (provider.schoolLogoUrl.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      _actionPill(
+                        icon: Icons.delete_outline,
+                        label: 'Remove',
+                        color: Colors.red.shade400,
+                        onTap: () => _removeLogo(provider),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
+          _sectionHeader(
+            icon: Icons.school_rounded,
+            iconBg: const Color(0xFFF0F4FF),
+            iconColor: const Color(0xFF1A237E),
+            title: 'School Information',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              children: [
+                _textField(_nameController, 'School Name',
+                    Icons.business_rounded),
+                const SizedBox(height: 16),
+                _textField(_addressController, 'Address / Location',
+                    Icons.location_on_rounded),
+                const SizedBox(height: 16),
+                _textField(_phoneController, 'Phone / WhatsApp',
+                    Icons.phone_rounded,
+                    keyboardType: TextInputType.phone),
+                const SizedBox(height: 16),
+                _textField(_emailController, 'Email Address',
+                    Icons.email_rounded,
+                    keyboardType: TextInputType.emailAddress),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          _saveBtn(
+            label: 'Save Profile',
+            loading: _isSaving,
+            onTap: _isSaving ? null : _saveProfile,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // BRANDING TAB
+  // ═══════════════════════════════════════════
+
+  Widget _buildBrandingTab(SchoolAdminProvider provider) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _pageHeader('School Branding',
+              'These appear on printed result sheets'),
+          const SizedBox(height: 28),
+          _sectionHeader(
+            icon: Icons.format_quote_rounded,
+            iconBg: const Color(0xFFF0F4FF),
+            iconColor: const Color(0xFF1A237E),
+            title: 'School Motto',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              children: [
+                _textField(_mottoController, 'Enter school motto',
+                    Icons.format_quote, maxLength: 100),
+                const SizedBox(height: 10),
+                _infoCallout('Prints below school name on result sheets'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _sectionHeader(
+            icon: Icons.person_rounded,
+            iconBg: const Color(0xFFF0FFF4),
+            iconColor: const Color(0xFF2E7D32),
+            title: 'Principal Name',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              children: [
+                _textField(
+                    _principalController,
+                    "Enter principal's full name",
+                    Icons.person_outline_rounded),
+                const SizedBox(height: 10),
+                _infoCallout(
+                    'Prints on the signature block of result sheets',
+                    accent: const Color(0xFF2E7D32)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _sectionHeader(
+            icon: Icons.tune_rounded,
+            iconBg: const Color(0xFFFFF8E1),
+            iconColor: const Color(0xFFF57F17),
+            title: 'Display Options',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              children: [
+                _toggleRow(
+                  title: 'Show Student Position',
+                  subtitle: 'Display position in class on result sheets',
+                  value: provider.schoolSettings?['show_position'] ?? true,
+                  activeColor: const Color(0xFF1A237E),
+                  onChanged: (v) =>
+                      provider.updateSchoolBranding(showPosition: v),
+                ),
+                Divider(color: Colors.grey.shade200, height: 24),
+                _toggleRow(
+                  title: 'Show Grade Only',
+                  subtitle: 'Hide individual scores, show only grade',
+                  value:
+                      provider.schoolSettings?['show_grade_only'] ?? false,
+                  activeColor: const Color(0xFF1A237E),
+                  onChanged: (v) =>
+                      provider.updateSchoolBranding(showGradeOnly: v),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          _saveBtn(
+            label: 'Save Branding',
+            loading: _isSaving,
+            onTap: _isSaving ? null : _saveBranding,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // GRADING TAB
+  // ═══════════════════════════════════════════
+
   Widget _buildGradingTab(SchoolAdminProvider provider) {
     final tier = _gradingTier;
-    final gradingSystem = provider.getEffectiveGradingForTier(tier);
-    final hasOverride = provider.hasTierGradingOverride(tier);
-    final gradingErrors = gradingSystem.isNotEmpty
-        ? GradingUtils.validateGradingSystem(gradingSystem)
+    final gs = provider.getEffectiveGradingForTier(tier);
+    final hasOv = provider.hasTierGradingOverride(tier);
+    final errs = gs.isNotEmpty
+        ? GradingUtils.validateGradingSystem(gs)
         : <String>[];
+    final isAm =
+        (provider.schoolSettings?['grading_standard'] ?? 'Nigerian')
+                .toString() ==
+            'American';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Grading System",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
-            ),
-          ),
-          const SizedBox(height: 4),
+          _pageHeader('Grading System',
+              'Configure grade boundaries and remarks'),
+          const SizedBox(height: 6),
           Text(
             _tierLabels[tier] ?? '',
             style: TextStyle(fontSize: 13, color: _tierColors[tier]),
           ),
-          const SizedBox(height: 16),
-
-          _buildTierSelector(tier, (t) => setState(() => _gradingTier = t)),
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 20),
+          // Standard selector
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: hasOverride ? Colors.blue.shade50 : Colors.green.shade50,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _sectionHeader(
+                  icon: Icons.language_rounded,
+                  iconBg: const Color(0xFFF0F4FF),
+                  iconColor: const Color(0xFF1A237E),
+                  title: 'Grading Standard',
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Nigerian = tier-based grading. American = same GPA grades for all tiers.',
+                  style: TextStyle(
+                      fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _standardCard(
+                        title: 'Nigerian',
+                        sub: 'WAEC · BECE · Primary',
+                        icon: Icons.flag_rounded,
+                        on: !isAm,
+                        tap: () async {
+                          final ok = await provider
+                              .updateGradingStandard('Nigerian');
+                          if (mounted && ok) setState(() {});
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _standardCard(
+                        title: 'American',
+                        sub: 'GPA (A to F, 4.0 scale)',
+                        icon: Icons.school_rounded,
+                        on: isAm,
+                        tap: () async {
+                          final ok = await provider
+                              .updateGradingStandard('American');
+                          if (mounted && ok) setState(() {});
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _tierSelector(tier, (t) => setState(() => _gradingTier = t)),
+          const SizedBox(height: 12),
+          // Override badge
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: hasOv ? Colors.blue.shade50 : Colors.green.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: hasOverride ? Colors.blue.shade200 : Colors.green.shade200,
+                color: hasOv
+                    ? Colors.blue.shade200
+                    : Colors.green.shade200,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  hasOverride ? Icons.edit_note : Icons.check_circle_outline,
+                  hasOv ? Icons.edit_note : Icons.check_circle_outline,
                   size: 18,
-                  color: hasOverride ? Colors.blue : Colors.green,
+                  color: hasOv ? Colors.blue : Colors.green,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    hasOverride
+                    hasOv
                         ? 'Using custom override for $tier'
                         : 'Using default grading for $tier',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: hasOverride ? Colors.blue.shade700 : Colors.green.shade700,
+                      color: hasOv
+                          ? Colors.blue.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                 ),
-                if (hasOverride)
+                if (hasOv)
                   TextButton(
                     onPressed: () async {
-                      final ok = await provider.resetTierToDefault(tier);
+                      final ok =
+                          await provider.resetTierToDefault(tier);
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(ok ? 'Reset to default for $tier' : 'Failed to reset'),
-                          backgroundColor: ok ? Colors.green : Colors.red,
-                        ));
+                        _snack(ok
+                            ? 'Reset to default for $tier'
+                            : 'Failed to reset');
                       }
                     },
-                    child: const Text('Reset', style: TextStyle(fontSize: 12, color: Colors.red)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Reset',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
-              ElevatedButton.icon(
-                onPressed: () => _addGradingRow(provider, tier),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Grade'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E),
-                  foregroundColor: Colors.white,
-                ),
+              _actionPill(
+                icon: Icons.add_rounded,
+                label: 'Add Grade',
+                color: const Color(0xFF1A237E),
+                onTap: () => _addGradingRow(provider, tier),
               ),
-              const SizedBox(width: 12),
-              if (!hasOverride)
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final defaults = GradingUtils.getDefaultGradingSystem(
-                      tier == 'SSS' ? provider.examTemplate : (tier == 'JSS' ? 'BECE' : 'PRIMARY'),
+              const SizedBox(width: 10),
+              if (!hasOv)
+                _actionPill(
+                  icon: Icons.content_copy_rounded,
+                  label: 'Copy Default as Override',
+                  color: Colors.grey.shade600,
+                  onTap: () async {
+                    final d = GradingUtils.getDefaultGradingSystem(
+                      tier == 'SSS'
+                          ? provider.examTemplate
+                          : (tier == 'JSS' ? 'BECE' : 'PRIMARY'),
                     );
-                    final ok = await provider.updateTierGrading(tier, defaults);
+                    final ok =
+                        await provider.updateTierGrading(tier, d);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(ok ? 'Default copied as custom override' : 'Failed'),
-                        backgroundColor: ok ? Colors.green : Colors.red,
-                      ));
+                      _snack(ok
+                          ? 'Default copied as custom override'
+                          : 'Failed to copy');
                     }
                   },
-                  icon: const Icon(Icons.content_copy, size: 16),
-                  label: const Text('Copy Default as Override'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A237E),
-                  ),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-
-          if (gradingErrors.isNotEmpty) ...[
+          // Errors
+          if (errs.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -640,260 +1179,319 @@ class _PageSettingsState extends State<PageSettings>
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
+                      Icon(Icons.warning_amber_rounded,
+                          color: Colors.red, size: 18),
                       SizedBox(width: 8),
-                      Text('Issues found', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                      Text('Issues found',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red)),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  ...gradingErrors.take(3).map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• ', style: TextStyle(color: Colors.red)),
-                        Expanded(child: Text(e, style: TextStyle(fontSize: 12, color: Colors.red.shade700))),
-                      ],
-                    ),
-                  )),
+                  ...errs.take(3).map((e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• ',
+                                style: TextStyle(color: Colors.red)),
+                            Expanded(
+                              child: Text(e,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red.shade700)),
+                            ),
+                          ],
+                        ),
+                      )),
                 ],
               ),
             ),
             const SizedBox(height: 16),
           ],
-
-          if (gradingSystem.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(60),
+          // Table or empty
+          if (gs.isEmpty)
+            _emptyState(Icons.grade_outlined, 'No grading system for $tier',
+                'Click "Add Grade" or "Copy Default as Override"')
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8EAED)),
+                ),
                 child: Column(
                   children: [
-                    Icon(Icons.grade_outlined, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text('No grading system for $tier', style: TextStyle(color: Colors.grey[700], fontSize: 15, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Text('Click "Add Grade" or "Copy Default as Override"', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _tierColors[tier]!.withOpacity(0.08),
+                      ),
+                      child: const Row(
+                        children: [
+                          Expanded(
+                              child: Text('Min',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Color(0xFF1A237E)))),
+                          Expanded(
+                              child: Text('Max',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Color(0xFF1A237E)))),
+                          Expanded(
+                              child: Text('Grade',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Color(0xFF1A237E)))),
+                          Expanded(
+                              flex: 2,
+                              child: Text('Remark',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: Color(0xFF1A237E)))),
+                          SizedBox(width: 68),
+                        ],
+                      ),
+                    ),
+                    ...gs.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final g = entry.value;
+                      final mn = (g['min'] as num?)?.toInt() ?? 0;
+                      final mx = (g['max'] as num?)?.toInt() ?? 0;
+                      final gr = (g['grade'] ?? '').toString();
+                      final fail = !GradingUtils.isPassingGrade(gr, gs);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: i.isEven
+                              ? Colors.white
+                              : const Color(0xFFFAFBFC),
+                          border: Border(
+                            bottom: BorderSide(
+                                color: Colors.grey.shade100),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text('$mn',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF1B2A4A))),
+                            ),
+                            Expanded(
+                              child: Text('$mx',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF1B2A4A))),
+                            ),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: fail
+                                      ? Colors.red.shade50
+                                      : _tierColors[tier]!
+                                          .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  gr,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: fail
+                                        ? Colors.red
+                                        : _tierColors[tier],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                (g['remark'] ?? '').toString(),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF1B2A4A)),
+                              ),
+                            ),
+                            _rowActions(
+                              onEdit: () => _editGradingRow(
+                                  provider, tier, i, g),
+                              onDelete: gs.length > 1
+                                  ? () => _deleteGradingRow(
+                                      provider, tier, i)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
-            )
-          else
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Table(
-                border: TableBorder(
-                  horizontalInside: BorderSide(color: Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                columnWidths: const {
-                  0: FlexColumnWidth(1),
-                  1: FlexColumnWidth(1),
-                  2: FlexColumnWidth(1.2),
-                  3: FlexColumnWidth(1.5),
-                  4: FixedColumnWidth(60),
-                },
-                children: [
-                  TableRow(
-                    decoration: BoxDecoration(
-                      color: _tierColors[tier]!.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    children: const [
-                      _TableHeader('Min Score'),
-                      _TableHeader('Max Score'),
-                      _TableHeader('Grade'),
-                      _TableHeader('Remark'),
-                      _TableHeader(''),
-                    ],
-                  ),
-                  ...gradingSystem.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final g = entry.value;
-                    final min = (g['min'] as num?)?.toInt() ?? 0;
-                    final max = (g['max'] as num?)?.toInt() ?? 0;
-                    final isFail = !GradingUtils.isPassingGrade(
-                        (g['grade'] ?? '').toString(), gradingSystem);
-                    return TableRow(
-                      decoration: isFail ? BoxDecoration(color: Colors.red.shade50) : null,
-                      children: [
-                        _TableCell('$min', alignment: TextAlign.center),
-                        _TableCell('$max', alignment: TextAlign.center),
-                        _TableCell(
-                          (g['grade'] ?? '').toString(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isFail ? Colors.red : _tierColors[tier],
-                          ),
-                          alignment: TextAlign.center,
-                        ),
-                        _TableCell((g['remark'] ?? '').toString()),
-                        _ActionCell(
-                          onEdit: () => _editGradingRow(provider, tier, i, g),
-                          onDelete: gradingSystem.length > 1
-                              ? () => _deleteGradingRow(provider, tier, i)
-                              : null,
-                        ),
-                      ],
-                    );
-                  }),
-                ],
-              ),
             ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : () => _saveTierGrading(provider, tier),
-              icon: _isSaving
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.save_rounded),
-              label: Text(
-                _isSaving ? 'Saving...' : 'Save Grading for $tier',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _tierColors[tier]!,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade300,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+          _saveBtn(
+            label: 'Save Grading for $tier',
+            loading: _isSaving,
+            onTap: _isSaving
+                ? null
+                : () => _saveTierGrading(provider, tier),
+            bg: _tierColors[tier],
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  // =========================================================
-  // ASSESSMENT TAB — TIER AWARE
-  // =========================================================
+  // ═══════════════════════════════════════════
+  // ASSESSMENT TAB
+  // ═══════════════════════════════════════════
 
   Widget _buildAssessmentTab(SchoolAdminProvider provider) {
     final tier = _assessmentTier;
-    final assessmentTypes = provider.getEffectiveAssessmentForTier(tier);
-    final hasOverride = provider.hasTierAssessmentOverride(tier);
-    final totalMax = assessmentTypes.fold<int>(0, (sum, at) => sum + ((at['max'] as num?)?.toInt() ?? 0));
-    final assessmentValidation = GradingUtils.validateAssessmentTypes(assessmentTypes);
+    final ats = provider.getEffectiveAssessmentForTier(tier);
+    final hasOv = provider.hasTierAssessmentOverride(tier);
+    final total = ats.fold<int>(
+        0, (s, a) => s + ((a['max'] as num?)?.toInt() ?? 0));
+    final val = GradingUtils.validateAssessmentTypes(ats);
+    final ok = val['valid'] == true;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Assessment Types",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A237E),
-            ),
-          ),
-          const SizedBox(height: 4),
+          _pageHeader('Assessment Types',
+              'Define how scores are broken down'),
+          const SizedBox(height: 6),
           Text(
-            'Define how scores are broken down — ${_tierLabels[tier]}',
+            'Currently configuring: ${_tierLabels[tier]}',
             style: TextStyle(fontSize: 13, color: _tierColors[tier]),
           ),
-          const SizedBox(height: 16),
-
-          _buildTierSelector(tier, (t) => setState(() => _assessmentTier = t)),
+          const SizedBox(height: 20),
+          _tierSelector(
+              tier, (t) => setState(() => _assessmentTier = t)),
           const SizedBox(height: 12),
-
+          // Override badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: hasOverride ? Colors.blue.shade50 : Colors.green.shade50,
+              color: hasOv ? Colors.blue.shade50 : Colors.green.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: hasOverride ? Colors.blue.shade200 : Colors.green.shade200,
+                color: hasOv
+                    ? Colors.blue.shade200
+                    : Colors.green.shade200,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  hasOverride ? Icons.edit_note : Icons.check_circle_outline,
+                  hasOv ? Icons.edit_note : Icons.check_circle_outline,
                   size: 18,
-                  color: hasOverride ? Colors.blue : Colors.green,
+                  color: hasOv ? Colors.blue : Colors.green,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    hasOverride ? 'Using custom override for $tier' : 'Using default assessment for $tier',
+                    hasOv
+                        ? 'Using custom override for $tier'
+                        : 'Using default assessment for $tier',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: hasOverride ? Colors.blue.shade700 : Colors.green.shade700,
+                      color: hasOv
+                          ? Colors.blue.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                 ),
-                if (hasOverride)
+                if (hasOv)
                   TextButton(
                     onPressed: () async {
-                      final ok = await provider.resetTierToDefault(tier);
+                      final r =
+                          await provider.resetTierToDefault(tier);
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(ok ? 'Reset to default for $tier' : 'Failed to reset'),
-                          backgroundColor: ok ? Colors.green : Colors.red,
-                        ));
+                        _snack(r
+                            ? 'Reset to default for $tier'
+                            : 'Failed to reset');
                       }
                     },
-                    child: const Text('Reset', style: TextStyle(fontSize: 12, color: Colors.red)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Reset',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
-              ElevatedButton.icon(
-                onPressed: () => _addAssessmentType(provider, tier),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add Assessment'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E),
-                  foregroundColor: Colors.white,
-                ),
+              _actionPill(
+                icon: Icons.add_rounded,
+                label: 'Add Assessment',
+                color: const Color(0xFF1A237E),
+                onTap: () => _addAssessmentType(provider, tier),
               ),
-              const SizedBox(width: 12),
-              if (!hasOverride)
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final defaults = GradingUtils.getDefaultAssessmentTypes(
-                      tier == 'SSS' ? provider.examTemplate : (tier == 'JSS' ? 'BECE' : 'PRIMARY'),
+              const SizedBox(width: 10),
+              if (!hasOv)
+                _actionPill(
+                  icon: Icons.content_copy_rounded,
+                  label: 'Copy Default as Override',
+                  color: Colors.grey.shade600,
+                  onTap: () async {
+                    final d = GradingUtils.getDefaultAssessmentTypes(
+                      tier == 'SSS'
+                          ? provider.examTemplate
+                          : (tier == 'JSS' ? 'BECE' : 'PRIMARY'),
                     );
-                    final ok = await provider.updateTierAssessment(tier, defaults);
+                    final r = await provider.updateTierAssessment(
+                        tier, d);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(ok ? 'Default copied as custom override' : 'Failed'),
-                        backgroundColor: ok ? Colors.green : Colors.red,
-                      ));
+                      _snack(r
+                          ? 'Default copied as custom override'
+                          : 'Failed to copy');
                     }
                   },
-                  icon: const Icon(Icons.content_copy, size: 16),
-                  label: const Text('Copy Default as Override'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A237E),
-                  ),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-
-          if (assessmentTypes.isNotEmpty)
+          // Validation
+          if (ats.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: assessmentValidation['valid'] == true
-                    ? Colors.green.shade50
-                    : Colors.red.shade50,
+                color: ok ? Colors.green.shade50 : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: assessmentValidation['valid'] == true
+                  color: ok
                       ? Colors.green.shade200
                       : Colors.red.shade200,
                 ),
@@ -901,20 +1499,22 @@ class _PageSettingsState extends State<PageSettings>
               child: Row(
                 children: [
                   Icon(
-                    assessmentValidation['valid'] == true ? Icons.check_circle : Icons.warning_amber_rounded,
-                    color: assessmentValidation['valid'] == true ? Colors.green : Colors.red,
+                    ok
+                        ? Icons.check_circle
+                        : Icons.warning_amber_rounded,
+                    color: ok ? Colors.green : Colors.red,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      assessmentValidation['valid'] == true
-                          ? 'Total: $totalMax/100 — Valid'
-                          : 'Total: $totalMax/100 — ${((assessmentValidation['errors'] as List).first).toString()}',
+                      ok
+                          ? 'Total: $total/100 — Valid configuration'
+                          : 'Total: $total/100 — ${((val['errors'] as List).first).toString()}',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: assessmentValidation['valid'] == true
+                        color: ok
                             ? Colors.green.shade700
                             : Colors.red.shade700,
                       ),
@@ -923,165 +1523,179 @@ class _PageSettingsState extends State<PageSettings>
                 ],
               ),
             ),
-
-          if (assessmentTypes.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(60),
-                child: Column(
-                  children: [
-                    Icon(Icons.tune_outlined, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text('No assessment types for $tier', style: TextStyle(color: Colors.grey[700], fontSize: 15, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Text('Click "Add Assessment" or "Copy Default as Override"', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                  ],
-                ),
-              ),
-            )
+          const SizedBox(height: 12),
+          // Cards or empty
+          if (ats.isEmpty)
+            _emptyState(
+                Icons.tune_outlined,
+                'No assessment types for $tier',
+                'Click "Add Assessment" or "Copy Default as Override"')
           else
-            ...assessmentTypes.asMap().entries.map((entry) {
+            ...ats.asMap().entries.map((entry) {
               final i = entry.key;
               final at = entry.value;
-              final name = (at['name'] ?? at['id'] ?? '').toString();
-              final max = (at['max'] as num?)?.toInt() ?? 0;
-              final percentage = totalMax > 0 ? ((max / totalMax) * 100).toStringAsFixed(0) : '0';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _tierColors[tier]!.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$percentage%',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _tierColors[tier]),
+              final nm =
+                  (at['name'] ?? at['id'] ?? '').toString();
+              final mx = (at['max'] as num?)?.toInt() ?? 0;
+              final pct = total > 0
+                  ? ((mx / total) * 100).toStringAsFixed(0)
+                  : '0';
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: const Color(0xFFE8EAED)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(width: 4, color: _tierColors[tier]),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: _tierColors[tier]!
+                                      .withOpacity(0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '$pct%',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: _tierColors[tier],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      nm,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Max: $mx marks',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF9CA3AF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(
+                                width: 90,
+                                child: Column(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: mx / 100,
+                                        backgroundColor:
+                                            Colors.grey.shade100,
+                                        valueColor:
+                                            AlwaysStoppedAnimation(
+                                                _tierColors[tier]!),
+                                        minHeight: 6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$mx/100',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF9CA3AF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              _rowActions(
+                                onEdit: () =>
+                                    _editAssessmentType(
+                                        provider, tier, i, at),
+                                onDelete: ats.length > 1
+                                    ? () =>
+                                        _deleteAssessmentType(
+                                            provider, tier, i)
+                                    : null,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _tierColors[tier])),
-                          Text('Max: $max marks', style: const TextStyle(fontSize: 12, color: Color(0xFF555555))),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: max / 100,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: AlwaysStoppedAnimation<Color>(_tierColors[tier]!),
-                              minHeight: 6,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('$max/100', style: const TextStyle(fontSize: 11, color: Color(0xFF555555))),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1A237E)),
-                      onPressed: () => _editAssessmentType(provider, tier, i, at),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: assessmentTypes.length > 1 ? Colors.red : Colors.grey.shade300,
-                      ),
-                      onPressed: assessmentTypes.length > 1
-                          ? () => _deleteAssessmentType(provider, tier, i)
-                          : null,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _isSaving ? null : () => _saveTierAssessment(provider, tier),
-              icon: _isSaving
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.save_rounded),
-              label: Text(
-                _isSaving ? 'Saving...' : 'Save Assessment for $tier',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _tierColors[tier]!,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade300,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+          _saveBtn(
+            label: 'Save Assessment for $tier',
+            loading: _isSaving,
+            onTap: _isSaving
+                ? null
+                : () => _saveTierAssessment(provider, tier),
+            bg: _tierColors[tier],
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  // =========================================================
+  // ═══════════════════════════════════════════
   // LOGO UPLOAD
-  // =========================================================
+  // ═══════════════════════════════════════════
 
-  Future<void> _pickAndUploadLogo(SchoolAdminProvider provider) async {
+  Future<void> _pickAndUploadLogo(
+      SchoolAdminProvider provider) async {
     try {
       final input = html.FileUploadInputElement()..accept = 'image/*';
       final changeFuture = input.onChange.first;
       input.click();
-
-      final event = await changeFuture;
-      debugPrint('File picker event fired');
-
-      if (input.files == null || input.files!.isEmpty) {
-        debugPrint('No file selected or picker cancelled');
-        return;
-      }
-
+      await changeFuture;
+      if (input.files == null || input.files!.isEmpty) return;
       final file = input.files!.first;
-      debugPrint('File selected: ${file.name}, size: ${file.size} bytes');
-
       if (file.size > 2 * 1024 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Image too large. Max 2MB allowed.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        _snack('Image too large. Max 2MB allowed.', success: false);
         return;
       }
-
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
               children: [
-                SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
+                ),
                 SizedBox(width: 12),
                 Text('Uploading logo...'),
               ],
@@ -1090,391 +1704,230 @@ class _PageSettingsState extends State<PageSettings>
           ),
         );
       }
-
       final bytes = await _readFileBytes(file);
       if (bytes == null) {
-        debugPrint('Failed to read file bytes');
-        if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to read file'), backgroundColor: Colors.red),
-          );
-        }
+        _snack('Failed to read file', success: false);
         return;
       }
-
-      debugPrint('File bytes read: ${bytes.length} bytes');
-      await _uploadBytesToSupabase(provider, bytes, file.name);
+      await _uploadBytes(provider, bytes, file.name);
     } catch (e) {
-      debugPrint('Error in _pickAndUploadLogo: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Error: $e', success: false);
     }
   }
 
   Future<Uint8List?> _readFileBytes(html.File file) async {
-    final completer = Completer<Uint8List?>();
-    final reader = html.FileReader();
-    reader.onLoadEnd.listen((_) {
-      if (reader.result != null) {
-        completer.complete((reader.result as ByteBuffer).asUint8List());
-      } else {
-        completer.complete(null);
-      }
+    final c = Completer<Uint8List?>();
+    final r = html.FileReader();
+    r.onLoadEnd.listen((_) {
+      c.complete(r.result != null
+          ? (r.result as ByteBuffer).asUint8List()
+          : null);
     });
-    reader.onError.listen((_) {
-      completer.completeError(Exception('FileReader error'));
+    r.onError.listen((_) {
+      c.completeError(Exception('FileReader error'));
     });
-    reader.readAsArrayBuffer(file);
-    return completer.future;
+    r.readAsArrayBuffer(file);
+    return c.future;
   }
 
-  Future<void> _uploadBytesToSupabase(SchoolAdminProvider provider, Uint8List bytes, String fileName) async {
+  Future<void> _uploadBytes(SchoolAdminProvider provider,
+      Uint8List bytes, String name) async {
     try {
-      final schoolId = provider.schoolId;
-      debugPrint('School ID: $schoolId');
-      if (schoolId.isEmpty) throw Exception('School ID not found. Cannot upload logo.');
-
-      final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'png';
-      final allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-      if (!allowedExts.contains(ext)) throw Exception('Invalid file type. Use JPG, PNG, GIF, or WebP.');
-
-      final storagePath = '$schoolId/logo.$ext';
-      debugPrint('Uploading to: school-logos/$storagePath');
-
-      await Supabase.instance.client.storage.from('school-logos').upload(
-            storagePath,
-            bytes,
-            fileOptions: FileOptions(upsert: true, contentType: 'image/$ext'),
-          );
-
-      debugPrint('Upload succeeded');
-      await provider.updateSchoolLogo(storagePath);
-      debugPrint('Provider updated, logoUrl now: ${provider.schoolLogoUrl}');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logo uploaded successfully!'), backgroundColor: Colors.green),
-        );
-      }
+      final sid = provider.schoolId;
+      if (sid.isEmpty) throw Exception('School ID not found.');
+      final ext = name.contains('.')
+          ? name.split('.').last.toLowerCase()
+          : 'png';
+      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext))
+        throw Exception('Invalid file type.');
+      final path = '$sid/logo.$ext';
+      await Supabase.instance.client.storage
+          .from('school-logos')
+          .upload(path, bytes,
+              fileOptions: FileOptions(
+                  upsert: true, contentType: 'image/$ext'));
+      await provider.updateSchoolLogo(path);
+      _snack('Logo uploaded successfully!');
     } catch (e) {
-      debugPrint('Upload error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Upload failed: $e', success: false);
     }
   }
 
   Future<void> _removeLogo(SchoolAdminProvider provider) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove Logo?'),
-        content: const Text('This will remove your school logo.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final ok = await _showConfirmDialog(
+      title: 'Remove Logo?',
+      message: 'This will remove your school logo from all documents.',
+      confirmLabel: 'Remove',
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true) return;
-
+    if (ok != true) return;
     try {
-      final schoolId = provider.schoolId;
-      if (schoolId.isNotEmpty) {
+      final sid = provider.schoolId;
+      if (sid.isNotEmpty) {
         try {
-          await Supabase.instance.client.storage.from('school-logos').remove(['$schoolId/logo']);
+          await Supabase.instance.client.storage
+              .from('school-logos')
+              .remove(['$sid/logo']);
         } catch (_) {}
       }
       await provider.updateSchoolLogo('');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logo removed'), backgroundColor: Colors.orange),
-        );
-      }
+      _snack('Logo removed', success: false);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error removing logo: $e'), backgroundColor: Colors.red),
-        );
-      }
+      _snack('Error removing logo: $e', success: false);
     }
   }
 
-  // =========================================================
-  // TIER-AWARE GRADING ACTIONS
-  // =========================================================
+  // ═══════════════════════════════════════════
+  // GRADING ACTIONS
+  // ═══════════════════════════════════════════
 
-  Future<void> _addGradingRow(SchoolAdminProvider provider, String tier) async {
-    final result = await showDialog<Map<String, dynamic>>(
+  Future<void> _addGradingRow(
+      SchoolAdminProvider p, String t) async {
+    final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => const _GradingRowDialog(title: 'Add Grade'),
+      builder: (c) => const _GradingDialog(title: 'Add Grade'),
     );
-    if (result == null) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveGradingForTier(tier))..add(result);
-    await provider.updateTierGrading(tier, updated);
+    if (r == null) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveGradingForTier(t))
+      ..add(r);
+    await p.updateTierGrading(t, u);
   }
 
-  Future<void> _editGradingRow(SchoolAdminProvider provider, String tier, int index, Map<String, dynamic> current) async {
-    final result = await showDialog<Map<String, dynamic>>(
+  Future<void> _editGradingRow(SchoolAdminProvider p, String t,
+      int i, Map<String, dynamic> cur) async {
+    final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => _GradingRowDialog(title: 'Edit Grade', initial: current),
+      builder: (c) =>
+          _GradingDialog(title: 'Edit Grade', initial: cur),
     );
-    if (result == null) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveGradingForTier(tier))..[index] = result;
-    await provider.updateTierGrading(tier, updated);
+    if (r == null) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveGradingForTier(t))
+      ..[i] = r;
+    await p.updateTierGrading(t, u);
   }
 
-  Future<void> _deleteGradingRow(SchoolAdminProvider provider, String tier, int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Grade?'),
-        content: const Text('This will remove this grade.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+  Future<void> _deleteGradingRow(
+      SchoolAdminProvider p, String t, int i) async {
+    final ok = await _showConfirmDialog(
+      title: 'Delete Grade?',
+      message: 'This will permanently remove this grade entry.',
+      confirmLabel: 'Delete',
     );
-    if (confirmed != true) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveGradingForTier(tier))..removeAt(index);
-    await provider.updateTierGrading(tier, updated);
+    if (ok != true) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveGradingForTier(t))
+      ..removeAt(i);
+    await p.updateTierGrading(t, u);
   }
 
-  Future<void> _saveTierGrading(SchoolAdminProvider provider, String tier) async {
-    final current = provider.getEffectiveGradingForTier(tier);
-    final errors = current.isNotEmpty ? GradingUtils.validateGradingSystem(current) : <String>[];
-    if (errors.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Fix ${errors.length} error(s) before saving'),
-        backgroundColor: Colors.red,
-      ));
+  Future<void> _saveTierGrading(
+      SchoolAdminProvider p, String t) async {
+    final cur = p.getEffectiveGradingForTier(t);
+    final errs = cur.isNotEmpty
+        ? GradingUtils.validateGradingSystem(cur)
+        : <String>[];
+    if (errs.isNotEmpty) {
+      _snack('Fix ${errs.length} error(s) before saving',
+          success: false);
       return;
     }
     setState(() => _isSaving = true);
-    final ok = await provider.updateTierGrading(tier, current);
+    final ok = await p.updateTierGrading(t, cur);
     setState(() => _isSaving = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? 'Grading saved for $tier!' : 'Failed to save'),
-        backgroundColor: ok ? Colors.green : Colors.red,
-      ));
-    }
+    _snack(ok ? 'Grading saved for $t!' : 'Failed to save');
   }
 
-  // =========================================================
-  // TIER-AWARE ASSESSMENT ACTIONS
-  // =========================================================
+  // ═══════════════════════════════════════════
+  // ASSESSMENT ACTIONS
+  // ═══════════════════════════════════════════
 
-  Future<void> _addAssessmentType(SchoolAdminProvider provider, String tier) async {
-    final result = await showDialog<Map<String, dynamic>>(
+  Future<void> _addAssessmentType(
+      SchoolAdminProvider p, String t) async {
+    final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => const _AssessmentTypeDialog(title: 'Add Assessment'),
+      builder: (c) =>
+          const _AssessDialog(title: 'Add Assessment'),
     );
-    if (result == null) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveAssessmentForTier(tier))..add(result);
-    await provider.updateTierAssessment(tier, updated);
+    if (r == null) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveAssessmentForTier(t))
+      ..add(r);
+    await p.updateTierAssessment(t, u);
   }
 
-  Future<void> _editAssessmentType(SchoolAdminProvider provider, String tier, int index, Map<String, dynamic> current) async {
-    final result = await showDialog<Map<String, dynamic>>(
+  Future<void> _editAssessmentType(SchoolAdminProvider p, String t,
+      int i, Map<String, dynamic> cur) async {
+    final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => _AssessmentTypeDialog(title: 'Edit Assessment', initial: current),
+      builder: (c) => _AssessDialog(
+          title: 'Edit Assessment', initial: cur),
     );
-    if (result == null) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveAssessmentForTier(tier))..[index] = result;
-    await provider.updateTierAssessment(tier, updated);
+    if (r == null) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveAssessmentForTier(t))
+      ..[i] = r;
+    await p.updateTierAssessment(t, u);
   }
 
-  Future<void> _deleteAssessmentType(SchoolAdminProvider provider, String tier, int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Assessment?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+  Future<void> _deleteAssessmentType(
+      SchoolAdminProvider p, String t, int i) async {
+    final ok = await _showConfirmDialog(
+      title: 'Delete Assessment?',
+      message:
+          'This will permanently remove this assessment type.',
+      confirmLabel: 'Delete',
     );
-    if (confirmed != true) return;
-    final updated = List<Map<String, dynamic>>.from(provider.getEffectiveAssessmentForTier(tier))..removeAt(index);
-    await provider.updateTierAssessment(tier, updated);
+    if (ok != true) return;
+    final u = List<Map<String, dynamic>>.from(
+        p.getEffectiveAssessmentForTier(t))
+      ..removeAt(i);
+    await p.updateTierAssessment(t, u);
   }
 
-  Future<void> _saveTierAssessment(SchoolAdminProvider provider, String tier) async {
-    final current = provider.getEffectiveAssessmentForTier(tier);
-    final validation = GradingUtils.validateAssessmentTypes(current);
-    if (validation['valid'] != true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Fix errors before saving'),
-        backgroundColor: Colors.red,
-      ));
+  Future<void> _saveTierAssessment(
+      SchoolAdminProvider p, String t) async {
+    final cur = p.getEffectiveAssessmentForTier(t);
+    final v = GradingUtils.validateAssessmentTypes(cur);
+    if (v['valid'] != true) {
+      _snack('Fix errors before saving', success: false);
       return;
     }
     setState(() => _isSaving = true);
-    final ok = await provider.updateTierAssessment(tier, current);
+    final ok = await p.updateTierAssessment(t, cur);
     setState(() => _isSaving = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? 'Assessment saved for $tier!' : 'Failed to save'),
-        backgroundColor: ok ? Colors.green : Colors.red,
-      ));
-    }
-  }
-
-  // =========================================================
-  // SHARED WIDGETS
-  // =========================================================
-
-  Widget _buildSectionTitle(String title) => Text(title,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)));
-
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon,
-      {TextInputType? keyboardType, int? maxLength}) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLength: maxLength,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF1A237E)),
-        border: const OutlineInputBorder(),
-        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
-        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E), width: 2)),
-        counterText: '',
-      ),
-    );
-  }
-
-  Widget _buildLogoPlaceholder() => const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
-          SizedBox(height: 4),
-          Text('No Logo', style: TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      );
-
-  IconData _getTemplateIcon(String template) {
-    switch (template.toUpperCase()) {
-      case 'WAEC': return Icons.school;
-      case 'BECE': return Icons.menu_book;
-      case 'NECO': return Icons.description;
-      case 'IGCSE': return Icons.public;
-      case 'PRIMARY': return Icons.child_care;
-      case 'AMERICAN': return Icons.flag;
-      default: return Icons.grade;
-    }
+    _snack(ok ? 'Assessment saved for $t!' : 'Failed to save');
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SUB-WIDGETS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DIALOGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-class _ExamTemplateCard extends StatelessWidget {
-  final String title, subtitle;
-  final IconData icon;
-  final bool isSelected, compact;
-  final VoidCallback onTap;
-
-  const _ExamTemplateCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    this.compact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final width = compact ? 130.0 : (MediaQuery.of(context).size.width / 2 - 28);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        width: width,
-        padding: EdgeInsets.all(compact ? 14 : 20),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1A237E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF1A237E) : Colors.grey.shade200,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(compact ? 10 : 12),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : const Color(0xFF1A237E).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: compact ? 24 : 32, color: isSelected ? Colors.white : const Color(0xFF1A237E)),
-            ),
-            SizedBox(height: compact ? 10 : 16),
-            Text(title,
-                style: TextStyle(fontSize: compact ? 14 : 18, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : const Color(0xFF1A237E))),
-            const SizedBox(height: 2),
-            Text(subtitle,
-                style: TextStyle(fontSize: compact ? 10 : 12, color: isSelected ? Colors.white70 : Colors.grey),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GradingRowDialog extends StatefulWidget {
+class _GradingDialog extends StatefulWidget {
   final String title;
   final Map<String, dynamic>? initial;
-
-  const _GradingRowDialog({required this.title, this.initial});
+  const _GradingDialog({required this.title, this.initial});
 
   @override
-  State<_GradingRowDialog> createState() => _GradingRowDialogState();
+  State<_GradingDialog> createState() => _GradingDialogState();
 }
 
-class _GradingRowDialogState extends State<_GradingRowDialog> {
+class _GradingDialogState extends State<_GradingDialog> {
   late TextEditingController _minC, _maxC, _gradeC, _remarkC;
 
   @override
   void initState() {
     super.initState();
-    _minC = TextEditingController(text: (widget.initial?['min'] ?? '').toString());
-    _maxC = TextEditingController(text: (widget.initial?['max'] ?? '').toString());
-    _gradeC = TextEditingController(text: (widget.initial?['grade'] ?? '').toString());
-    _remarkC = TextEditingController(text: (widget.initial?['remark'] ?? '').toString());
+    _minC = TextEditingController(
+        text: (widget.initial?['min'] ?? '').toString());
+    _maxC = TextEditingController(
+        text: (widget.initial?['max'] ?? '').toString());
+    _gradeC = TextEditingController(
+        text: (widget.initial?['grade'] ?? '').toString());
+    _remarkC = TextEditingController(
+        text: (widget.initial?['remark'] ?? '').toString());
   }
 
   @override
@@ -1488,83 +1941,204 @@ class _GradingRowDialogState extends State<_GradingRowDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _minC,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Min Score', border: OutlineInputBorder()),
+    return Dialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.grade_rounded,
+                      size: 22, color: Color(0xFF1A237E)),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _maxC,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Max Score', border: OutlineInputBorder()),
+                const SizedBox(width: 14),
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minC,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Min Score',
+                      labelStyle:
+                          TextStyle(color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A237E),
+                              width: 2)),
+                      filled: true,
+                      fillColor: const Color(0xFFFAFBFC),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _maxC,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Max Score',
+                      labelStyle:
+                          TextStyle(color: Colors.grey.shade600),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A237E),
+                              width: 2)),
+                      filled: true,
+                      fillColor: const Color(0xFFFAFBFC),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _gradeC,
+              decoration: InputDecoration(
+                labelText: 'Grade (e.g. A1)',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1A237E), width: 2)),
+                filled: true,
+                fillColor: const Color(0xFFFAFBFC),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _gradeC,
-            decoration: const InputDecoration(labelText: 'Grade (e.g. A1)', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _remarkC,
-            decoration: const InputDecoration(labelText: 'Remark (e.g. Excellent)', border: OutlineInputBorder()),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(
-          onPressed: () {
-            final min = int.tryParse(_minC.text);
-            final max = int.tryParse(_maxC.text);
-            final grade = _gradeC.text.trim();
-            final remark = _remarkC.text.trim();
-            if (min == null || max == null || grade.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fill all required fields'), backgroundColor: Colors.red));
-              return;
-            }
-            Navigator.pop(context, {'min': min, 'max': max, 'grade': grade, 'remark': remark});
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E)),
-          child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _remarkC,
+              decoration: InputDecoration(
+                labelText: 'Remark (e.g. Excellent)',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1A237E), width: 2)),
+                filled: true,
+                fillColor: const Color(0xFFFAFBFC),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Cancel',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final mn = int.tryParse(_minC.text);
+                      final mx = int.tryParse(_maxC.text);
+                      final g = _gradeC.text.trim();
+                      final r = _remarkC.text.trim();
+                      if (mn == null ||
+                          mx == null ||
+                          g.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text('Fill all required fields'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.pop(context, {
+                        'min': mn,
+                        'max': mx,
+                        'grade': g,
+                        'remark': r,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A237E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Save',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-class _AssessmentTypeDialog extends StatefulWidget {
+class _AssessDialog extends StatefulWidget {
   final String title;
   final Map<String, dynamic>? initial;
-
-  const _AssessmentTypeDialog({required this.title, this.initial});
+  const _AssessDialog({required this.title, this.initial});
 
   @override
-  State<_AssessmentTypeDialog> createState() => _AssessmentTypeDialogState();
+  State<_AssessDialog> createState() => _AssessDialogState();
 }
 
-class _AssessmentTypeDialogState extends State<_AssessmentTypeDialog> {
+class _AssessDialogState extends State<_AssessDialog> {
   late TextEditingController _nameC, _idC, _maxC;
 
   @override
   void initState() {
     super.initState();
-    _nameC = TextEditingController(text: (widget.initial?['name'] ?? '').toString());
-    _idC = TextEditingController(text: (widget.initial?['id'] ?? '').toString());
-    _maxC = TextEditingController(text: (widget.initial?['max'] ?? '').toString());
+    _nameC = TextEditingController(
+        text: (widget.initial?['name'] ?? '').toString());
+    _idC = TextEditingController(
+        text: (widget.initial?['id'] ?? '').toString());
+    _maxC = TextEditingController(
+        text: (widget.initial?['max'] ?? '').toString());
   }
 
   @override
@@ -1577,100 +2151,154 @@ class _AssessmentTypeDialogState extends State<_AssessmentTypeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameC,
-            decoration: const InputDecoration(labelText: 'Name (e.g. CA1)', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _idC,
-            decoration: const InputDecoration(labelText: 'ID (e.g. ca1)', border: OutlineInputBorder(), helperText: 'Lowercase, no spaces'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _maxC,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Maximum Score', border: OutlineInputBorder(), helperText: 'All should sum to 100'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        ElevatedButton(
-          onPressed: () {
-            final name = _nameC.text.trim();
-            final id = _idC.text.trim().toLowerCase().replaceAll(' ', '_');
-            final max = int.tryParse(_maxC.text);
-            if (name.isEmpty || id.isEmpty || max == null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fill all fields'), backgroundColor: Colors.red));
-              return;
-            }
-            Navigator.pop(context, {'id': id, 'name': name, 'max': max});
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E)),
-          child: const Text('Save', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    );
-  }
-}
-
-class _TableHeader extends StatelessWidget {
-  final String text;
-  const _TableHeader(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(12),
-        child: Text(text, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E), fontSize: 13)),
-      );
-}
-
-class _TableCell extends StatelessWidget {
-  final String text;
-  final TextStyle? style;
-  final TextAlign alignment;
-
-  const _TableCell(this.text, {this.style, this.alignment = TextAlign.left});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(12),
-        child: Text(text, style: style ?? const TextStyle(fontSize: 13, color: Color(0xFF1B2A4A)), textAlign: alignment),
-      );
-}
-
-class _ActionCell extends StatelessWidget {
-  final VoidCallback onEdit;
-  final VoidCallback? onDelete;
-
-  const _ActionCell({required this.onEdit, this.onDelete});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Dialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF1A237E)),
-              onPressed: onEdit,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              padding: EdgeInsets.zero,
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.tune_rounded,
+                      size: 22, color: Color(0xFFF57F17)),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ],
             ),
-            if (onDelete != null)
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                onPressed: onDelete,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                padding: EdgeInsets.zero,
+            const SizedBox(height: 20),
+            TextField(
+              controller: _nameC,
+              decoration: InputDecoration(
+                labelText: 'Name (e.g. CA1)',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1A237E), width: 2)),
+                filled: true,
+                fillColor: const Color(0xFFFAFBFC),
               ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _idC,
+              decoration: InputDecoration(
+                labelText: 'ID (e.g. ca1)',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                helperText: 'Lowercase, no spaces',
+                helperStyle: TextStyle(
+                    fontSize: 12, color: Colors.grey.shade400),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1A237E), width: 2)),
+                filled: true,
+                fillColor: const Color(0xFFFAFBFC),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _maxC,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Maximum Score',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                helperText: 'All assessments should sum to 100',
+                helperStyle: TextStyle(
+                    fontSize: 12, color: Colors.grey.shade400),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1A237E), width: 2)),
+                filled: true,
+                fillColor: const Color(0xFFFAFBFC),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Cancel',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final n = _nameC.text.trim();
+                      final id = _idC.text
+                          .trim()
+                          .toLowerCase()
+                          .replaceAll(' ', '_');
+                      final mx = int.tryParse(_maxC.text);
+                      if (n.isEmpty || id.isEmpty || mx == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Fill all fields'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.pop(context, {
+                        'id': id,
+                        'name': n,
+                        'max': mx,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A237E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Save',
+                        style:
+                            TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-      );
+      ),
+    );
+  }
 }

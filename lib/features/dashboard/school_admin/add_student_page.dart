@@ -35,7 +35,29 @@ class _AddStudentPageState extends State<AddStudentPage> {
     super.dispose();
   }
 
-  String _getSchoolId(SchoolAdminProvider provider) => provider.schoolId;
+  String _getSchoolId(SchoolAdminProvider provider) =>
+      provider.schoolId;
+
+  void _snack(String message, {bool success = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor:
+            success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.only(
+            bottom: 24, left: 16, right: 16),
+      ),
+    );
+  }
 
   // ─── IMAGE ───────────────────────────────────────────────────
 
@@ -53,25 +75,18 @@ class _AddStudentPageState extends State<AddStudentPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'Could not access ${source == ImageSource.camera ? 'camera' : 'gallery'}.'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10))));
-      }
+      _snack(
+          'Could not access ${source == ImageSource.camera ? 'camera' : 'gallery'}.',
+          success: false);
     } finally {
       if (mounted) setState(() => _isPickingImage = false);
     }
   }
 
-  void _removeImage() =>
-      setState(() {
-        _pickedXFile = null;
-        _passportUrlPreview = null;
-      });
+  void _removeImage() => setState(() {
+    _pickedXFile = null;
+    _passportUrlPreview = null;
+  });
 
   void _showImagePickerSheet() {
     showModalBottomSheet(
@@ -81,7 +96,13 @@ class _AddStudentPageState extends State<AddStudentPage> {
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4))
+            ]),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -94,58 +115,170 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     borderRadius: BorderRadius.circular(2))),
             Padding(
                 padding: const EdgeInsets.all(20),
-                child: Text('Upload Photo',
-                    style: Theme.of(ctx)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700))),
-            ListTile(
-              leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Icon(Icons.photo_library_rounded,
-                      color: Colors.blue.shade700)),
-              title: const Text('Choose from Gallery'),
-              subtitle: const Text('Pick an existing photo'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.photo_camera_rounded,
+                          size: 20, color: Color(0xFF1A237E)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Upload Photo',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827))),
+                  ],
+                )),
+            const SizedBox(height: 4),
+            // Gallery
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.gallery);
               },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAFBFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8EAED)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.photo_library_rounded,
+                            size: 20, color: Colors.blue.shade700)),
+                    const SizedBox(width: 14),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Choose from Gallery',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111827))),
+                        Text('Pick an existing photo',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            ListTile(
-              leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Icon(Icons.camera_alt_rounded,
-                      color: Colors.green.shade700)),
-              title: const Text('Take a Photo'),
-              subtitle: const Text('Use your camera'),
+            const SizedBox(height: 8),
+            // Camera
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.camera);
               },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAFBFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8EAED)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.camera_alt_rounded,
+                            size: 20, color: Colors.green.shade700)),
+                    const SizedBox(width: 14),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Take a Photo',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF111827))),
+                        Text('Use your camera',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            if (_pickedXFile != null)
-              ListTile(
-                leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Icon(Icons.delete_outline_rounded,
-                        color: Colors.red.shade700)),
-                title: const Text('Remove Photo'),
-                subtitle: const Text('Remove selected photo'),
+            // Remove
+            if (_pickedXFile != null) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   Navigator.pop(ctx);
                   _removeImage();
                 },
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child:
+                              const Icon(Icons.delete_outline_rounded,
+                                  size: 20,
+                                  color: Colors.red.shade700)),
+                      const SizedBox(width: 14),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Remove Photo',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDC2626))),
+                          Text('Remove selected photo',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red.shade400)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            const SizedBox(height: 8),
+            ],
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -165,7 +298,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0D47A1),
+                primary: Color(0xFF1A237E),
                 onPrimary: Colors.white,
                 surface: Colors.white)),
         child: child!,
@@ -184,7 +317,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
   // ─── DUPLICATE CHECK ─────────────────────────────────────────
 
-  Future<bool> _admissionNoExists(String admissionNo, String schoolId) async {
+  Future<bool> _admissionNoExists(
+      String admissionNo, String schoolId) async {
     final res = await Supabase.instance.client
         .from('students')
         .select('id')
@@ -226,8 +360,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
   String? _vEmail(String? v) {
     if (v == null || v.trim().isEmpty) return null;
-    if (!RegExp(r'^[\w\.\-\+]+@[\w\.\-]+\.\w+$').hasMatch(v.trim()))
-      return 'Invalid email';
+    if (!RegExp(r'^[\w\.\-\+]+@[\w\.\-]+\.\w+$')
+        .hasMatch(v.trim())) return 'Invalid email';
     return null;
   }
 
@@ -251,17 +385,12 @@ class _AddStudentPageState extends State<AddStudentPage> {
     _formKey.currentState!.save();
 
     if (_data['class_id'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Please select a class'),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10))));
+      _snack('Please select a class', success: false);
       return;
     }
 
-    // ── Duplicate admission number check ──
-    final admNo = (_data['admission_no'] ?? '').toString().trim();
+    final admNo =
+        (_data['admission_no'] ?? '').toString().trim();
     final provider = context.read<SchoolAdminProvider>();
     final schoolId = _getSchoolId(provider);
 
@@ -269,23 +398,13 @@ class _AddStudentPageState extends State<AddStudentPage> {
     try {
       final exists = await _admissionNoExists(admNo, schoolId);
       if (exists) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Row(children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.white),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Admission number "$admNo" already exists in this school.')),
-            ]),
-            backgroundColor: const Color(0xFFD32F2F),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ));
-        }
+        _snack(
+            'Admission number "$admNo" already exists in this school.',
+            success: false);
         return;
       }
     } catch (e) {
       debugPrint('DUP CHECK ERR: $e');
-      // Don't block on network error — let the DB unique constraint handle it
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -295,25 +414,80 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('Confirm Addition'),
-        content: Text('Add $fn $ln ($admNo)?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0D47A1),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8))),
-            child:
-                const Text('Add', style: TextStyle(color: Colors.white)),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F4FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.person_add_rounded,
+                    size: 24, color: Color(0xFF1A237E)),
+              ),
+              const SizedBox(height: 16),
+              const Text('Confirm Addition',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  )),
+              const SizedBox(height: 8),
+              Text('Add $fn $ln ($admNo)?',
+                  style: TextStyle(
+                      fontSize: 14, color: Colors.grey.shade600)),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                            color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFF1A237E),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12),
+                      ),
+                      child: const Text('Add Student',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
     if (ok != true) return;
@@ -321,20 +495,15 @@ class _AddStudentPageState extends State<AddStudentPage> {
     setState(() => _isUploading = true);
     try {
       if (schoolId.isEmpty) {
-        if (mounted)
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: const Text('FATAL: School ID missing.'),
-              backgroundColor: Colors.red.shade700,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10))));
+        _snack('FATAL: School ID missing.', success: false);
         return;
       }
 
       _data['passport_url'] = '';
       if (_pickedXFile != null) {
         try {
-          final ts = DateTime.now().millisecondsSinceEpoch;
+          final ts =
+              DateTime.now().millisecondsSinceEpoch;
           final adm = (_data['admission_no'] ?? 'unknown')
               .toString()
               .replaceAll(' ', '_');
@@ -344,9 +513,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
               .from('passports')
               .upload(path, bytes,
                   fileOptions: const FileOptions(upsert: true));
-          _data['passport_url'] = Supabase.instance.client.storage
-              .from('passports')
-              .getPublicUrl(path);
+          _data['passport_url'] =
+              Supabase.instance.client.storage
+                  .from('passports')
+                  .getPublicUrl(path);
         } catch (e) {
           debugPrint('IMG FAIL: $e');
         }
@@ -354,7 +524,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
       _data['school_id'] = schoolId;
       _data['is_active'] = true;
-      // PIN is auto-generated — don't send from form
       _data.remove('pin');
 
       final result = await Supabase.instance.client
@@ -365,17 +534,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
       debugPrint('SUCCESS: ${result['id']}');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white),
-            SizedBox(width: 10),
-            Text('Student added successfully!')
-          ]),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
-        ));
+        _snack('Student added successfully!');
         Navigator.pop(context, _data);
       }
     } catch (e) {
@@ -383,18 +542,26 @@ class _AddStudentPageState extends State<AddStudentPage> {
       if (mounted) {
         final msg = e.toString();
         String display = msg;
-        if (msg.contains('duplicate') || msg.contains('unique') || msg.contains('students_admission_no_key')) {
-          display = 'Admission number "$admNo" already exists.';
+        if (msg.contains('duplicate') ||
+            msg.contains('unique') ||
+            msg.contains('students_admission_no_key')) {
+          display =
+              'Admission number "$admNo" already exists.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: SelectableText(display,
-              style: const TextStyle(fontSize: 11)),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
-          duration: const Duration(seconds: 15),
-        ));
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: SelectableText(display,
+                style: const TextStyle(fontSize: 11)),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.only(
+                bottom: 24, left: 16, right: 16),
+            duration: const Duration(seconds: 15),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -406,11 +573,12 @@ class _AddStudentPageState extends State<AddStudentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
         title: const Text('Add New Student',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: const Color(0xFF0D47A1),
+            style: TextStyle(
+                fontWeight: FontWeight.w600, color: Colors.white)),
+        backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -418,16 +586,14 @@ class _AddStudentPageState extends State<AddStudentPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16.0, vertical: 24.0),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.05), blurRadius: 10)
-                ],
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: const Color(0xFFE8EAED)),
               ),
               padding: const EdgeInsets.all(24),
               child: Form(
@@ -444,20 +610,25 @@ class _AddStudentPageState extends State<AddStudentPage> {
                             child: Stack(
                               children: [
                                 Container(
-                                  height: 100,
-                                  width: 100,
+                                  height: 110,
+                                  width: 110,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0D47A1)
-                                        .withOpacity(0.08),
+                                    color: const Color(0xFF1A237E)
+                                        .withOpacity(0.06),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: _pickedXFile != null
-                                            ? const Color(0xFF0D47A1)
-                                            : const Color(0xFF0D47A1)
-                                                .withOpacity(0.2),
+                                        color: _pickedXFile !=
+                                                null
+                                            ? const Color(
+                                                0xFF1A237E)
+                                            : const Color(
+                                                    0xFF1A237E)
+                                                .withOpacity(
+                                                    0.2),
                                         width: 2),
                                   ),
-                                  child: ClipOval(child: _buildPhoto()),
+                                  child: ClipOval(
+                                      child: _buildPhoto()),
                                 ),
                                 if (_pickedXFile != null)
                                   Positioned(
@@ -466,69 +637,104 @@ class _AddStudentPageState extends State<AddStudentPage> {
                                     child: GestureDetector(
                                       onTap: _removeImage,
                                       child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle),
-                                        child: const Icon(Icons.close,
-                                            color: Colors.white, size: 16),
+                                        padding:
+                                            const EdgeInsets.all(3),
+                                        decoration:
+                                            const BoxDecoration(
+                                          color: Color(
+                                              0xFFDC2626),
+                                          shape:
+                                              BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                            Icons.close,
+                                            color: Colors
+                                                .white,
+                                            size: 14),
                                       ),
                                     ),
                                   ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text('Tap to add photo',
                               style: TextStyle(
-                                  fontSize: 11, color: Colors.grey.shade500)),
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
 
                     // ── Basic Information ──────────────────
-                    _sectionTitle('Basic Information'),
+                    _sectionHeader(
+                      'Basic Information',
+                      Icons.person_rounded,
+                      const Color(0xFFF0F4FF),
+                      const Color(0xFF1A237E),
+                    ),
                     const SizedBox(height: 12),
                     _field('Admission No', 'admission_no',
-                        icon: Icons.fingerprint_rounded, validator: _vAdm),
+                        icon: Icons.fingerprint_rounded,
+                        validator: _vAdm),
                     Row(
                       children: [
                         Expanded(
-                            child: _field('First Name', 'first_name',
-                                icon: Icons.person_outline, validator: _vName)),
+                            child: _field(
+                                'First Name', 'first_name',
+                                icon: Icons.person_outline,
+                                validator: _vName)),
                         const SizedBox(width: 12),
                         Expanded(
-                            child: _field('Last Name', 'last_name',
+                            child: _field(
+                                'Last Name', 'last_name',
                                 validator: _vName)),
                       ],
                     ),
-                    _field('Middle Name', 'middle_name', validator: _vOptName),
-                    _dropdown('Gender', 'gender', ['Male', 'Female'],
-                        validator: _vDrop, icon: Icons.wc_outlined),
+                    _field('Middle Name', 'middle_name',
+                        validator: _vOptName),
+                    _dropdown('Gender', 'gender',
+                        ['Male', 'Female'],
+                        validator: _vDrop,
+                        icon: Icons.wc_outlined),
                     const SizedBox(height: 20),
 
                     // ── Personal Details ──────────────────
-                    _sectionTitle('Personal Details'),
+                    _sectionHeader(
+                      'Personal Details',
+                      Icons.badge_rounded,
+                      const Color(0xFFF3E5F5),
+                      const Color(0xFF1565C0),
+                    ),
                     const SizedBox(height: 12),
                     _dateField('Date of Birth'),
                     _dropdown('School Level', 'school_level',
                         ['Primary', 'Secondary', 'Tertiary'],
-                        def: 'Secondary', icon: Icons.school_outlined),
+                        def: 'Secondary',
+                        icon: Icons.school_outlined),
                     _field('Home Address', 'home_address',
                         icon: Icons.home_outlined),
                     const SizedBox(height: 20),
 
                     // ── Class & Admission ─────────────────
-                    _sectionTitle('Class & Admission'),
+                    _sectionHeader(
+                      'Class & Admission',
+                      Icons.class_rounded,
+                      const Color(0xFFFFF3E0),
+                      const Color(0xFFE65100),
+                    ),
                     const SizedBox(height: 12),
                     _classDropdown(),
                     _field('Session', 'admission_session',
                         hint: 'e.g. 2024/2025',
-                        icon: Icons.calendar_view_month_outlined),
+                        icon:
+                            Icons.calendar_view_month_outlined),
                     _dropdown('Admission Mode', 'admission_mode',
                         ['Fresh', 'Transfer', 'Repeat']),
-                    _field('Admission Year', 'class_admission_year',
+                    _field('Admission Year',
+                        'class_admission_year',
                         type: TextInputType.number,
                         validator: _vYear,
                         hint: 'e.g. 2024',
@@ -536,17 +742,26 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     const SizedBox(height: 20),
 
                     // ── Extracurricular ───────────────────
-                    _sectionTitle('Extracurricular'),
+                    _sectionHeader(
+                      'Extracurricular',
+                      Icons.emoji_events_rounded,
+                      const Color(0xFFFFF8E1),
+                      const Color(0xFFF57F17),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
-                            child: _field('Sport Team', 'sport_team',
+                            child: _field(
+                                'Sport Team', 'sport_team',
                                 hint: 'e.g. Football',
-                                icon: Icons.sports_soccer)),
+                                icon:
+                                    Icons.sports_soccer)),
                         const SizedBox(width: 12),
                         Expanded(
-                            child: _field('Club/Society', 'club_society',
+                            child: _field(
+                                'Club/Society',
+                                'club_society',
                                 hint: 'e.g. Jet Club',
                                 icon: Icons.groups_outlined)),
                       ],
@@ -554,10 +769,16 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     const SizedBox(height: 20),
 
                     // ── Parent / Guardian ─────────────────
-                    _sectionTitle('Parent / Guardian'),
+                    _sectionHeader(
+                      'Parent / Guardian',
+                      Icons.family_restroom_rounded,
+                      const Color(0xFFF0FFF4),
+                      const Color(0xFF2E7D32),
+                    ),
                     const SizedBox(height: 12),
                     _field('Parent Name', 'parent_name',
-                        validator: _vName, icon: Icons.person_outline),
+                        validator: _vName,
+                        icon: Icons.person_outline),
                     _field('Parent Phone', 'parent_phone',
                         type: TextInputType.phone,
                         validator: _vPhone,
@@ -568,7 +789,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
                         validator: _vEmail,
                         hint: 'parent@email.com',
                         icon: Icons.email_outlined),
-                    _field('Parent Occupation', 'parent_occupation',
+                    _field('Parent Occupation',
+                        'parent_occupation',
                         hint: 'e.g. Teacher, Engineer',
                         icon: Icons.work_outline),
                     const SizedBox(height: 28),
@@ -577,26 +799,36 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     SizedBox(
                       height: 48,
                       child: ElevatedButton.icon(
-                        onPressed: _isUploading ? null : _submit,
+                        onPressed:
+                            _isUploading ? null : _submit,
                         icon: _isUploading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5))
-                            : const Icon(Icons.person_add, size: 22),
+                                    color: Colors.white,
+                                    strokeWidth: 2))
+                            : const Icon(Icons.person_add,
+                                size: 20),
                         label: Text(
-                            _isUploading ? 'Saving...' : 'Save Student',
+                            _isUploading
+                                ? 'Saving...'
+                                : 'Save Student',
                             style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3)),
+                                letterSpacing: -0.2)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0D47A1),
+                          backgroundColor:
+                              const Color(0xFF1A237E),
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.blue.shade200,
+                          disabledBackgroundColor: const Color(
+                                  0xFF1A237E)
+                              .withOpacity(0.5),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                              borderRadius:
+                                  BorderRadius.circular(8)),
                         ),
                       ),
                     ),
@@ -617,34 +849,49 @@ class _AddStudentPageState extends State<AddStudentPage> {
     if (_isPickingImage)
       return const Center(
           child: CircularProgressIndicator(
-              strokeWidth: 2, color: Color(0xFF0D47A1)));
+              strokeWidth: 2,
+              color: Color(0xFF1A237E)));
     if (_pickedXFile != null) {
       return FutureBuilder<Uint8List>(
         future: _pickedXFile!.readAsBytes(),
         builder: (_, snap) {
-          if (snap.connectionState == ConnectionState.done && snap.hasData)
-            return Image.memory(snap.data!, fit: BoxFit.cover);
+          if (snap.connectionState == ConnectionState.done &&
+              snap.hasData)
+            return Image.memory(snap.data!,
+                fit: BoxFit.cover);
           return const Center(
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Color(0xFF0D47A1)));
+                  strokeWidth: 2,
+                  color: Color(0xFF1A237E)));
         },
       );
     }
     if (_passportUrlPreview != null)
-      return Image.network(_passportUrlPreview!, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _photoPlaceholder());
+      return Image.network(_passportUrlPreview!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              _photoPlaceholder());
     return _photoPlaceholder();
   }
 
   Widget _photoPlaceholder() {
-    return const Column(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.add_a_photo_outlined, size: 32, color: Color(0xFF0D47A1)),
-        SizedBox(height: 4),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.add_a_photo_outlined,
+              size: 20, color: Colors.grey.shade400),
+        ),
+        const SizedBox(height: 4),
         Text('Photo',
             style: TextStyle(
-                color: Color(0xFF0D47A1),
+                color: Colors.grey.shade500,
                 fontSize: 11,
                 fontWeight: FontWeight.w500)),
       ],
@@ -653,15 +900,27 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
   // ─── REUSABLE BUILDERS ───────────────────────────────────────
 
-  Widget _sectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(title,
-          style: const TextStyle(
-              fontSize: 13,
+  Widget _sectionHeader(
+      String title, IconData icon, Color iconBg, Color iconColor) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 17, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Text(title,
+            style: const TextStyle(
+              fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Colors.black54,
-              letterSpacing: 0.5)),
+              color: Color(0xFF111827),
+            )),
+      ],
     );
   }
 
@@ -678,36 +937,51 @@ class _AddStudentPageState extends State<AddStudentPage> {
             ? TextCapitalization.words
             : TextCapitalization.none,
         style: const TextStyle(
-            fontSize: 15, height: 1.4, letterSpacing: 0.2, color: Colors.black87),
+            fontSize: 15,
+            height: 1.4,
+            letterSpacing: 0.2,
+            color: Color(0xFF111827)),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+          labelStyle: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
           hintText: hint,
           hintStyle: TextStyle(
-              fontSize: 13, color: Colors.grey.shade500, letterSpacing: 0.2),
+              fontSize: 13,
+              color: Colors.grey.shade400,
+              letterSpacing: 0.2),
           prefixIcon: icon != null
-              ? Icon(icon, size: 20, color: Colors.grey.shade600)
+              ? Icon(icon,
+                  size: 20,
+                  color: const Color(0xFF1A237E)
+                      .withOpacity(0.7))
               : null,
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0D47A1), width: 1.5)),
+              borderSide: const BorderSide(
+                  color: Color(0xFF1A237E), width: 2)),
           errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.red)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+          filled: true,
+          fillColor: const Color(0xFFFAFBFC),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 14),
         ),
         validator: validator,
         onSaved: (v) {
-          if (v != null && v.trim().isNotEmpty) _data[key] = v.trim();
+          if (v != null && v.trim().isNotEmpty)
+            _data[key] = v.trim();
         },
       ),
     );
@@ -720,27 +994,37 @@ class _AddStudentPageState extends State<AddStudentPage> {
         controller: _dobController,
         readOnly: true,
         style: const TextStyle(
-            fontSize: 15, height: 1.4, letterSpacing: 0.2, color: Colors.black87),
+            fontSize: 15,
+            height: 1.4,
+            letterSpacing: 0.2,
+            color: Color(0xFF111827)),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+          labelStyle: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
           hintText: 'Select date',
-          hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+          hintStyle:
+              TextStyle(fontSize: 13, color: Colors.grey.shade400),
           suffixIcon: const Icon(Icons.calendar_today,
-              color: Color(0xFF0D47A1), size: 20),
+              color: Color(0xFF1A237E), size: 20),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0D47A1), width: 1.5)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              borderSide: const BorderSide(
+                  color: Color(0xFF1A237E), width: 2)),
+          filled: true,
+          fillColor: const Color(0xFFFAFBFC),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 14),
         ),
         onTap: _selectDateOfBirth,
       ),
@@ -748,31 +1032,45 @@ class _AddStudentPageState extends State<AddStudentPage> {
   }
 
   Widget _dropdown(String label, String key, List<String> items,
-      {String? def, IconData? icon, String? Function(String?)? validator}) {
+      {String? def,
+      IconData? icon,
+      String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         style: const TextStyle(
-            fontSize: 15, height: 1.4, letterSpacing: 0.2, color: Colors.black87),
+            fontSize: 15,
+            height: 1.4,
+            letterSpacing: 0.2,
+            color: Color(0xFF111827)),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+          labelStyle: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
           prefixIcon: icon != null
-              ? Icon(icon, size: 20, color: Colors.grey.shade600)
+              ? Icon(icon,
+                  size: 20,
+                  color: const Color(0xFF1A237E)
+                      .withOpacity(0.7))
               : null,
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0D47A1), width: 1.5)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              borderSide: const BorderSide(
+                  color: Color(0xFF1A237E), width: 2)),
+          filled: true,
+          fillColor: const Color(0xFFFAFBFC),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 4),
         ),
         value: _data[key] ?? def,
         items: items
@@ -794,31 +1092,42 @@ class _AddStudentPageState extends State<AddStudentPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         style: const TextStyle(
-            fontSize: 15, height: 1.4, letterSpacing: 0.2, color: Colors.black87),
+            fontSize: 15,
+            height: 1.4,
+            letterSpacing: 0.2,
+            color: Color(0xFF111827)),
         decoration: InputDecoration(
           labelText: 'Class',
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+          labelStyle: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
           prefixIcon: const Icon(Icons.class_rounded,
-              size: 20, color: Color(0xFF0D47A1)),
+              size: 20, color: Color(0xFF1A237E)),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300)),
+              borderSide:
+                  BorderSide(color: Colors.grey.shade300)),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF0D47A1), width: 1.5)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              borderSide: const BorderSide(
+                  color: Color(0xFF1A237E), width: 2)),
+          filled: true,
+          fillColor: const Color(0xFFFAFBFC),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 4),
         ),
         value: _data['class_id'],
         hint: widget.classes.isEmpty
             ? const Text('No classes created yet',
-                style: TextStyle(fontSize: 13, color: Colors.redAccent))
-            : const Text('Select Class', style: TextStyle(fontSize: 13)),
+                style: TextStyle(
+                    fontSize: 13, color: Color(0xFFDC2626)))
+            : const Text('Select Class',
+                style: TextStyle(fontSize: 13)),
         isExpanded: true,
         items: widget.classes.isEmpty
             ? []
@@ -828,7 +1137,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 return DropdownMenuItem(
                     value: c['id']?.toString() ?? '',
                     child: Text(
-                        s.isNotEmpty ? '$n - $s' : n,
+                        s.isNotEmpty ? '$n — $s' : n,
                         style: const TextStyle(
                             fontSize: 15, letterSpacing: 0.2),
                         overflow: TextOverflow.ellipsis));
@@ -836,7 +1145,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
         onChanged: widget.classes.isEmpty
             ? null
             : (v) {
-                if (v != null) setState(() => _data['class_id'] = v);
+                if (v != null)
+                  setState(() => _data['class_id'] = v);
               },
         onSaved: (v) {
           if (v != null) _data['class_id'] = v;

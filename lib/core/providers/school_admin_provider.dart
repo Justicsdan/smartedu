@@ -76,15 +76,21 @@ class SchoolAdminProvider extends BaseProvider
   }
 
   List<Map<String, dynamic>> getEffectiveGradingForTier(String tier) {
+    // American standard overrides everything
+    final standard = (schoolSettings?['grading_standard'] ?? '').toString().toLowerCase();
+    if (standard == 'american') return GradingUtils.getDefaultGradingSystem('AMERICAN');
     final override = getTierGradingOverride(tier);
     if (override.isNotEmpty) return override;
-    return GradingUtils.getDefaultGradingSystem(_defaultTemplateForTier(tier));
+    return GradingUtils.getGradingSystemForTier(tier, schoolSettings ?? {});
   }
 
   List<Map<String, dynamic>> getEffectiveAssessmentForTier(String tier) {
+    // American standard overrides everything
+    final standard = (schoolSettings?['grading_standard'] ?? '').toString().toLowerCase();
+    if (standard == 'american') return GradingUtils.getDefaultAssessmentTypes('AMERICAN');
     final override = getTierAssessmentOverride(tier);
     if (override.isNotEmpty) return override;
-    return GradingUtils.getDefaultAssessmentTypes(_defaultTemplateForTier(tier));
+    return GradingUtils.getAssessmentTypesForTier(tier, schoolSettings ?? {});
   }
 
   bool hasTierGradingOverride(String tier) => schoolSettings?[_gradingKey(tier)] != null;
@@ -139,6 +145,113 @@ class SchoolAdminProvider extends BaseProvider
     } catch (e) {
       debugPrint('Error resetting tier: $e');
       return false;
+    }
+  }
+
+  Future<bool> updateGradingStandard(String standard) async {
+    if (schoolId.isEmpty) return false;
+    try {
+      await supabase.from('school_settings').update({
+        'grading_standard': standard,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('school_id', schoolId);
+      logAudit(action: 'update', tableName: 'school_settings', newData: {'grading_standard': standard});
+      if (schoolSettings != null) {
+        schoolSettings!['grading_standard'] = standard;
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error updating grading standard: $e');
+      return false;
+    }
+  }
+
+  // ==========================================
+  // BEHAVIORAL RATINGS (11 Nigerian Standard)
+  // ==========================================
+
+  /// Save behavioral ratings for a student for a session/term.
+  /// ratingsMap keys must match GradingUtils.behavioralFieldKeys.
+  Future<bool> saveBehavioralRatings({
+    required String studentId,
+    required String classId,
+    required String sessionId,
+    required String termId,
+    required Map<String, String> ratingsMap,
+  }) async {
+    if (schoolId.isEmpty) return false;
+    try {
+      // Upsert: check if exists
+      final existing = await supabase
+          .from('student_behavioural_ratings')
+          .select('id')
+          .eq('school_id', schoolId)
+          .eq('student_id', studentId)
+          .eq('class_id', classId)
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .maybeSingle();
+
+      final data = <String, dynamic>{
+        'school_id': schoolId,
+        'student_id': studentId,
+        'class_id': classId,
+        'session_id': sessionId,
+        'term_id': termId,
+        'recorded_by': currentUserId,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      data.addAll(ratingsMap);
+
+      if (existing != null) {
+        await supabase
+            .from('student_behavioural_ratings')
+            .update(data)
+            .eq('id', existing['id']);
+      } else {
+        await supabase
+            .from('student_behavioural_ratings')
+            .insert(data);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error saving behavioral ratings: $e');
+      return false;
+    }
+  }
+
+  /// Load behavioral ratings for a student for a session/term.
+  /// Returns a map of field_key -> rating value, or empty map if none.
+  Future<Map<String, String>> loadBehavioralRatings({
+    required String studentId,
+    required String sessionId,
+    required String termId,
+  }) async {
+    if (schoolId.isEmpty) return {};
+    try {
+      final row = await supabase
+          .from('student_behavioural_ratings')
+          .select()
+          .eq('school_id', schoolId)
+          .eq('student_id', studentId)
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .maybeSingle();
+
+      if (row == null) return {};
+
+      final result = <String, String>{};
+      for (final key in GradingUtils.behavioralFieldKeys) {
+        final val = row[key];
+        if (val != null && val.toString().isNotEmpty) {
+          result[key] = val.toString();
+        }
+      }
+      return result;
+    } catch (e) {
+      debugPrint('Error loading behavioral ratings: $e');
+      return {};
     }
   }
 

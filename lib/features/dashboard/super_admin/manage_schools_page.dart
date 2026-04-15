@@ -1,8 +1,11 @@
+// ==========================================
+// File: lib/features/dashboard/super_admin/manage_schools_page.dart
+// ==========================================
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/super_admin_provider.dart';
-import 'package:smartedu/core/school_model.dart'; // REVERTED to core import to match provider
+import 'package:smartedu/core/school_model.dart';
 
 class ManageSchoolsPage extends StatefulWidget {
   const ManageSchoolsPage({super.key});
@@ -23,20 +26,16 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     final input = html.FileUploadInputElement();
     input.accept = 'image/*';
     input.click();
-
     input.onChange.listen((event) {
       final files = input.files;
       if (files == null || files.isEmpty) return;
-
       final file = files.first;
       final reader = html.FileReader();
-
       reader.onLoadEnd.listen((event) {
         setState(() {
           _logoBase64 = reader.result as String;
         });
       });
-
       reader.readAsDataUrl(file);
     });
   }
@@ -51,126 +50,169 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSt) => AlertDialog(
-          title: const Text("Register New School"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+        builder: (context, setSt) {
+          String? dialogError;
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            title: Row(
               children: [
-                GestureDetector(
-                  onTap: _pickLogo,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(60),
-                      border: Border.all(color: Colors.grey.shade300, width: 2),
-                    ),
-                    child: _logoBase64.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(60),
-                            child: Image.network(_logoBase64, fit: BoxFit.cover),
-                          )
-                        : const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text("Upload Logo", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
-                          ),
-                  ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.domain_add_rounded, size: 22, color: Color(0xFF1A237E)),
                 ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: "School Name",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.school, color: Color(0xFF1E3C72)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(
-                    labelText: "Location/Address",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on, color: Color(0xFF1E3C72)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _whatsappController,
-                  decoration: const InputDecoration(
-                    labelText: "WhatsApp Number",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.chat, color: Color(0xFF25D366)),
-                    hintText: "+234 xxx xxx xxxx",
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _schoolType,
-                  decoration: const InputDecoration(
-                    labelText: "School Type",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category, color: Color(0xFF1E3C72)),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'primary', child: Text('Primary')),
-                    DropdownMenuItem(value: 'secondary', child: Text('Secondary')),
-                    DropdownMenuItem(value: 'both', child: Text('Primary & Secondary')),
-                  ],
-                  onChanged: (v) => setSt(() => _schoolType = v!),
-                ),
+                const SizedBox(width: 12),
+                const Text("Register New School", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text("Cancel"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (dialogError != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFECACA))),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, size: 18, color: Color(0xFFDC2626)),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(dialogError, style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626), height: 1.3))),
+                        ],
+                      ),
+                    ),
+                  GestureDetector(
+                    onTap: _pickLogo,
+                    child: Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFBFC),
+                        borderRadius: BorderRadius.circular(55),
+                        border: Border.all(color: const Color(0xFFE8EAED), width: 2),
+                      ),
+                      child: _logoBase64.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(55),
+                              child: Image.network(_logoBase64, fit: BoxFit.cover),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt_rounded, size: 32, color: Colors.grey.shade400),
+                                const SizedBox(height: 6),
+                                Text("Upload Logo", style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _nameController,
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF111827)),
+                    decoration: InputDecoration(
+                      labelText: "School Name",
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE0E0E0))),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E))),
+                      prefixIcon: const Icon(Icons.school_rounded, color: Color(0xFF1A237E)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _locationController,
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF111827)),
+                    decoration: InputDecoration(
+                      labelText: "Location / Address",
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE0E0E0))),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E))),
+                      prefixIcon: const Icon(Icons.location_on_rounded, color: Color(0xFF1A237E)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _whatsappController,
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF111827)),
+                    decoration: InputDecoration(
+                      labelText: "WhatsApp Number",
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE0E0E0))),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32))),
+                      prefixIcon: const Icon(Icons.chat_rounded, color: Color(0xFF2E7D32)),
+                      hintText: "+234 xxx xxx xxxx",
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _schoolType,
+                    decoration: InputDecoration(
+                      labelText: "School Type",
+                      labelStyle: TextStyle(color: Colors.grey.shade600),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE0E0E0))),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E))),
+                      prefixIcon: const Icon(Icons.category_rounded, color: Color(0xFF1A237E)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'primary', child: Text('Primary')),
+                      DropdownMenuItem(value: 'secondary', child: Text('Secondary')),
+                      DropdownMenuItem(value: 'both', child: Text('Primary & Secondary')),
+                    ],
+                    onChanged: (v) => setSt(() => _schoolType = v!),
+                  ),
+                ],
+              ),
             ),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : () async {
-                if (_nameController.text.isEmpty || _locationController.text.isEmpty) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text("Please fill required fields"), backgroundColor: Colors.red),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: _isSubmitting ? null : () async {
+                  if (_nameController.text.isEmpty || _locationController.text.isEmpty) {
+                    setSt(() => dialogError = 'School name and location are required.');
+                    return;
+                  }
+                  setSt(() => _isSubmitting = true);
+                  final provider = context.read<SuperAdminProvider>();
+                  final result = await provider.addSchool(
+                    name: _nameController.text.trim(),
+                    location: _locationController.text.trim(),
+                    schoolType: _schoolType,
+                    logoUrl: _logoBase64,
+                    whatsapp: _whatsappController.text.trim(),
                   );
-                  return;
-                }
-
-                setSt(() => _isSubmitting = true);
-
-                final provider = context.read<SuperAdminProvider>();
-                final result = await provider.addSchool(
-                  name: _nameController.text.trim(),
-                  location: _locationController.text.trim(),
-                  schoolType: _schoolType,
-                  logoUrl: _logoBase64,
-                  whatsapp: _whatsappController.text.trim(),
-                );
-
-                Navigator.pop(ctx);
-
-                if (result != null) {
-                  _showCredentialsDialog(result['username']!, result['password']!);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Failed to register school"), backgroundColor: Colors.red),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3C72)),
-              child: _isSubmitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text("Register", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
+                  Navigator.pop(ctx);
+                  if (result != null) {
+                    _showCredentialsDialog(result['username']!, result['password']!);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: const Text("Failed to register school"), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                child: _isSubmitting
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("Register", style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -179,34 +221,65 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("School Registered!"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.check_circle_rounded, size: 22, color: Color(0xFF2E7D32)),
+            ),
+            const SizedBox(width: 12),
+            const Text("School Registered!", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, size: 60, color: Colors.green),
-            const SizedBox(height: 16),
-            const Text("Save these credentials for the school admin:"),
+            const Text("Save these credentials for the school admin:", style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAF6))),
               child: Column(
                 children: [
-                  const Text("Username:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(username, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1E3C72))),
-                  const Divider(),
-                  const Text("Password:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(password, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1E3C72))),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      const Text("Username", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(username, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFE8EAF6)),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      const Text("Password", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(password, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Close")),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+            child: const Text("Done", style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
@@ -214,48 +287,80 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
 
   void _showLoginDialog(School school) {
     final logoUrl = school.logoUrl;
+    final logoValid = logoUrl != null && logoUrl.isNotEmpty;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("School Admin Login"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.key_rounded, size: 22, color: Color(0xFFF57F17)),
+            ),
+            const SizedBox(width: 12),
+            const Text("Admin Login Credentials", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (logoUrl != null && logoUrl.isNotEmpty)
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: NetworkImage(logoUrl),
+            if (logoValid)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: CircleAvatar(
+                  radius: 36,
+                  backgroundColor: const Color(0xFFF0F4FF),
+                  backgroundImage: NetworkImage(logoUrl),
+                  onBackgroundImageError: (_, __) {},
+                ),
               ),
-            const SizedBox(height: 16),
-            Text(school.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(school.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: const Color(0xFFFAFBFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
               child: Column(
                 children: [
-                  const Text("Username:"),
-                  Text(
-                    school.adminUsername ?? 'N/A',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3C72)),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      const Text("Username", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  const Text("Password:"),
-                  Text(
-                    school.adminPassword ?? 'N/A',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3C72)),
+                  const SizedBox(height: 4),
+                  Text(school.adminUsername ?? 'N/A', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFE8EAED)),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      const Text("Password", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                    ],
                   ),
+                  const SizedBox(height: 4),
+                  Text(school.adminPassword ?? 'N/A', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Close")),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+            child: const Text("Close", style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
@@ -265,20 +370,40 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Delete School"),
-        content: Text("Are you sure you want to delete \"${school.name}\"?"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        title: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.delete_outline_rounded, size: 22, color: Color(0xFFD32F2F)),
+            ),
+            const SizedBox(width: 12),
+            const Text("Delete School", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
+          ],
+        ),
+        content: Text('Are you sure you want to delete "${school.name}"? This action cannot be undone.', style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+            child: const Text("Cancel"),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
             onPressed: () async {
               Navigator.pop(ctx);
               await context.read<SuperAdminProvider>().deleteSchool(school.id);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${school.name} deleted"), backgroundColor: Colors.red),
+                SnackBar(content: Text("${school.name} deleted"), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
               );
             },
-            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+            child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -296,58 +421,119 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Schools"),
-        backgroundColor: const Color(0xFF1E3C72),
-        foregroundColor: Colors.white,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddDialog,
-        backgroundColor: const Color(0xFF1E3C72),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Register School", style: TextStyle(color: Colors.white)),
-      ),
-      body: Consumer<SuperAdminProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading && provider.schools.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (provider.schools.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.school_outlined, size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text("No schools registered yet", style: TextStyle(fontSize: 16, color: Colors.grey)),
-                ],
+      backgroundColor: const Color(0xFFF7F8FA),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF111827)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.domain_rounded, size: 20, color: Color(0xFF1A237E)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Manage Schools', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF111827), letterSpacing: -0.5)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          Expanded(
+            child: Consumer<SuperAdminProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading && provider.schools.isEmpty) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF1A237E)));
+                }
+                if (provider.schools.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(18)),
+                          child: const Icon(Icons.school_rounded, size: 32, color: Color(0xFF9CA3AF)),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('No schools registered yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                        const SizedBox(height: 6),
+                        Text('Tap "Register School" to add your first school.', style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
+                      ],
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  itemCount: provider.schools.length,
+                  itemBuilder: (context, index) {
+                    return _SchoolCard(
+                      school: provider.schools[index],
+                      index: index,
+                      onToggleStatus: () => provider.toggleSchoolStatus(provider.schools[index].id),
+                      onTogglePayment: () => provider.togglePaymentStatus(provider.schools[index].id),
+                      onViewLogin: () => _showLoginDialog(provider.schools[index]),
+                      onDelete: () => _confirmDelete(provider.schools[index]),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.3), blurRadius: 14, offset: const Offset(0, 5))],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: _showAddDialog,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(width: 16),
+                        Icon(Icons.add, color: Colors.white, size: 22),
+                        SizedBox(width: 8),
+                        Text('Register School', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                        SizedBox(width: 16),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: provider.schools.length,
-            itemBuilder: (context, index) {
-              final school = provider.schools[index];
-              return _SchoolCard(
-                school: school,
-                onToggleStatus: () => provider.toggleSchoolStatus(school.id),
-                onTogglePayment: () => provider.togglePaymentStatus(school.id),
-                onViewLogin: () => _showLoginDialog(school),
-                onDelete: () => _confirmDelete(school),
-              );
-            },
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SchoolCard extends StatelessWidget {
+class _SchoolCard extends StatefulWidget {
   final School school;
+  final int index;
   final VoidCallback onToggleStatus;
   final VoidCallback onTogglePayment;
   final VoidCallback onViewLogin;
@@ -355,23 +541,30 @@ class _SchoolCard extends StatelessWidget {
 
   const _SchoolCard({
     required this.school,
+    required this.index,
     required this.onToggleStatus,
     required this.onTogglePayment,
     required this.onViewLogin,
     required this.onDelete,
   });
 
-  // Fixed: Use string parsing to avoid enum conflict between core and models files
-  String get _typeString => school.schoolType.toString().split('.').last.toLowerCase();
+  @override
+  State<_SchoolCard> createState() => _SchoolCardState();
+}
+
+class _SchoolCardState extends State<_SchoolCard> {
+  bool _hovered = false;
+
+  String get _typeString => widget.school.schoolType.toString().split('.').last.toLowerCase();
 
   Color get _typeColor {
     switch (_typeString) {
       case 'primary':
-        return Colors.blue;
+        return const Color(0xFF0984E3);
       case 'secondary':
-        return Colors.purple;
+        return const Color(0xFF6C5CE7);
       default:
-        return Colors.grey;
+        return const Color(0xFF6B7280);
     }
   }
 
@@ -380,120 +573,170 @@ class _SchoolCard extends StatelessWidget {
     return name.isEmpty ? '' : '${name[0].toUpperCase()}${name.substring(1)}';
   }
 
-  // Fixed: Avoid importing the second School model by checking string status
   bool get _isPaid {
-    final statusStr = school.subscriptionStatus.toString().split('.').last.toLowerCase();
+    final statusStr = widget.school.subscriptionStatus.toString().split('.').last.toLowerCase();
     return statusStr == 'active';
   }
 
   @override
   Widget build(BuildContext context) {
-    final logoUrl = school.logoUrl;
-    final whatsapp = school.whatsapp;
+    final logoUrl = widget.school.logoUrl;
+    final logoValid = logoUrl != null && logoUrl.isNotEmpty;
+    final whatsapp = widget.school.whatsapp;
 
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: _hovered ? _typeColor.withOpacity(0.02) : (widget.index.isEven ? Colors.white : const Color(0xFFFAFBFC)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _hovered ? _typeColor.withOpacity(0.25) : const Color(0xFFE8EAED)),
+          boxShadow: _hovered ? [BoxShadow(color: _typeColor.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4))] : [],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: _typeColor.withOpacity(0.1),
-                  backgroundImage: (logoUrl != null && logoUrl.isNotEmpty) ? NetworkImage(logoUrl) : null,
-                  child: (logoUrl == null || logoUrl.isEmpty) ? Icon(Icons.school, size: 30, color: _typeColor) : null,
+                Container(
+                  width: 4,
+                  height: 52,
+                  decoration: BoxDecoration(color: _typeColor, borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _typeColor.withOpacity(0.2)),
+                  ),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: _typeColor.withOpacity(0.05),
+                    backgroundImage: logoValid ? NetworkImage(logoUrl) : null,
+                    onBackgroundImageError: logoValid ? (_, __) {} : null,
+                    child: logoValid ? null : Icon(Icons.school_rounded, size: 22, color: _typeColor.withOpacity(0.5)),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(school.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E3C72))),
-                      const SizedBox(height: 4),
-                      Row(
+                      Text(widget.school.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 4,
                         children: [
-                          const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              school.location ?? '',
-                              style: const TextStyle(fontSize: 13, color: Colors.grey),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.location_on_outlined, size: 12, color: Colors.grey.shade400),
+                              const SizedBox(width: 3),
+                              Flexible(child: Text(widget.school.location ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade500), overflow: TextOverflow.ellipsis)),
+                            ],
                           ),
+                          if (whatsapp != null && whatsapp.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.chat_rounded, size: 12, color: const Color(0xFF25D366)),
+                                const SizedBox(width: 3),
+                                Text(whatsapp, style: const TextStyle(fontSize: 12, color: Color(0xFF25D366), fontWeight: FontWeight.w500)),
+                              ],
+                            ),
                         ],
                       ),
-                      if (whatsapp != null && whatsapp.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(Icons.chat, size: 14, color: Color(0xFF25D366)),
-                            const SizedBox(width: 4),
-                            Text(whatsapp, style: const TextStyle(fontSize: 13, color: Color(0xFF25D366), fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: _typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text(_typeLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _typeColor)),
-                ),
+                if (_typeLabel.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: _typeColor.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                    child: Text(_typeLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _typeColor)),
+                  ),
               ],
             ),
             const SizedBox(height: 14),
             Row(
               children: [
                 GestureDetector(
-                  onTap: onToggleStatus,
+                  onTap: widget.onToggleStatus,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: (school.isActive ? Colors.green : Colors.red).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      color: (widget.school.isActive ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F)).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.circle, size: 8, color: school.isActive ? Colors.green : Colors.red),
-                        const SizedBox(width: 4),
-                        Text(school.isActive ? "Active" : "Inactive", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: school.isActive ? Colors.green : Colors.red)),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: widget.school.isActive ? const Color(0xFF4ADE80) : const Color(0xFFEF5350),
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: (widget.school.isActive ? const Color(0xFF4ADE80) : const Color(0xFFEF5350)).withOpacity(0.4), blurRadius: 4)],
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(widget.school.isActive ? "Active" : "Inactive", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: widget.school.isActive ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F))),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: onTogglePayment,
+                  onTap: widget.onTogglePayment,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: (_isPaid ? Colors.green : Colors.orange).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      color: (_isPaid ? const Color(0xFF2E7D32) : const Color(0xFFE65100)).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.circle, size: 8, color: _isPaid ? Colors.green : Colors.orange),
+                        Icon(Icons.account_balance_wallet_outlined, size: 13, color: _isPaid ? const Color(0xFF2E7D32) : const Color(0xFFE65100)),
                         const SizedBox(width: 4),
-                        Text(_isPaid ? "Paid" : "Unpaid", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _isPaid ? Colors.green : Colors.orange)),
+                        Text(_isPaid ? "Paid" : "Unpaid", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _isPaid ? const Color(0xFF2E7D32) : const Color(0xFFE65100))),
                       ],
                     ),
                   ),
                 ),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.key, size: 20), tooltip: "View Login", onPressed: onViewLogin),
-                IconButton(icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red), tooltip: "Delete", onPressed: onDelete),
+                _actionBtn(Icons.key_rounded, 'View Login', const Color(0xFFF57F17), widget.onViewLogin),
+                const SizedBox(width: 6),
+                _actionBtn(Icons.delete_outline_rounded, 'Delete', const Color(0xFFD32F2F), widget.onDelete),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String tooltip, Color color, VoidCallback onTap) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 150),
+      opacity: _hovered ? 1.0 : 0.55,
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: IconButton(
+          icon: Icon(icon, size: 18, color: _hovered ? color : Colors.grey.shade400),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          tooltip: tooltip,
+          onPressed: onTap,
         ),
       ),
     );

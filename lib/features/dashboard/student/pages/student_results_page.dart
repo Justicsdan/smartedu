@@ -21,32 +21,80 @@ class StudentResultsPage extends StatefulWidget {
 class _StudentResultsPageState extends State<StudentResultsPage> {
   bool _isGeneratingPdf = false;
   Map<String, dynamic>? _termComment;
+  Map<String, String>? _behavioralRatings;
   bool _commentsLoaded = false;
+
+  static const List<String> _bKeys = [
+    'punctuality', 'relationship_with_others', 'attendance_in_class', 'games_sports',
+    'attentiveness_in_class', 'handling_tools_lab_workshops', 'carrying_out_assignments',
+    'participation_in_school_activities', 'neatness', 'honesty', 'self_control',
+  ];
+
+  static const List<String> _bLabels = [
+    'Punctuality', 'Relationship with Others', 'Attendance in Class', 'Games/Sports',
+    'Attentiveness in Class', 'Handling of Tools, Lab & Workshops', 'Carrying out Assignments',
+    'Participation in School Activities', 'Neatness', 'Honesty', 'Self-Control',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadTermComments();
+    _loadCommentsAndRatings();
   }
 
-  Future<void> _loadTermComments() async {
+  Future<void> _loadCommentsAndRatings() async {
     try {
       final provider = context.read<StudentProvider>();
-      if (provider.currentSessionId == null || provider.currentTermId == null) return;
-      final r = await Supabase.instance.client
-          .from('term_comments')
-          .select()
-          .eq('school_id', provider.schoolId)
-          .eq('student_id', provider.studentId)
-          .eq('session_id', provider.currentSessionId!)
-          .eq('term_id', provider.currentTermId!)
-          .maybeSingle();
-      if (mounted) setState(() {
-        _termComment = r != null ? Map<String, dynamic>.from(r) : null;
-        _commentsLoaded = true;
-      });
+      if (provider.currentSessionId == null || provider.currentTermId == null) {
+        if (mounted) setState(() => _commentsLoaded = true);
+        return;
+      }
+      final sid = provider.schoolId;
+      final stid = provider.studentId;
+      final sesid = provider.currentSessionId!;
+      final tid = provider.currentTermId!;
+
+      final results = await Future.wait([
+        Supabase.instance.client
+            .from('term_comments')
+            .select()
+            .eq('school_id', sid)
+            .eq('student_id', stid)
+            .eq('session_id', sesid)
+            .eq('term_id', tid)
+            .maybeSingle(),
+        Supabase.instance.client
+            .from('student_behavioural_ratings')
+            .select()
+            .eq('school_id', sid)
+            .eq('student_id', stid)
+            .eq('session_id', sesid)
+            .eq('term_id', tid)
+            .maybeSingle(),
+      ]);
+
+      final comment = results[0] != null ? Map<String, dynamic>.from(results[0] as Map) : null;
+      final rating = results[1] != null ? Map<String, dynamic>.from(results[1] as Map) : null;
+
+      Map<String, String>? ratings;
+      if (rating != null) {
+        ratings = {};
+        for (final key in _bKeys) {
+          final val = (rating[key] ?? '').toString().trim();
+          if (val.isNotEmpty) ratings[key] = val;
+        }
+        if (ratings.isEmpty) ratings = null;
+      }
+
+      if (mounted) {
+        setState(() {
+          _termComment = comment;
+          _behavioralRatings = ratings;
+          _commentsLoaded = true;
+        });
+      }
     } catch (e) {
-      debugPrint('Error loading term comments: $e');
+      debugPrint('Error loading comments/ratings: $e');
       if (mounted) setState(() => _commentsLoaded = true);
     }
   }
@@ -113,6 +161,19 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       final headerTextColor = _hexToPdf(provider.headerTextColor);
 
       final pdf = pw.Document(theme: pw.ThemeData.withFont(base: pw.Font.helvetica()));
+
+      // Build behavioral rating rows for PDF (2-column layout)
+      List<pw.TableRow> behavioralRows = [];
+      for (int i = 0; i < _bKeys.length; i += 2) {
+        final cells = <pw.Widget>[];
+        cells.add(_pdfBehavioralCell(_bLabels[i], _behavioralRatings?[_bKeys[i]]));
+        if (i + 1 < _bKeys.length) {
+          cells.add(_pdfBehavioralCell(_bLabels[i + 1], _behavioralRatings?[_bKeys[i + 1]]));
+        } else {
+          cells.add(pw.SizedBox());
+        }
+        behavioralRows.add(pw.TableRow(children: cells));
+      }
 
       pdf.addPage(
         pw.MultiPage(
@@ -347,6 +408,31 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               ),
             ),
 
+            // BEHAVIORAL RATINGS (11 Nigerian standard fields)
+            if (_behavioralRatings != null && _behavioralRatings!.isNotEmpty) ...[
+              pw.SizedBox(height: 10),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400), borderRadius: pw.BorderRadius.circular(4)),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Behavioral Ratings', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                    pw.SizedBox(height: 6),
+                    pw.Table(
+                      columnWidths: const {
+                        0: pw.FlexColumnWidth(3),
+                        1: pw.FlexColumnWidth(2),
+                        2: pw.FlexColumnWidth(3),
+                        3: pw.FlexColumnWidth(2),
+                      },
+                      children: behavioralRows,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // COMMENTS
             if (_termComment != null) ...[
               pw.SizedBox(height: 10),
@@ -368,30 +454,6 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                       pw.Text((_termComment!['principal_comment'] ?? '').toString(), style: const pw.TextStyle(fontSize: 8)),
                       pw.SizedBox(height: 6),
                     ],
-                  ],
-                ),
-              ),
-
-              // BEHAVIORAL
-              pw.SizedBox(height: 8),
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400), borderRadius: pw.BorderRadius.circular(4)),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Behavioral Ratings', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-                    pw.SizedBox(height: 6),
-                    pw.Wrap(
-                      spacing: 20,
-                      runSpacing: 4,
-                      children: [
-                        _behavioralItem('Conduct', _termComment!['conduct']),
-                        _behavioralItem('Attitude', _termComment!['attitude']),
-                        _behavioralItem('Interest', _termComment!['interest']),
-                        _behavioralItem('Attendance', _termComment!['attendance_remark']),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -492,15 +554,16 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     );
   }
 
-  static pw.Widget _behavioralItem(String label, dynamic value) {
+  static pw.Widget _pdfBehavioralCell(String label, String? value) {
     final v = (value ?? '').toString();
-    if (v.isEmpty) return pw.SizedBox.shrink();
-    return pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      children: [
-        pw.Text('$label: ', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-        pw.Text(v, style: const pw.TextStyle(fontSize: 8)),
-      ],
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+      child: pw.Row(
+        children: [
+          pw.Text('$label: ', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+          pw.Text(v.isEmpty ? '-' : v, style: pw.TextStyle(fontSize: 7.5, fontWeight: v.isEmpty ? pw.FontWeight.normal : pw.FontWeight.bold)),
+        ],
+      ),
     );
   }
 
@@ -696,10 +759,16 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
             const SizedBox(height: 24),
 
-            if (_termComment != null) _buildBehavioralSection(_termComment!),
+            // BEHAVIORAL RATINGS — 11 Nigerian standard fields
+            if (_behavioralRatings != null && _behavioralRatings!.isNotEmpty)
+              _buildBehavioralSection(),
             const SizedBox(height: 16),
+
+            // COMMENTS
             if (_termComment != null) _buildCommentsSection(_termComment!),
             const SizedBox(height: 16),
+
+            // GRADING KEY
             _buildGradingKey(gradingSystem),
           ],
         ],
@@ -707,16 +776,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     );
   }
 
-  Widget _buildBehavioralSection(Map<String, dynamic> comment) {
-    final fields = [
-      {'key': 'conduct', 'label': 'Conduct', 'icon': Icons.star_outline},
-      {'key': 'attitude', 'label': 'Attitude', 'icon': Icons.emoji_emotions_outlined},
-      {'key': 'interest', 'label': 'Interest', 'icon': Icons.lightbulb_outline},
-      {'key': 'attendance_remark', 'label': 'Attendance', 'icon': Icons.schedule},
-    ];
-    final hasAny = fields.any((f) => (comment[f['key']] ?? '').toString().isNotEmpty);
-    if (!hasAny) return const SizedBox.shrink();
-
+  Widget _buildBehavioralSection() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
@@ -731,33 +791,54 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             ],
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: fields.map((f) {
-              final value = (comment[f['key']] ?? '').toString();
+          ...List.generate((_bKeys.length / 2).ceil(), (rowIdx) {
+            final startIdx = rowIdx * 2;
+            final endIdx = (startIdx + 2).clamp(0, _bKeys.length);
+            final rowItems = List.generate(endIdx - startIdx, (i) {
+              final idx = startIdx + i;
+              final key = _bKeys[idx];
+              final label = _bLabels[idx];
+              final value = _behavioralRatings?[key] ?? '';
               if (value.isEmpty) return const SizedBox.shrink();
               final color = _getBehavioralColor(value);
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.25))),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(f['icon'] as IconData, size: 18, color: color),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i == 0 ? 8 : 0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: color.withOpacity(0.25)),
+                    ),
+                    child: Row(
                       children: [
-                        Text(f['label'] as String, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
-                        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                              const SizedBox(height: 3),
+                              Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               );
-            }).toList(),
-          ),
+            });
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: rowItems),
+            );
+          }),
         ],
       ),
     );

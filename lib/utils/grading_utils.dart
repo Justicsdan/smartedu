@@ -7,22 +7,27 @@
 class GradingUtils {
 
   // =========================================================
-  // BEHAVIORAL RATING FIELDS
-  // Used by teacher_enter_scores.dart for student behavior ratings.
+  // BEHAVIORAL RATING FIELDS (Nigerian Standard — 11 Ratings)
+  // Used on report cards per student per term (NOT per-subject).
+  // Entered by form teacher when publishing results.
   // =========================================================
 
-  /// Standard behavioral field keys used on report cards.
+  /// DB column names for the 11 Nigerian standard behavioral ratings.
   static const List<String> behavioralFieldKeys = [
-    'attitude',
-    'interest',
-    'conduct',
     'punctuality',
+    'relationship_with_others',
+    'attendance_in_class',
+    'games_sports',
+    'attentiveness_in_class',
+    'handling_tools_lab_workshops',
+    'carrying_out_assignments',
+    'participation_in_school_activities',
     'neatness',
-    'relationship',
+    'honesty',
+    'self_control',
   ];
 
-  /// Default behavioral rating options.
-  /// Each option has a value and label for dropdown display.
+  /// Rating options for each behavioral field.
   static const List<Map<String, dynamic>> defaultBehavioralOptions = [
     {'value': 'Excellent', 'label': 'Excellent'},
     {'value': 'Very Good', 'label': 'Very Good'},
@@ -31,14 +36,20 @@ class GradingUtils {
     {'value': 'Poor', 'label': 'Poor'},
   ];
 
-  /// Human-readable labels for behavioral field keys.
+  /// Human-readable labels for display on result sheets.
+  /// Keys match the DB column names exactly.
   static const Map<String, String> behavioralFieldLabels = {
-    'attitude': 'Attitude to Learning',
-    'interest': 'Interest in Studies',
-    'conduct': 'Conduct',
     'punctuality': 'Punctuality',
+    'relationship_with_others': 'Relationship with Others',
+    'attendance_in_class': 'Attendance in Class',
+    'games_sports': 'Games/Sports',
+    'attentiveness_in_class': 'Attentiveness in Class',
+    'handling_tools_lab_workshops': 'Handling of Tools, Lab. & Workshops',
+    'carrying_out_assignments': 'Carrying out Assignments',
+    'participation_in_school_activities': 'Participation in School Activities',
     'neatness': 'Neatness',
-    'relationship': 'Relationship with Others',
+    'honesty': 'Honesty',
+    'self_control': 'Self-Control',
   };
 
   /// Get the display label for a behavioral field key.
@@ -293,6 +304,12 @@ class GradingUtils {
     String tier,
     Map<String, dynamic> schoolSettings,
   ) {
+    // Grading standard override: American uses same grades for all tiers
+    final standard = (schoolSettings['grading_standard'] ?? '').toString().toLowerCase();
+    if (standard == 'american') {
+      return getDefaultGradingSystem('AMERICAN');
+    }
+    // Nigerian standard: tier-based
     switch (tier.toUpperCase()) {
       case 'JSS':
         final override = schoolSettings['grading_system_jss'];
@@ -322,6 +339,12 @@ class GradingUtils {
     String tier,
     Map<String, dynamic> schoolSettings,
   ) {
+    // Grading standard override: American uses same assessment for all tiers
+    final standard = (schoolSettings['grading_standard'] ?? '').toString().toLowerCase();
+    if (standard == 'american') {
+      return getDefaultAssessmentTypes('AMERICAN');
+    }
+    // Nigerian standard: tier-based
     switch (tier.toUpperCase()) {
       case 'JSS':
         final override = schoolSettings['assessment_types_jss'];
