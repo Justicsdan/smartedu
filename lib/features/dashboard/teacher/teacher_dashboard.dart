@@ -11,6 +11,7 @@ import 'pages/teacher_enter_scores.dart';
 import 'pages/teacher_my_students.dart';
 import 'pages/teacher_assignments.dart';
 import 'pages/teacher_results.dart';
+import 'pages/teacher_attendance.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final Map<String, dynamic>? teacherData;
@@ -52,6 +53,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     if (isFormMaster) {
       items.add(const _NavItem(id: 'form_class', icon: Icons.class_rounded, label: 'My Class'));
       items.add(const _NavItem(id: 'form_students', icon: Icons.people_rounded, label: 'My Students'));
+      items.add(const _NavItem(id: 'attendance', icon: Icons.fact_check_rounded, label: 'Attendance'));
     }
 
     if (isFormMaster && isSubjectTeacher) {
@@ -305,27 +307,45 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             Consumer<TeacherProvider>(
               builder: (context, p, _) {
                 if (p.terms.isEmpty) return const SizedBox.shrink();
-                return Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D47A1).withOpacity(0.1),
+                final currentName = p.currentTerm?['name'] ?? 'Term';
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButton<String>(
-                    value: p.currentTerm?['id'] as String?,
-                    underline: const SizedBox(),
-                    isDense: true,
-                    items: p.terms.map((t) => DropdownMenuItem<String>(
-                      value: t['id'] as String?,
-                      child: Text('${t['name']}', style: const TextStyle(fontSize: 12, color: Color(0xFF0D47A1))),
-                    )).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        p.setCurrentTerm(value);
-                        _setRoleDefault(p);
-                      }
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => _TermPickerDialog(
+                          terms: p.terms,
+                          currentId: p.currentTerm?['id'] as String?,
+                          onPick: (v) {
+                            Navigator.pop(ctx);
+                            if (v != null) {
+                              p.setCurrentTerm(v);
+                              _setRoleDefault(p);
+                            }
+                          },
+                        ),
+                      );
                     },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D47A1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.calendar_today, size: 14, color: Color(0xFF0D47A1)),
+                          const SizedBox(width: 6),
+                          Text(currentName, style: const TextStyle(fontSize: 12, color: Color(0xFF0D47A1), fontWeight: FontWeight.w500)),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF0D47A1)),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -367,6 +387,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         return const TeacherMyClassesPage();
       case 'form_students':
         return const TeacherMyStudentsPage();
+      case 'attendance':
+        return const TeacherAttendancePage();
       case 'my_classes':
         return const TeacherMyClassesPage();
       case 'enter_scores':
@@ -570,27 +592,32 @@ class _TeacherHomePage extends StatelessWidget {
             ),
 
           if (isSubjectTeacher || isFormMaster)
-            GridView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.3,
-              ),
-              children: [
-                if (isSubjectTeacher)
-                  _StatCard(title: "Subjects", value: "$assignedCount", icon: Icons.menu_book_rounded, gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)])),
-                _StatCard(title: "Classes", value: "$classCount", icon: Icons.class_rounded, gradient: const LinearGradient(colors: [Color(0xFFE65100), Color(0xFFFF8A65)])),
-                _StatCard(title: "Students", value: "$studentCount", icon: Icons.people_rounded, gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)])),
-                _StatCard(
-                  title: "Form Master",
-                  value: isFormMaster ? "Yes" : "No",
-                  icon: Icons.supervisor_account_rounded,
-                  gradient: LinearGradient(colors: isFormMaster ? [Color(0xFF00695C), Color(0xFF4DB6AC)] : [Color(0xFF757575), Color(0xFFBDBDBD)]),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossCount = constraints.maxWidth > 600 ? 4 : 2;
+                return GridView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: crossCount == 4 ? 1.05 : 1.4,
+                  ),
+                  children: [
+                    if (isSubjectTeacher)
+                      _StatCard(title: "Subjects", value: "$assignedCount", icon: Icons.menu_book_rounded, gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)])),
+                    _StatCard(title: "Classes", value: "$classCount", icon: Icons.class_rounded, gradient: const LinearGradient(colors: [Color(0xFFE65100), Color(0xFFFF8A65)])),
+                    _StatCard(title: "Students", value: "$studentCount", icon: Icons.people_rounded, gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)])),
+                    _StatCard(
+                      title: "Form Master",
+                      value: isFormMaster ? "Yes" : "No",
+                      icon: Icons.supervisor_account_rounded,
+                      gradient: LinearGradient(colors: isFormMaster ? [Color(0xFF00695C), Color(0xFF4DB6AC)] : [Color(0xFF757575), Color(0xFFBDBDBD)]),
+                    ),
+                  ],
+                );
+              },
             ),
 
           if (isFormMaster && ftClass != null) ...[
@@ -731,17 +758,71 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: gradient, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: Colors.white, size: 24)),
+          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: Colors.white, size: 20)),
           const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8))),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 2),
+          Text(title, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8))),
         ],
+      ),
+    );
+  }
+}
+
+class _TermPickerDialog extends StatelessWidget {
+  final List<Map<String, dynamic>> terms;
+  final String? currentId;
+  final ValueChanged<String?> onPick;
+
+  const _TermPickerDialog({required this.terms, required this.currentId, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Select Term', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+            const SizedBox(height: 16),
+            ...terms.map((t) {
+              final id = t['id']?.toString() ?? '';
+              final name = t['name'] ?? '';
+              final selected = id == currentId;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onPick(id),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFFF0F4FF) : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: selected ? const Color(0xFF1A237E) : const Color(0xFFE8EAED), width: selected ? 2 : 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 20, color: selected ? const Color(0xFF1A237E) : Colors.transparent),
+                        const SizedBox(width: 10),
+                        Text(name, style: TextStyle(fontSize: 14, fontWeight: selected ? FontWeight.w600 : FontWeight.w500, color: selected ? const Color(0xFF1A237E) : const Color(0xFF111827))),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

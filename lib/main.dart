@@ -91,7 +91,7 @@ final _router = GoRouter(
       path: '/dashboard/teacher',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
-        return TeacherDashboard(teacherData: data);
+        return _TeacherInitializer(teacherData: data);
       },
     ),
     GoRoute(
@@ -236,6 +236,174 @@ class _SchoolAdminInitializerState extends State<_SchoolAdminInitializer> {
       );
     }
     return const _AdminShell();
+  }
+}
+
+class _TeacherInitializer extends StatefulWidget {
+  final Map<String, dynamic> teacherData;
+  const _TeacherInitializer({required this.teacherData});
+
+  @override
+  State<_TeacherInitializer> createState() => _TeacherInitializerState();
+}
+
+class _TeacherInitializerState extends State<_TeacherInitializer> {
+  bool _ready = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final p = context.read<TeacherProvider>();
+      final d = widget.teacherData;
+      final schoolId = (d['schoolId'] ?? d['school_id'])?.toString() ?? '';
+      final teacherId = (d['id'])?.toString() ?? '';
+      if (schoolId.isEmpty || teacherId.isEmpty) {
+        throw Exception('Missing school or teacher ID');
+      }
+      await p.initialize(
+        loginData: {
+          'first_name': d['firstName'] ?? d['first_name'] ?? '',
+          'last_name': d['lastName'] ?? d['last_name'] ?? '',
+          'email': d['email'] ?? '',
+          'phone': d['phone'] ?? '',
+          'staff_id': d['staffId'] ?? d['staff_id'] ?? '',
+        },
+        schoolId: schoolId,
+        teacherId: teacherId,
+      );
+      if (mounted) setState(() => _ready = true);
+    } catch (e) {
+      debugPrint('TEACHER INIT ERR: $e');
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: Color(0xFFD32F2F)),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text('Failed to load teacher data',
+                    style: TextStyle(
+                        fontSize: 15, color: Colors.grey.shade600)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/role-selection'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    elevation: 0),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F8FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+        ),
+      );
+    }
+    return const TeacherDashboard();
+  }
+}
+
+class _StudentInitializer extends StatefulWidget {
+  final Map<String, dynamic> studentData;
+  const _StudentInitializer({required this.studentData});
+
+  @override
+  State<_StudentInitializer> createState() => _StudentInitializerState();
+}
+
+class _StudentInitializerState extends State<_StudentInitializer> {
+  bool _ready = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final p = context.read<StudentProvider>();
+      final d = widget.studentData;
+      final schoolId = (d['schoolId'] ?? d['school_id'])?.toString() ?? '';
+      final studentId = (d['id'])?.toString() ?? '';
+      if (schoolId.isEmpty || studentId.isEmpty) {
+        throw Exception('Missing school or student ID');
+      }
+      await p.initialize(schoolId, studentId, widget.studentData);
+      if (mounted) setState(() => _ready = true);
+    } catch (e) {
+      debugPrint('STUDENT INIT ERR: $e');
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: Color(0xFFD32F2F)),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text('Failed to load student data',
+                    style: TextStyle(
+                        fontSize: 15, color: Colors.grey.shade600)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/role-selection'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    elevation: 0),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F8FA),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+        ),
+      );
+    }
+    return StudentDashboard(studentData: widget.studentData);
   }
 }
 
@@ -527,84 +695,6 @@ class _AdminShellState extends State<_AdminShell> {
       default:
         return const SizedBox.shrink();
     }
-  }
-}
-
-class _StudentInitializer extends StatefulWidget {
-  final Map<String, dynamic> studentData;
-  const _StudentInitializer({required this.studentData});
-
-  @override
-  State<_StudentInitializer> createState() => _StudentInitializerState();
-}
-
-class _StudentInitializerState extends State<_StudentInitializer> {
-  bool _ready = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _init();
-  }
-
-  Future<void> _init() async {
-    try {
-      final p = context.read<StudentProvider>();
-      final schoolId = widget.studentData['schoolId']?.toString() ?? '';
-      final studentId = widget.studentData['id']?.toString() ?? '';
-      if (schoolId.isEmpty || studentId.isEmpty) {
-        throw Exception('Missing school or student ID');
-      }
-      await p.initialize(schoolId, studentId, widget.studentData);
-      if (mounted) setState(() => _ready = true);
-    } catch (e) {
-      debugPrint('STUDENT INIT ERR: $e');
-      if (mounted) setState(() => _error = e.toString());
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF7F8FA),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: Color(0xFFD32F2F)),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text('Failed to load student data',
-                    style: TextStyle(
-                        fontSize: 15, color: Colors.grey.shade600)),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => context.go('/role-selection'),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E),
-                    foregroundColor: Colors.white,
-                    elevation: 0),
-                child: const Text('Go Back'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    if (!_ready) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF7F8FA),
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
-        ),
-      );
-    }
-    return StudentDashboard(studentData: widget.studentData);
   }
 }
 
