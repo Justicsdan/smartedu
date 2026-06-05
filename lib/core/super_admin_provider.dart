@@ -6,12 +6,11 @@ import 'school_model.dart';
 /// Handles school CRUD, subscription management, analytics.
 ///
 /// MASTER PLAN:
-/// - Every school creation also creates a school_admins record
-/// - Legacy admin_username/password in schools table kept for migration
+/// - School admin credentials live in schools table (admin_username/admin_password)
+/// - school_admins table does NOT exist — do NOT reference it
 /// - Subscription replaces boolean has_paid_current_term
 /// - NEVER fetches admin_password in list views
 /// - Passwords only returned once at creation time
-/// - V4: Added togglePaymentStatus alias for UI backward compat
 
 class SuperAdminProvider extends ChangeNotifier {
 
@@ -45,7 +44,7 @@ class SuperAdminProvider extends ChangeNotifier {
   String _filterType = 'all';
   String get filterType => _filterType;
 
-  String _filterStatus = 'all'; // all, active, inactive, trial, expired
+  String _filterStatus = 'all';
   String get filterStatus => _filterStatus;
 
   // ==========================================
@@ -165,7 +164,6 @@ class SuperAdminProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Extract count from Supabase aggregate response.
   int _extractCount(dynamic countData) {
     try {
       final list = countData as List<dynamic>?;
@@ -195,17 +193,6 @@ class SuperAdminProvider extends ChangeNotifier {
           .eq('id', schoolId)
           .maybeSingle();
 
-      if (response != null) {
-        try {
-          final admins = await Supabase.instance.client
-              .from('school_admins')
-              .select('id, first_name, last_name, email, phone, username, role, is_active, last_login, created_at')
-              .eq('school_id', schoolId)
-              .order('created_at', ascending: false);
-          response['school_admins'] = admins;
-        } catch (_) {}
-      }
-
       return response != null ? Map<String, dynamic>.from(response) : null;
     } catch (e) {
       debugPrint('Error fetching school details: $e');
@@ -220,7 +207,6 @@ class SuperAdminProvider extends ChangeNotifier {
   List<School> get filteredSchools {
     List<School> result = List.from(_schools);
 
-    // Apply search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result.where((s) =>
@@ -231,12 +217,10 @@ class SuperAdminProvider extends ChangeNotifier {
       ).toList();
     }
 
-    // Apply type filter
     if (_filterType.isNotEmpty && _filterType != 'all') {
       result = result.where((s) => s.schoolType == _filterType).toList();
     }
 
-    // Apply status filter
     switch (_filterStatus) {
       case 'active':
         result = result.where((s) => s.isActive).toList();
@@ -363,12 +347,12 @@ class SuperAdminProvider extends ChangeNotifier {
       chars[j] = temp;
     }
 
-    return chars.join();
+    return chars.join('');
   }
 
   // ==========================================
   // SCHOOL CREATION
-  // Creates both schools AND school_admins records.
+  // Credentials stored in schools table (admin_username/admin_password).
   // ==========================================
 
   Future<Map<String, String>?> addSchool({
@@ -385,7 +369,6 @@ class SuperAdminProvider extends ChangeNotifier {
       final username = _generateUsername(name);
       final password = _generateSecurePassword();
 
-      // 1. Create school record
       final schoolResponse = await Supabase.instance.client.from('schools').insert({
         'name': name,
         'location': location,
@@ -401,32 +384,15 @@ class SuperAdminProvider extends ChangeNotifier {
         'trial_ends_at': DateTime.now().add(const Duration(days: 14)).toIso8601String(),
         'max_students': 100,
         'max_teachers': 20,
-        // Legacy credentials kept for backward compatibility
         'admin_username': username,
         'admin_password': password,
       }).select('id, name, location, logo_url, whatsapp, school_type, is_active, admin_username, created_at').single();
-
-      final schoolId = schoolResponse['id'];
-
-      // 2. Create school_admin record (new schema)
-      await Supabase.instance.client.from('school_admins').insert({
-        'school_id': schoolId,
-        'first_name': 'School',
-        'last_name': 'Admin',
-        'email': officialEmail.isNotEmpty ? officialEmail : null,
-        'phone': whatsapp.isNotEmpty ? whatsapp : null,
-        'username': username,
-        'password': password,
-        'role': 'admin',
-        'is_active': true,
-      });
 
       _schools.insert(0, School.fromMap(schoolResponse));
       _activeSchools++;
       _trialSchools++;
       notifyListeners();
 
-      // Password ONLY returned here — never stored in list state
       return {'username': username, 'password': password};
     } catch (e) {
       debugPrint('Error adding school: $e');
@@ -472,20 +438,7 @@ class SuperAdminProvider extends ChangeNotifier {
 
       final schoolId = schoolResponse['id'];
 
-      // 2. Create school_admin record
-      await Supabase.instance.client.from('school_admins').insert({
-        'school_id': schoolId,
-        'first_name': adminFirstName,
-        'last_name': adminLastName,
-        'email': officialEmail.isNotEmpty ? officialEmail : null,
-        'phone': whatsapp.isNotEmpty ? whatsapp : null,
-        'username': username,
-        'password': password,
-        'role': 'admin',
-        'is_active': true,
-      });
-
-      // 3. Create academic session
+      // 2. Create academic session
       final currentYear = DateTime.now().year;
       final nextYear = currentYear + 1;
       final sessionName = '$currentYear/$nextYear';
@@ -496,7 +449,7 @@ class SuperAdminProvider extends ChangeNotifier {
         'is_current': true,
       }).select('id').single();
 
-      // 4. Create first term
+      // 3. Create first term
       await Supabase.instance.client.from('terms').insert({
         'school_id': schoolId,
         'session_id': sessionResponse['id'],
@@ -505,7 +458,7 @@ class SuperAdminProvider extends ChangeNotifier {
         'term_start_date': DateTime.now().toIso8601String().split('T').first,
       });
 
-      // 5. Create school_settings with appropriate grading
+      // 4. Create school_settings with appropriate grading
       final gradingSystem = schoolType == 'primary'
           ? [
               {'min': 70, 'max': 100, 'grade': 'A', 'remark': 'Excellent'},
@@ -623,7 +576,6 @@ class SuperAdminProvider extends ChangeNotifier {
 
   // ==========================================
   // SCHOOL DELETION
-  // CASCADE deletes all related data via foreign keys.
   // ==========================================
 
   Future<bool> deleteSchool(String id) async {
@@ -666,13 +618,11 @@ class SuperAdminProvider extends ChangeNotifier {
       final newStatus = !school.isActive;
 
       if (newStatus) {
-        // Re-activating — clear deactivated_at
         await Supabase.instance.client.from('schools').update({
           'is_active': true,
           'deactivated_at': null,
         }).eq('id', id);
       } else {
-        // Deactivating — set deactivated_at
         await Supabase.instance.client.from('schools').update({
           'is_active': false,
           'deactivated_at': DateTime.now().toUtc().toIso8601String(),
@@ -700,7 +650,6 @@ class SuperAdminProvider extends ChangeNotifier {
     }
   }
 
-  /// Toggle subscription status between 'active' and 'expired'.
   Future<bool> toggleSubscriptionStatus(String id) async {
     try {
       final school = _schools.firstWhere((s) => s.id == id);
@@ -737,10 +686,8 @@ class SuperAdminProvider extends ChangeNotifier {
     }
   }
 
-  /// Alias so UI files calling togglePaymentStatus still work.
   Future<bool> togglePaymentStatus(String id) async => toggleSubscriptionStatus(id);
 
-  /// Extend a school's trial by N days.
   Future<bool> extendTrial(String id, int days) async {
     try {
       final school = _schools.firstWhere((s) => s.id == id);
@@ -770,7 +717,6 @@ class SuperAdminProvider extends ChangeNotifier {
 
   // ==========================================
   // CREDENTIAL REGENERATION
-  // Updates BOTH schools table (legacy) AND school_admins table.
   // ==========================================
 
   Future<Map<String, String>?> regenerateLogin(String id) async {
@@ -779,17 +725,10 @@ class SuperAdminProvider extends ChangeNotifier {
       final username = _generateUsername(school.name);
       final password = _generateSecurePassword();
 
-      // Update schools table (legacy)
       await Supabase.instance.client.from('schools').update({
         'admin_username': username,
         'admin_password': password,
       }).eq('id', id);
-
-      // Update school_admins table (new)
-      await Supabase.instance.client.from('school_admins').update({
-        'username': username,
-        'password': password,
-      }).eq('school_id', id);
 
       final index = _schools.indexWhere((s) => s.id == id);
       if (index != -1) {
@@ -798,7 +737,6 @@ class SuperAdminProvider extends ChangeNotifier {
 
       notifyListeners();
 
-      // Password ONLY shown to Super Admin once here
       return {'username': username, 'password': password};
     } catch (e) {
       debugPrint('Error regenerating login: $e');
@@ -932,5 +870,54 @@ class SuperAdminProvider extends ChangeNotifier {
     _filterStatus = 'all';
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<Map<String, String>?> fetchSchoolCredentials(String schoolId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('schools')
+          .select('admin_username, admin_password')
+          .eq('id', schoolId)
+          .maybeSingle();
+      if (response != null) {
+        return {
+          'username': response['admin_username'] as String? ?? '',
+          'password': response['admin_password'] as String? ?? '',
+        };
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching credentials: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, String>?> regenerateSchoolPassword(String schoolId) async {
+    try {
+      final existing = await Supabase.instance.client
+          .from('schools')
+          .select('admin_username, name')
+          .eq('id', schoolId)
+          .single();
+      String username = (existing['admin_username'] as String? ?? '').trim();
+      final schoolName = (existing['name'] as String? ?? '').trim();
+      if (username.isEmpty && schoolName.isNotEmpty) {
+        username = _generateUsername(schoolName);
+      }
+      final password = _generateSecurePassword();
+      await Supabase.instance.client.from('schools').update({
+        'admin_username': username,
+        'admin_password': password,
+      }).eq('id', schoolId);
+      final index = _schools.indexWhere((s) => s.id == schoolId);
+      if (index != -1) {
+        _schools[index] = _schools[index].copyWith(adminUsername: username);
+      }
+      notifyListeners();
+      return {'username': username, 'password': password};
+    } catch (e) {
+      debugPrint('Error regenerating password: $e');
+      return null;
+    }
   }
 }

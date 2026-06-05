@@ -1,3 +1,6 @@
+// ==========================================
+// File: lib/features/dashboard/teacher/pages/teacher_enter_scores.dart
+// ==========================================
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +39,9 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     if (ftClass != null) {
       classIds.add(ftClass['id']?.toString() ?? '');
     }
-    return provider.myClasses.where((c) => classIds.contains(c['id']?.toString())).toList();
+    return provider.myClasses
+        .where((c) => classIds.contains(c['id']?.toString()))
+        .toList();
   }
 
   List<Map<String, dynamic>> get _subjectsForSelectedClass {
@@ -50,14 +55,17 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
   List<Map<String, dynamic>> get _studentsInClass {
     if (_selectedClassId == null) return [];
     final provider = context.read<TeacherProvider>();
-    return provider.students.where((s) => s['class_id']?.toString() == _selectedClassId).toList();
+    return provider.students
+        .where((s) => s['class_id']?.toString() == _selectedClassId)
+        .toList();
   }
 
   String _getClassTier() {
     if (_selectedClassId == null) return 'SSS';
     try {
       final provider = context.read<TeacherProvider>();
-      final cls = provider.myClasses.firstWhere((c) => c['id'].toString() == _selectedClassId);
+      final cls = provider.myClasses
+          .firstWhere((c) => c['id'].toString() == _selectedClassId);
       return (cls['tier'] as String?) ?? 'SSS';
     } catch (_) {
       return 'SSS';
@@ -72,8 +80,10 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
       if (tier == 'JSS' && settings['assessment_types_jss'] != null) {
         return List<Map<String, dynamic>>.from(settings['assessment_types_jss']);
       }
-      if (tier == 'PRIMARY' && settings['assessment_types_primary'] != null) {
-        return List<Map<String, dynamic>>.from(settings['assessment_types_primary']);
+      if (tier == 'PRIMARY' &&
+          settings['assessment_types_primary'] != null) {
+        return List<Map<String, dynamic>>.from(
+            settings['assessment_types_primary']);
       }
       if (settings['assessment_types'] != null) {
         return List<Map<String, dynamic>>.from(settings['assessment_types']);
@@ -83,7 +93,12 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
   }
 
   double get _totalMaxScore {
-    return _assessmentTypes.fold<double>(0, (sum, at) => sum + ((at['max'] as num?)?.toDouble() ?? 0));
+    return _assessmentTypes.fold<double>(
+        0, (sum, at) => sum + ((at['max'] as num?)?.toDouble() ?? 0));
+  }
+
+  String _assessKey(Map<String, dynamic> at) {
+    return (at['id'] ?? '').toString().toLowerCase();
   }
 
   TextEditingController _getController(String studentId, String key) {
@@ -93,14 +108,16 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
   }
 
   void _clearControllers() {
-    for (var c in _controllers.values) { c.dispose(); }
+    for (var c in _controllers.values) {
+      c.dispose();
+    }
     _controllers.clear();
   }
 
   double _getTotal(String studentId) {
     double total = 0;
     for (final at in _assessmentTypes) {
-      final key = (at['id'] ?? '').toString();
+      final key = _assessKey(at);
       total += double.tryParse(_getController(studentId, key).text) ?? 0;
     }
     return total;
@@ -113,11 +130,15 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     List<Map<String, dynamic>> grading = [];
     if (settings != null) {
       if (tier == 'JSS' && settings['grading_system_jss'] != null) {
-        grading = List<Map<String, dynamic>>.from(settings['grading_system_jss']);
-      } else if (tier == 'PRIMARY' && settings['grading_system_primary'] != null) {
-        grading = List<Map<String, dynamic>>.from(settings['grading_system_primary']);
+        grading =
+            List<Map<String, dynamic>>.from(settings['grading_system_jss']);
+      } else if (tier == 'PRIMARY' &&
+          settings['grading_system_primary'] != null) {
+        grading = List<Map<String, dynamic>>.from(
+            settings['grading_system_primary']);
       } else if (settings['grading_system'] != null) {
-        grading = List<Map<String, dynamic>>.from(settings['grading_system']);
+        grading =
+            List<Map<String, dynamic>>.from(settings['grading_system']);
       }
     }
     if (grading.isEmpty) grading = GradingUtils.getDefaultGradingSystem('WAEC');
@@ -131,7 +152,9 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
 
   @override
   void dispose() {
-    for (var c in _controllers.values) { c.dispose(); }
+    for (var c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -150,29 +173,34 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
 
     setState(() => _isPrefilling = true);
 
-    for (final student in _studentsInClass) {
-      final studentId = student['id'].toString();
-      try {
-        final r = await Supabase.instance.client.from('scores')
-            .select()
-            .eq('school_id', schoolId)
-            .eq('student_id', studentId)
-            .eq('class_id', classId)
-            .eq('subject_id', subjectId)
-            .eq('session_id', sid)
-            .eq('term_id', tid)
-            .maybeSingle();
-        if (r != null) {
-          final sj = r['scores_json'] as Map<String, dynamic>? ?? {};
-          for (final at in _assessmentTypes) {
-            final key = (at['id'] ?? '').toString().toLowerCase();
-            final val = sj[key] ?? sj[at['name']] ?? 0;
-            _getController(studentId, key).text = (val is num ? val : 0).toString();
-          }
-        }
-      } catch (e) {
-        debugPrint('Prefill error: $e');
+    try {
+      final rows = await Supabase.instance.client
+          .from('scores')
+          .select()
+          .eq('school_id', schoolId)
+          .eq('class_id', classId)
+          .eq('subject_id', subjectId)
+          .eq('session_id', sid)
+          .eq('term_id', tid);
+
+      final Map<String, Map<String, dynamic>> scoreMap = {};
+      for (final r in rows) {
+        final stId = r['student_id']?.toString() ?? '';
+        scoreMap[stId] = r['scores_json'] as Map<String, dynamic>? ?? {};
       }
+
+      for (final student in _studentsInClass) {
+        final studentId = student['id'].toString();
+        final sj = scoreMap[studentId] ?? {};
+        for (final at in _assessmentTypes) {
+          final key = _assessKey(at);
+          final val = sj[key] ?? sj[at['name']] ?? 0;
+          _getController(studentId, key).text =
+              (val is num ? val : 0).toString();
+        }
+      }
+    } catch (e) {
+      debugPrint('Prefill error: $e');
     }
 
     if (mounted) setState(() => _isPrefilling = false);
@@ -195,13 +223,14 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         final studentId = student['id'].toString();
         final sj = <String, dynamic>{};
         for (final at in _assessmentTypes) {
-          final key = (at['id'] ?? '').toString().toLowerCase();
+          final key = _assessKey(at);
           sj[key] = double.tryParse(_getController(studentId, key).text) ?? 0;
         }
         final total = _getTotal(studentId);
         final grade = _getGrade(total);
 
-        final existing = await Supabase.instance.client.from('scores')
+        final existing = await Supabase.instance.client
+            .from('scores')
             .select('id')
             .eq('school_id', provider.schoolId)
             .eq('student_id', studentId)
@@ -225,24 +254,37 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         };
 
         if (existing != null) {
-          await Supabase.instance.client.from('scores').update(scoreData).eq('id', existing['id']);
+          await Supabase.instance.client
+              .from('scores')
+              .update(scoreData)
+              .eq('id', existing['id']);
         } else {
           await Supabase.instance.client.from('scores').insert(scoreData);
         }
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Scores saved successfully!'), backgroundColor: Color(0xFF2E7D32)),
+          const SnackBar(
+            content: Text('Scores saved successfully!'),
+            backgroundColor: Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFD32F2F)),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
-      if (mounted) { setState(() => _isSaving = false); }
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -259,11 +301,25 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.edit_off_rounded, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text('Score entry requires subject assignment', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(Icons.edit_off_rounded,
+                  size: 32, color: Colors.grey.shade400),
+            ),
+            const SizedBox(height: 20),
+            Text('Score entry requires subject assignment',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: const Color(0xFF111827),
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text('Contact your admin to get assigned to a subject.', style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
+            Text('Contact your admin to get assigned to a subject.',
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
           ],
         ),
       );
@@ -275,9 +331,22 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.class_rounded, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text('No classes assigned yet', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child:
+                  Icon(Icons.class_rounded, size: 32, color: Colors.grey.shade400),
+            ),
+            const SizedBox(height: 20),
+            Text('No classes assigned yet',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: const Color(0xFF111827),
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       );
@@ -288,26 +357,42 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Enter Scores', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+          const Text('Enter Scores',
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                  letterSpacing: -0.5)),
           const SizedBox(height: 4),
-          const Text('Select a class and subject to enter scores', style: TextStyle(fontSize: 13, color: Colors.grey)),
+          const Text('Select a class and subject to enter or edit scores',
+              style: TextStyle(fontSize: 13, color: Colors.grey)),
           const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFE8EAED)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: DropdownButton<String>(
                     value: _selectedClassId,
                     hint: const Text('Select Class', style: TextStyle(fontSize: 14)),
                     isExpanded: true,
                     underline: const SizedBox(),
-                    icon: const Icon(Icons.class_rounded, color: Color(0xFF0D47A1)),
-                    items: myClasses.map((c) => DropdownMenuItem<String>(
-                      value: c['id'].toString(),
-                      child: Text('${c['name'] ?? ''} ${c['section'] ?? ''}'.trim(), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
-                    )).toList(),
+                    icon: const Icon(Icons.class_rounded,
+                        color: Color(0xFF1A237E)),
+                    items: myClasses
+                        .map((c) => DropdownMenuItem<String>(
+                              value: c['id'].toString(),
+                              child: Text(
+                                  '${c['name'] ?? ''} ${c['section'] ?? ''}'
+                                      .trim(),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 14)),
+                            ))
+                        .toList(),
                     onChanged: (v) {
                       setState(() {
                         _selectedClassId = v;
@@ -322,18 +407,26 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFE8EAED)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: DropdownButton<String>(
                     value: _selectedSubjectId,
-                    hint: const Text('Select Subject', style: TextStyle(fontSize: 14)),
+                    hint:
+                        const Text('Select Subject', style: TextStyle(fontSize: 14)),
                     isExpanded: true,
                     underline: const SizedBox(),
-                    icon: const Icon(Icons.menu_book, color: Color(0xFF0D47A1)),
+                    icon: const Icon(Icons.menu_book,
+                        color: Color(0xFF1A237E)),
                     items: _subjectsForSelectedClass.map((cs) {
-                      final subj = cs['subjects'] as Map<String, dynamic>? ?? {};
+                      final subj =
+                          cs['subjects'] as Map<String, dynamic>? ?? {};
                       return DropdownMenuItem<String>(
                         value: cs['subject_id'].toString(),
-                        child: Text(subj['name']?.toString() ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+                        child: Text(subj['name']?.toString() ?? '',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 14)),
                       );
                     }).toList(),
                     onChanged: (v) {
@@ -341,6 +434,9 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                         _selectedSubjectId = v;
                         _clearControllers();
                       });
+                      if (v != null) {
+                        _prefill();
+                      }
                     },
                   ),
                 ),
@@ -350,43 +446,84 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
           const SizedBox(height: 12),
           if (_assessmentTypes.isNotEmpty && _selectedClassId != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFFE082)),
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.orange.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('Assessment: ${_assessmentTypes.map((a) => "${a['name']}(${a['max']})").join(" + ")} = $_totalMaxScore', style: TextStyle(fontSize: 12, color: Colors.orange.shade900))),
+                  const Icon(Icons.info_outline,
+                      size: 18, color: Color(0xFFF57F17)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                        'Assessment: ${_assessmentTypes.map((a) => "${a['name']}(${a['max']})").join(" + ")} = $_totalMaxScore',
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFFF57F17))),
+                  ),
                 ],
               ),
             ),
           const SizedBox(height: 24),
           if (_selectedClassId != null && _selectedSubjectId != null)
             _isPrefilling
-                ? const Center(child: Padding(padding: EdgeInsets.all(60), child: CircularProgressIndicator()))
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(60),
+                      child: CircularProgressIndicator(),
+                    ))
                 : _studentsInClass.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.all(60),
+                          padding: const EdgeInsets.all(60),
                           child: Column(
                             children: [
-                              Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text('No students in this class', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF7F8FA),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Icon(Icons.people_outline,
+                                    size: 32, color: Colors.grey.shade400),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text('No students in this class',
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF111827),
+                                      fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
                       )
                     : _buildScoreTable()
           else
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(60),
+                padding: const EdgeInsets.all(60),
                 child: Column(
                   children: [
-                    Icon(Icons.touch_app_outlined, size: 56, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text('Select class and subject to begin', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7F8FA),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Icon(Icons.touch_app_outlined,
+                          size: 32, color: Colors.grey.shade400),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Select class and subject to begin',
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF111827),
+                            fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -400,24 +537,61 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     return Column(
       children: [
         Container(
-          decoration: const BoxDecoration(color: Color(0xFF0D47A1), borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10))),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A237E),
+            borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+          ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                const SizedBox(width: 40, child: Center(child: Text('#', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
-                const SizedBox(width: 160, child: Center(child: Text('Student Name', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
+                const SizedBox(
+                    width: 40,
+                    child: Center(
+                        child: Text('#',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)))),
+                const SizedBox(
+                    width: 160,
+                    child: Center(
+                        child: Text('Student Name',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)))),
                 ..._assessmentTypes.map((at) => SizedBox(
-                  width: 90,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text('${at['name']}\n(${at['max']})', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                    ),
-                  ),
-                )),
-                const SizedBox(width: 70, child: Center(child: Text('Total', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
-                const SizedBox(width: 60, child: Center(child: Text('Grade', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
+                      width: 90,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Text('${at['name']}\n(${at['max']})',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11)),
+                        ),
+                      ),
+                    )),
+                const SizedBox(
+                    width: 70,
+                    child: Center(
+                        child: Text('Total',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)))),
+                const SizedBox(
+                    width: 60,
+                    child: Center(
+                        child: Text('Grade',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)))),
               ],
             ),
           ),
@@ -428,37 +602,75 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
           final sid = student['id'].toString();
           final total = _getTotal(sid);
           final grade = _getGrade(total);
-          final bgColor = index % 2 == 0 ? Colors.white : Colors.grey.shade50;
+          final bgColor =
+              index % 2 == 0 ? Colors.white : const Color(0xFFFAFBFC);
           return Container(
-            color: bgColor,
+            decoration: BoxDecoration(
+              color: bgColor,
+              border: Border(
+                bottom: BorderSide(
+                    color: index == _studentsInClass.length - 1
+                        ? const Color(0xFFE8EAED)
+                        : Colors.grey.shade100,
+                    width: index == _studentsInClass.length - 1 ? 1 : 0.5),
+                left: const BorderSide(color: Color(0xFFE8EAED)),
+                right: const BorderSide(color: Color(0xFFE8EAED)),
+              ),
+            ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  SizedBox(width: 40, child: Center(child: Text('${index + 1}', style: const TextStyle(fontSize: 12, color: Color(0xFF111827))))),
+                  SizedBox(
+                      width: 40,
+                      child: Center(
+                          child: Text('${index + 1}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF111827))))),
                   SizedBox(
                     width: 160,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: Text(_studentName(student), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF1B2A4A)), overflow: TextOverflow.ellipsis),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
+                      child: Text(_studentName(student),
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1B2A4A)),
+                          overflow: TextOverflow.ellipsis),
                     ),
                   ),
                   ..._assessmentTypes.map((at) {
-                    final key = (at['id'] ?? '').toString();
+                    final key = _assessKey(at);
                     return SizedBox(
                       width: 90,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 4),
                         child: TextField(
                           controller: _getController(sid, key),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 14, color: Color(0xFF111827), fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF111827),
+                              fontWeight: FontWeight.w500),
                           decoration: InputDecoration(
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: Colors.grey.shade300)),
-                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: Colors.grey.shade300)),
-                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 1.5)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300)),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300)),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF1A237E), width: 1.5)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 8),
                             isDense: true,
                           ),
                           onChanged: (_) => setState(() {}),
@@ -469,19 +681,45 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                   SizedBox(
                     width: 70,
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 6),
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: total >= _totalMaxScore * 0.5 ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)),
-                      child: Text(total.toStringAsFixed(0), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: total >= _totalMaxScore * 0.5 ? Colors.green.shade700 : Colors.red.shade700)),
+                      decoration: BoxDecoration(
+                        color: total >= _totalMaxScore * 0.5
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(total.toStringAsFixed(0),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: total >= _totalMaxScore * 0.5
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFD32F2F))),
                     ),
                   ),
                   SizedBox(
                     width: 60,
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 6),
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: total >= _totalMaxScore * 0.5 ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)),
-                      child: Text(grade, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: total >= _totalMaxScore * 0.5 ? Colors.green.shade700 : Colors.red.shade700)),
+                      decoration: BoxDecoration(
+                        color: total >= _totalMaxScore * 0.5
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(grade,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: total >= _totalMaxScore * 0.5
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFD32F2F))),
                     ),
                   ),
                 ],
@@ -495,9 +733,23 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
           height: 50,
           child: ElevatedButton.icon(
             onPressed: _isSaving ? null : _save,
-            icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save_rounded),
-            label: Text(_isSaving ? "Saving..." : "Save All Scores", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white, shape: const StadiumBorder()),
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
+                : const Icon(Icons.save_rounded),
+            label: Text(_isSaving ? "Saving..." : "Save All Scores",
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A237E),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
           ),
         ),
       ],

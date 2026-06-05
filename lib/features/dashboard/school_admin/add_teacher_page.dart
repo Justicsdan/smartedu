@@ -181,7 +181,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -237,7 +237,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -290,14 +290,14 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.delete_outline_rounded,
                           size: 20,
                           color: Colors.red.shade700,
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -956,7 +956,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(
               color: Color(0xFFD32F2F),
-            ),
+            )),
           filled: true,
           fillColor: const Color(0xFFFAFBFC),
           contentPadding: const EdgeInsets.symmetric(

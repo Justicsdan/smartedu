@@ -4,6 +4,8 @@
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:typed_data';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/super_admin_provider.dart';
 import 'package:smartedu/core/school_model.dart';
 
@@ -20,6 +22,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
   final _whatsappController = TextEditingController();
   String _schoolType = 'primary';
   String _logoBase64 = '';
+  html.File? _logoFile;
   bool _isSubmitting = false;
 
   Future<void> _pickLogo() async {
@@ -34,6 +37,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
       reader.onLoadEnd.listen((event) {
         setState(() {
           _logoBase64 = reader.result as String;
+          _logoFile = file;
         });
       });
       reader.readAsDataUrl(file);
@@ -46,12 +50,13 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     _whatsappController.clear();
     _schoolType = 'primary';
     _logoBase64 = '';
+    _logoFile = null;
 
+    String? dialogError;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSt) {
-          String? dialogError;
           return AlertDialog(
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -84,7 +89,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                         children: [
                           const Icon(Icons.error_outline, size: 18, color: Color(0xFFDC2626)),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(dialogError, style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626), height: 1.3))),
+                          Expanded(child: Text(dialogError!, style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626), height: 1.3))),
                         ],
                       ),
                     ),
@@ -168,7 +173,13 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                     items: const [
                       DropdownMenuItem(value: 'primary', child: Text('Primary')),
                       DropdownMenuItem(value: 'secondary', child: Text('Secondary')),
+                      DropdownMenuItem(value: 'tertiary', child: Text('Tertiary')),
+                      DropdownMenuItem(value: 'vocational', child: Text('Vocational')),
+                      DropdownMenuItem(value: 'montessori', child: Text('Montessori')),
+                      DropdownMenuItem(value: 'creche', child: Text('Creche')),
+                      DropdownMenuItem(value: 'special_needs', child: Text('Special Needs')),
                       DropdownMenuItem(value: 'both', child: Text('Primary & Secondary')),
+                      DropdownMenuItem(value: 'other', child: Text('Other')),
                     ],
                     onChanged: (v) => setSt(() => _schoolType = v!),
                   ),
@@ -188,12 +199,23 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                     return;
                   }
                   setSt(() => _isSubmitting = true);
+                  String logoUrl = '';
+                  if (_logoFile != null) {
+                    final rd = html.FileReader();
+                    rd.readAsArrayBuffer(_logoFile!);
+                    await rd.onLoadEnd.first;
+                    final bytes = Uint8List.fromList((rd.result as ByteBuffer).asUint8List());
+                    final ext = _logoFile!.name.split('.').last;
+                    final sp = 'schools/${DateTime.now().millisecondsSinceEpoch}.$ext';
+                    await Supabase.instance.client.storage.from('school-logos').upload(sp, bytes, fileOptions: const FileOptions(upsert: true));
+                    logoUrl = Supabase.instance.client.storage.from('school-logos').getPublicUrl(sp);
+                  }
                   final provider = context.read<SuperAdminProvider>();
                   final result = await provider.addSchool(
                     name: _nameController.text.trim(),
                     location: _locationController.text.trim(),
                     schoolType: _schoolType,
-                    logoUrl: _logoBase64,
+                    logoUrl: logoUrl,
                     whatsapp: _whatsappController.text.trim(),
                   );
                   Navigator.pop(ctx);
@@ -213,6 +235,19 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _copyToClipboard(String text, String label) {
+    html.window.navigator.clipboard?.writeText(text);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$label copied to clipboard"),
+        backgroundColor: const Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -253,10 +288,19 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                       Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade500),
                       const SizedBox(width: 6),
                       const Text("Username", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => _copyToClipboard(username, "Username"),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF1A237E)),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(username, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+                  Align(alignment: Alignment.centerLeft, child: Text(username, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
                   const SizedBox(height: 14),
                   const Divider(color: Color(0xFFE8EAF6)),
                   const SizedBox(height: 14),
@@ -265,11 +309,37 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                       Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade500),
                       const SizedBox(width: 6),
                       const Text("Password", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => _copyToClipboard(password, "Password"),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF1A237E)),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(password, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+                  Align(alignment: Alignment.centerLeft, child: Text(password, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
                 ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _copyToClipboard('Username: $username\nPassword: $password', "Credentials"),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFE8EAF6))),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.content_copy_rounded, size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 6),
+                    Text("Copy Both", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                  ],
+                ),
               ),
             ),
           ],
@@ -285,83 +355,162 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     );
   }
 
-  void _showLoginDialog(School school) {
+  Future<void> _showLoginDialog(School school) async {
     final logoUrl = school.logoUrl;
     final logoValid = logoUrl != null && logoUrl.isNotEmpty;
+    final provider = context.read<SuperAdminProvider>();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.key_rounded, size: 22, color: Color(0xFFF57F17)),
-            ),
-            const SizedBox(width: 12),
-            const Text("Admin Login Credentials", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (logoValid)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: CircleAvatar(
-                  radius: 36,
-                  backgroundColor: const Color(0xFFF0F4FF),
-                  backgroundImage: NetworkImage(logoUrl),
-                  onBackgroundImageError: (_, __) {},
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSt) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            title: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.key_rounded, size: 22, color: Color(0xFFF57F17)),
                 ),
-              ),
-            Text(school.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFFAFBFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 6),
-                      const Text("Username", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(school.adminUsername ?? 'N/A', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
-                  const SizedBox(height: 14),
-                  const Divider(color: Color(0xFFE8EAED)),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 6),
-                      const Text("Password", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(school.adminPassword ?? 'N/A', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
-                ],
-              ),
+                const SizedBox(width: 12),
+                const Text("Admin Login Credentials", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827), letterSpacing: -0.3)),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-            child: const Text("Close", style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ],
+            content: FutureBuilder<Map<String, String>?>(
+              future: provider.fetchSchoolCredentials(school.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFF1A237E))),
+                  );
+                }
+                final creds = snapshot.data;
+                final username = creds?['username'] ?? school.adminUsername ?? 'N/A';
+                final password = creds?['password'] ?? 'N/A';
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (logoValid)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: CircleAvatar(
+                          radius: 36,
+                          backgroundColor: const Color(0xFFF0F4FF),
+                          backgroundImage: NetworkImage(logoUrl),
+                          onBackgroundImageError: logoValid ? (_, __) {} : null,
+                        ),
+                      ),
+                    Text(school.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: const Color(0xFFFAFBFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade500),
+                              const SizedBox(width: 6),
+                              const Text("Username", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => _copyToClipboard(username, "Username"),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(color: const Color(0xFFF57F17).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                                  child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFFF57F17)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Align(alignment: Alignment.centerLeft, child: Text(username, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
+                          const SizedBox(height: 14),
+                          const Divider(color: Color(0xFFE8EAED)),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Icon(Icons.lock_outline_rounded, size: 16, color: Colors.grey.shade500),
+                              const SizedBox(width: 6),
+                              const Text("Password", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => _copyToClipboard(password, "Password"),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(color: const Color(0xFFF57F17).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                                  child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFFF57F17)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Align(alignment: Alignment.centerLeft, child: Text(password, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () => _copyToClipboard('Username: $username\nPassword: $password', "Credentials"),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFFE082))),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.content_copy_rounded, size: 16, color: Colors.grey.shade700),
+                            const SizedBox(width: 6),
+                            Text("Copy Both", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (snapshot.hasError) ...[
+                      const SizedBox(height: 12),
+                      Text("Error loading credentials", style: TextStyle(fontSize: 12, color: Colors.red.shade400)),
+                    ],
+                  ],
+                );
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final result = await provider.regenerateSchoolPassword(school.id);
+                  if (result != null && mounted) {
+                    _showCredentialsDialog(result['username']!, result['password']!);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: const Text("Password regenerated successfully"), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: const Text("Failed to regenerate password"), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFFF57F17)),
+                child: const Text("Reset Password"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                child: const Text("Close", style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

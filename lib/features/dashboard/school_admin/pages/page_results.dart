@@ -333,6 +333,62 @@ class _PageResultsState extends State<PageResults> {
     }
   }
 
+  void _printBlankSheet() {
+    if (_studentsInClass.isEmpty) return;
+    final provider = context.read<SchoolAdminProvider>();
+    final className = _getClassName();
+    final subjectName = _getSubjectName();
+    final sessionName = provider.currentSession?['name']?.toString() ?? '';
+    final termName = provider.currentTerm?['name']?.toString() ?? '';
+    final schoolName = provider.schoolName;
+    final schoolLogo = provider.schoolLogoUrl;
+    final tier = _getClassTier();
+    final sortedStudents = List<Map<String, dynamic>>.from(_studentsInClass);
+    sortedStudents.sort((a, b) => _studentName(a).compareTo(_studentName(b)));
+    final aHeaders = _assessmentTypes.map((a) => {'name': a['name'].toString(), 'max': a['max'].toString()}).toList();
+    final assessmentSummary = aHeaders.map((a) => "${a['name']}(${a['max']})").join(' + ');
+    final thCells = aHeaders.map((a) => "<th style=\"width:80px;\">${a['name']}<br/>(${a['max']})</th>").join('');
+    final rows = sortedStudents.asMap().entries.map((e) =>
+      '<tr><td>${e.key + 1}</td><td class="name">${_studentName(e.value)}</td>${aHeaders.map((_) => '<td></td>').join('')}<td></td><td></td></tr>'
+    ).join('\n          ');
+    final htmlContent = '''<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Score Sheet - $className - $subjectName</title>
+<style>
+@page{size:A4 landscape;margin:10mm}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;font-size:11px;color:#111}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border-bottom:2px solid #1A237E;padding-bottom:8px}
+.school-name{font-size:16px;font-weight:700;color:#1A237E}
+.logo{height:50px}
+.info{display:flex;gap:24px;margin-bottom:10px;font-size:12px;color:#374151}
+.info span{font-weight:600}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #9CA3AF;padding:7px 8px;text-align:center}
+th{background:#1E293B;color:white;font-weight:700;font-size:10px;text-transform:uppercase}
+td.name{text-align:left;font-weight:600}
+tr:nth-child(even) td{background:#F9FAFB}
+.footer{margin-top:12px;display:flex;justify-content:space-between;font-size:10px;color:#6B7280}
+.signature{margin-top:30px;display:flex;justify-content:flex-end;gap:80px}
+.sig-line{text-align:center}
+.sig-line .line{border-top:1px solid #111;width:150px;margin-top:30px}
+.sig-line .label{font-size:10px;margin-top:4px}
+.no-print{margin-bottom:10px}
+@media print{.no-print{display:none}}
+</style></head><body>
+<div class="no-print"><button onclick="window.print()" style="padding:8px 20px;background:#1A237E;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer">Print This Sheet</button></div>
+<div class="header"><div class="school-name">$schoolName</div>${schoolLogo.isNotEmpty ? '<img class="logo" src="$schoolLogo"/>' : ''}</div>
+<div class="info"><div>Class: <span>$className</span>${tier.isNotEmpty ? ' [$tier]' : ''}</div><div>Subject: <span>$subjectName</span></div><div>Session: <span>$sessionName</span></div><div>Term: <span>$termName</span></div><div>Total: <span>$_totalMaxScore</span></div></div>
+<table><thead><tr><th style="width:35px">#</th><th style="width:180px;text-align:left">Student Name</th>$thCells<th style="width:65px">Total</th><th style="width:55px">Grade</th></tr></thead>
+<tbody>$rows</tbody></table>
+<div class="footer"><div>Assessment: $assessmentSummary = $_totalMaxScore</div><div>${sortedStudents.length} students</div><div>Printed: ${DateTime.now().toString().split('.').first}</div></div>
+<div class="signature"><div class="sig-line"><div class="line"></div><div class="label">Class Teacher</div></div><div class="sig-line"><div class="line"></div><div class="label">Subject Teacher</div></div><div class="sig-line"><div class="line"></div><div class="label">Principal</div></div></div>
+</body></html>''';
+    final blob = html.Blob([htmlContent], 'text/html');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.window.open(url, '_blank');
+    html.Url.revokeObjectUrl(url);
+  }
+
   Future<void> _save() async {
     final session = context.read<SchoolAdminProvider>().currentSession;
     final term = context.read<SchoolAdminProvider>().currentTerm;
@@ -461,7 +517,6 @@ class _PageResultsState extends State<PageResults> {
             const Text('Enter scores per subject per class',
                 style: TextStyle(fontSize: 13, color: Colors.grey)),
             const SizedBox(height: 24),
-            // Dropdowns row
             Row(
               children: [
                 Expanded(
@@ -521,7 +576,6 @@ class _PageResultsState extends State<PageResults> {
               ],
             ),
             const SizedBox(height: 12),
-            // Assessment info
             if (_assessmentTypes.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -551,7 +605,6 @@ class _PageResultsState extends State<PageResults> {
                 ),
               ),
             const SizedBox(height: 24),
-            // Content
             if (_selectedClassId != null &&
                 _selectedSubjectId != null)
               FutureBuilder(
@@ -676,7 +729,6 @@ class _PageResultsState extends State<PageResults> {
   Widget _buildScoreTable() {
     return Column(
       children: [
-        // Table header
         Container(
           padding: const EdgeInsets.symmetric(
               horizontal: 12, vertical: 12),
@@ -699,7 +751,6 @@ class _PageResultsState extends State<PageResults> {
           ),
         ),
         const SizedBox(height: 2),
-        // Table rows
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFFE8EAED)),
@@ -740,7 +791,6 @@ class _PageResultsState extends State<PageResults> {
           ),
         ),
         const SizedBox(height: 24),
-        // Action buttons
         Row(
           children: [
             Expanded(
@@ -771,6 +821,36 @@ class _PageResultsState extends State<PageResults> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: _studentsInClass.isEmpty ? null : _printBlankSheet,
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F4FF),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFC5CAE9)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.print_rounded,
+                        size: 20, color: Color(0xFF1A237E)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Blank Sheet',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A237E),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

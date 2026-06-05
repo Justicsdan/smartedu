@@ -138,7 +138,7 @@ class _PageStudentsState extends State<PageStudents> {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [ringColor, ringColor.withOpacity(0.5)]),
+        color: isFemale ? const Color(0xFFFFECF3) : const Color(0xFFF0F4FF),
         shape: BoxShape.circle,
       ),
       child: url.isNotEmpty
@@ -158,11 +158,7 @@ class _PageStudentsState extends State<PageStudents> {
     if (_searchQuery.isEmpty) {
       return TextSpan(
         text: text.isNotEmpty ? text : 'Unknown',
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF111827),
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
       );
     }
     final q = _searchQuery.toLowerCase();
@@ -171,89 +167,16 @@ class _PageStudentsState extends State<PageStudents> {
     if (idx == -1) {
       return TextSpan(
         text: text.isNotEmpty ? text : 'Unknown',
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF111827),
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
       );
     }
     return TextSpan(
       children: [
         if (idx > 0)
-          TextSpan(
-            text: text.substring(0, idx),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
-            ),
-          ),
-        TextSpan(
-          text: text.substring(idx, idx + _searchQuery.length),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A237E),
-            backgroundColor: Color(0xFFE8EAF6),
-          ),
-        ),
-        if (idx + _searchQuery.length < text.length)
-          TextSpan(
-            text: text.substring(idx + _searchQuery.length),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
-            ),
-          ),
+          TextSpan(text: text.substring(0, idx), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+        TextSpan(text: text.substring(idx, idx + _searchQuery.length), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A237E), backgroundColor: Color(0xFFE8EAF6))),
+        TextSpan(text: text.substring(idx + _searchQuery.length), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
       ],
-    );
-  }
-
-  Widget _statPill({
-    required IconData icon,
-    required String label,
-    required String value,
-    required LinearGradient gradient,
-  }) {
-    return Expanded(
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 17, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                  height: 1.2,
-                ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -265,100 +188,66 @@ class _PageStudentsState extends State<PageStudents> {
     final parent = (s['parent_name'] ?? '').toString().trim();
     final photo = (s['passport_url'] ?? '').toString().trim();
     final isFemale = gender == 'female';
-    final accentColor = isFemale ? const Color(0xFFE91E63) : const Color(0xFF1565C0);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: index.isEven ? Colors.white : const Color(0xFFFAFBFC),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFE8EAED)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 76,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(12),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(12),
-                ),
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  child: Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                _buildStudentAvatar(name, photo, isFemale),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildStudentAvatar(name, photo, isFemale),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            RichText(
-                              text: _buildHighlightedName(name),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [
-                                if (admNo.isNotEmpty)
-                                  _badge(admNo, const Color(0xFF1A237E), const Color(0xFFF0F4FF)),
-                                if (classInfo.isNotEmpty)
-                                  _badge(classInfo, const Color(0xFF7B1FA2), const Color(0xFFF3E5F5)),
-                                if (parent.isNotEmpty)
-                                  _badge(parent, Colors.grey.shade600, const Color(0xFFF5F5F5)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 34,
-                        height: 34,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: Colors.red.shade400,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 30,
-                            minHeight: 30,
-                          ),
-                          onPressed: () => widget.onDelete(s['id']),
-                        ),
+                      RichText(text: _buildHighlightedName(name), overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (admNo.isNotEmpty)
+                            _badge(admNo, const Color(0xFF1A237E), const Color(0xFFF0F4FF)),
+                          if (classInfo.isNotEmpty)
+                            _badge(classInfo, const Color(0xFF7B1FA2), const Color(0xFFF3E5F5)),
+                          if (parent.isNotEmpty)
+                            _badge(parent, Colors.grey.shade600, const Color(0xFFF5F5F5)),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(width: 4),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                    color: const Color(0xFFFEF2F2),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.delete_outline, size: 16, color: Colors.red.shade400),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => widget.onDelete(s['id']),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -367,16 +256,7 @@ class _PageStudentsState extends State<PageStudents> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-      ),
+      child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color), overflow: TextOverflow.ellipsis, maxLines: 1),
     );
   }
 
@@ -396,24 +276,41 @@ class _PageStudentsState extends State<PageStudents> {
           Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
-              color: iconBg ?? Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(icon, size: 32, color: iconColor ?? Colors.grey.shade400),
+            decoration: BoxDecoration(color: iconBg ?? const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(18)),
+            child: Icon(icon, size: 32, color: iconColor ?? const Color(0xFF9CA3AF)),
           ),
           const SizedBox(height: 16),
-          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
           const SizedBox(height: 6),
           Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)), textAlign: TextAlign.center),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: onAction,
-              child: Text(actionLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
-            ),
+            TextButton(onPressed: onAction, child: Text(actionLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)))),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _actionChip({required IconData icon, required String label, required VoidCallback onTap, bool active = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF1A237E) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: active ? const Color(0xFF1A237E) : const Color(0xFFE8EAED)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: active ? Colors.white : const Color(0xFF6B7280)),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : const Color(0xFF6B7280))),
+          ],
+        ),
       ),
     );
   }
@@ -429,129 +326,43 @@ class _PageStudentsState extends State<PageStudents> {
       backgroundColor: const Color(0xFFF7F8FA),
       body: Column(
         children: [
-          // Gradient header
+          // Flat header
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1A237E), Color(0xFF283593)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-            ),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            color: const Color(0xFFF7F8FA),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: const Icon(Icons.school_rounded, size: 24, color: Colors.white),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.school_rounded, size: 22, color: Color(0xFF1A237E)),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Students', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5)),
+                          const Text('Students', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111827), letterSpacing: -0.5)),
                           const SizedBox(height: 2),
-                          Text(hasSearch ? '${_filteredStudents.length} of $total found' : '$total registered', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7))),
+                          Text(hasSearch ? '${_filteredStudents.length} of $total found' : '$total registered', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
                         ],
                       ),
                     ),
-                    // Promote
-                    Container(
-                      height: 38,
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white.withOpacity(0.2))),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: _showPromoteSheet,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 14),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.trending_up_rounded, size: 17, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text('Promote', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _actionChip(icon: Icons.trending_up_rounded, label: 'Promote', onTap: _showPromoteSheet),
                     const SizedBox(width: 8),
-                    // Export
-                    Container(
-                      height: 38,
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white.withOpacity(0.2))),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: _isExporting ? null : _exportCsv,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_isExporting)
-                                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                else
-                                  const Icon(Icons.download_rounded, size: 17, color: Colors.white),
-                                const SizedBox(width: 6),
-                                Text('Export', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _actionChip(icon: Icons.download_rounded, label: _isExporting ? '...' : 'Export', onTap: _isExporting ? () {} : _exportCsv),
                     const SizedBox(width: 8),
-                    // Search toggle
-                    Container(
-                      height: 38,
-                      decoration: BoxDecoration(color: _showSearch ? Colors.white : Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(10), border: Border.all(color: _showSearch ? Colors.white : Colors.white.withOpacity(0.2))),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () {
-                            setState(() {
-                              _showSearch = !_showSearch;
-                              if (!_showSearch) {
-                                _searchController.clear();
-                                _searchQuery = '';
-                                _displayCount = _pageSize;
-                              }
-                            });
-                            if (_showSearch) FocusScope.of(context).requestFocus(_searchFocusNode);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.search_rounded, size: 17, color: _showSearch ? const Color(0xFF1A237E) : Colors.white),
-                                if (!_showSearch) ...[
-                                  const SizedBox(width: 6),
-                                  Text('Search', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white)),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _actionChip(icon: Icons.search_rounded, label: 'Search', onTap: () {
+                      setState(() {
+                        _showSearch = !_showSearch;
+                        if (!_showSearch) { _searchController.clear(); _searchQuery = ''; _displayCount = _pageSize; }
+                      });
+                      if (_showSearch) FocusScope.of(context).requestFocus(_searchFocusNode);
+                    }, active: _showSearch),
                   ],
                 ),
                 // Search field
@@ -560,10 +371,10 @@ class _PageStudentsState extends State<PageStudents> {
                   curve: Curves.easeInOut,
                   child: _showSearch
                       ? Padding(
-                          padding: const EdgeInsets.only(top: 14),
+                          padding: const EdgeInsets.only(top: 14, bottom: 4),
                           child: Container(
                             height: 44,
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))]),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE8EAED))),
                             child: TextField(
                               controller: _searchController,
                               focusNode: _searchFocusNode,
@@ -578,6 +389,8 @@ class _PageStudentsState extends State<PageStudents> {
                                     ? IconButton(icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF9CA3AF)), padding: const EdgeInsets.only(right: 4), constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () { _searchController.clear(); setState(() { _searchQuery = ''; _displayCount = _pageSize; }); })
                                     : null,
                                 border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                                 isDense: true,
                               ),
@@ -589,22 +402,21 @@ class _PageStudentsState extends State<PageStudents> {
               ],
             ),
           ),
-          // Stat pills
+          // Stat row
           if (!_showSearch)
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8EAED)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))]),
+              margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
               child: Row(
                 children: [
-                  _statPill(icon: Icons.people_rounded, label: 'Total', value: '$total', gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF283593)])),
-                  Container(width: 1, height: 32, color: const Color(0xFFE8EAED), margin: const EdgeInsets.symmetric(horizontal: 16)),
-                  _statPill(icon: Icons.check_circle_outline_rounded, label: 'Assigned', value: '${total - unassigned}', gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)])),
-                  Container(width: 1, height: 32, color: const Color(0xFFE8EAED), margin: const EdgeInsets.symmetric(horizontal: 16)),
-                  _statPill(icon: Icons.person_off_rounded, label: 'Unassigned', value: '$unassigned', gradient: const LinearGradient(colors: [Color(0xFFE65100), Color(0xFFEF6C00)])),
+                  _statCard(icon: Icons.people_rounded, label: 'Total', value: '$total', iconBg: const Color(0xFFF0F4FF), iconColor: const Color(0xFF1A237E)),
+                  const SizedBox(width: 10),
+                  _statCard(icon: Icons.check_circle_outline, label: 'Assigned', value: '${total - unassigned}', iconBg: const Color(0xFFF0FFF4), iconColor: const Color(0xFF2E7D32)),
+                  const SizedBox(width: 10),
+                  _statCard(icon: Icons.person_off_rounded, label: 'Unassigned', value: '$unassigned', iconBg: const Color(0xFFFFF3E0), iconColor: const Color(0xFFE65100)),
                 ],
               ),
             ),
+          const SizedBox(height: 12),
           // List
           Expanded(
             child: widget.students.isEmpty
@@ -612,7 +424,7 @@ class _PageStudentsState extends State<PageStudents> {
                 : hasSearch && _filteredStudents.isEmpty
                     ? _emptyState(icon: Icons.search_off_rounded, iconBg: const Color(0xFFFFF3E0), iconColor: const Color(0xFFE65100), title: 'No match found', subtitle: 'Try different search', actionLabel: 'Clear search', onAction: () { _searchController.clear(); setState(() { _searchQuery = ''; _displayCount = _pageSize; }); })
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         itemCount: displayed.length + (_hasMore ? 1 : 0),
                         itemBuilder: (_, i) {
                           if (i == displayed.length) {
@@ -637,26 +449,48 @@ class _PageStudentsState extends State<PageStudents> {
       ),
       floatingActionButton: Container(
         height: 52,
-        decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF283593)]), borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]),
+        decoration: BoxDecoration(color: const Color(0xFF1A237E), borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))]),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: widget.onAdd,
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(width: 16),
-                Icon(Icons.person_add_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text('Add New', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                SizedBox(width: 16),
-              ],
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_add_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Add New', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
             ),
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _statCard({required IconData icon, required String label, required String value, required Color iconBg, required Color iconColor}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
+        child: Row(
+          children: [
+            Container(width: 38, height: 38, decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 18, color: iconColor)),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF111827), height: 1.2)),
+                Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -754,26 +588,30 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Gradient header
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-            decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          // Flat header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
             child: Column(
               children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(4))),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(4))),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(0.2))), child: const Icon(Icons.trending_up_rounded, size: 22, color: Colors.white)),
+                    Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFF0FFF4), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.trending_up_rounded, size: 22, color: Color(0xFF2E7D32))),
                     const SizedBox(width: 14),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Bulk Promote Students', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)), const SizedBox(height: 2), Text('Move all students from one class to another', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.7)))])),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                      Text('Bulk Promote Students', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827), letterSpacing: -0.3)),
+                      SizedBox(height: 2),
+                      Text('Move all students from one class to another', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+                    ])),
                   ],
                 ),
               ],
             ),
           ),
+          const Divider(height: 1, color: Color(0xFFE8EAED)),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -781,7 +619,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
                   value: _fromId,
-                  decoration: InputDecoration(hintText: 'Select source class', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC8E6C9))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_upward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
+                  decoration: InputDecoration(hintText: 'Select source class', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_upward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
                   items: _classes.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (v) { setState(() { _fromId = v; _toId = null; }); },
                 ),
@@ -789,15 +627,15 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
                   Container(
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF388E3C)]), borderRadius: BorderRadius.all(Radius.circular(8))),
-                    child: Text('$_fromCount student${_fromCount != 1 ? 's' : ''} will be moved', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                    decoration: BoxDecoration(color: const Color(0xFFF0FFF4), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFC8E6C9))),
+                    child: Text('$_fromCount student${_fromCount != 1 ? 's' : ''} will be moved', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
                   ),
                 const SizedBox(height: 16),
                 const Align(alignment: Alignment.centerLeft, child: Text('TO CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF), letterSpacing: 0.5))),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
                   value: _toId,
-                  decoration: InputDecoration(hintText: _fromId == null ? 'Select source first' : 'Select destination', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC8E6C9))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
+                  decoration: InputDecoration(hintText: _fromId == null ? 'Select source first' : 'Select destination', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
                   items: _toOptions.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: _fromId == null ? null : (v) { setState(() => _toId = v); },
                 ),

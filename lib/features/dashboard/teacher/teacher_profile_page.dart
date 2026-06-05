@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:smartedu/core/teacher_provider.dart';
+import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 
 class TeacherProfilePage extends StatelessWidget {
   final Map<String, dynamic> teacherData;

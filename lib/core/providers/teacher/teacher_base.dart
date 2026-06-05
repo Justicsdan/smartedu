@@ -9,6 +9,7 @@ abstract class TeacherBase extends ChangeNotifier {
   String get teacherId => _teacherId;
 
   bool _isInitialized = false;
+  final List<RealtimeChannel> _realtimeChannels = [];
   bool get isInitialized => _isInitialized;
 
   Map<String, dynamic>? _currentSession;
@@ -69,7 +70,7 @@ abstract class TeacherBase extends ChangeNotifier {
       await Supabase.instance.client.from('login_history').insert({'school_id': _schoolId, 'user_id': _teacherId, 'user_type': 'teacher', 'username': username, 'is_successful': true});
       await Supabase.instance.client.from('teachers').update({'last_login': DateTime.now().toIso8601String()}).eq('id', _teacherId);
       await _loadSessions(); await _loadSettings(); await loadTeacherData();
-      _isInitialized = true; notifyListeners(); return true;
+      _isInitialized = true; _setupRealtime(); notifyListeners(); return true;
     } catch (e) { debugPrint('Teacher login error: $e'); return false; }
   }
 
@@ -280,5 +281,38 @@ abstract class TeacherBase extends ChangeNotifier {
             a['class_id']?.toString() == classId &&
             a['subject_id']?.toString() == subjectId)
         .toList();
+  }
+
+  void _setupRealtime() {
+    if (_schoolId.isEmpty || _realtimeChannels.isNotEmpty) return;
+    final supabase = Supabase.instance.client;
+    final ch = supabase.channel('teacher-realtime-\${_schoolId}');
+    ch.onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'school_settings',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadSettings(); },
+    ).onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'academic_sessions',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadSessions(); },
+    ).onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'terms',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadTerms(); notifyListeners(); },
+    ).subscribe();
+    _realtimeChannels.add(ch);
+  }
+
+  @override
+  void dispose() {
+    for (final ch in _realtimeChannels) { try { ch.unsubscribe(); } catch (_) {} }
+    _realtimeChannels.clear();
+    super.dispose();
   }
 }

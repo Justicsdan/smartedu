@@ -27,7 +27,6 @@ dependencies:
   
   # PDF & Print (already here — school-branded result sheets)
   pdf: ^3.12.0
-  printing: ^5.14.3
   
   # Backend & Auth
   supabase_flutter: ^2.12.2

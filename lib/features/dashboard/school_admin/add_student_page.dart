@@ -163,7 +163,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                         child: Icon(Icons.photo_library_rounded,
                             size: 20, color: Colors.blue.shade700)),
                     const SizedBox(width: 14),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Choose from Gallery',
@@ -209,7 +209,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                         child: Icon(Icons.camera_alt_rounded,
                             size: 20, color: Colors.green.shade700)),
                     const SizedBox(width: 14),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Take a Photo',
@@ -255,11 +255,11 @@ class _AddStudentPageState extends State<AddStudentPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child:
-                              const Icon(Icons.delete_outline_rounded,
+                              Icon(Icons.delete_outline_rounded,
                                   size: 20,
                                   color: Colors.red.shade700)),
                       const SizedBox(width: 14),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Remove Photo',
@@ -972,7 +972,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                   color: Color(0xFF1A237E), width: 2)),
           errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+              borderSide: const BorderSide(color: Color(0xFFD32F2F))),
           filled: true,
           fillColor: const Color(0xFFFAFBFC),
           contentPadding: const EdgeInsets.symmetric(

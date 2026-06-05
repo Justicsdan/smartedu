@@ -202,6 +202,8 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/dashboard/superadmin', extra: {
         'id': r['id'],
         'name': r['name'],
+        'username': username,
+        'username': username,
       });
     }
   }

@@ -37,7 +37,13 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   final List<String> _schoolTypes = [
     'Primary',
     'Secondary',
-    'Both (Primary & Secondary)',
+    'Primary & Secondary',
+    'Tertiary',
+    'Vocational',
+    'Montessori',
+    'Creche',
+    'Special Needs',
+    'Other',
   ];
 
   @override
@@ -56,26 +62,30 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   }
 
   String _mapSchoolType(String? displayType) {
-    switch (displayType) {
-      case 'Primary':
-        return 'primary';
-      case 'Secondary':
-        return 'secondary';
-      case 'Both (Primary & Secondary)':
-        return 'mixed';
-      default:
-        return 'secondary';
-    }
+    if (displayType == null) return 'secondary';
+    if (displayType == 'Primary & Secondary') return 'both';
+    return displayType.toLowerCase().replaceAll(' ', '_');
   }
 
   String _getTypeDescription(String type) {
     switch (type) {
       case 'Primary':
-        return 'Primary school — suitable for Nursery to Primary 6';
+        return 'Nursery to Primary 6 — uses 5-point grading';
       case 'Secondary':
-        return 'Secondary school — suitable for JSS 1 to SSS 3';
-      case 'Both (Primary & Secondary)':
-        return 'Combined school — covers both primary and secondary levels';
+      case 'Primary & Secondary':
+        return 'JSS 1 to SSS 3 — uses WAEC/NECO grading';
+      case 'Tertiary':
+        return 'Polytechnic, College of Education, or University';
+      case 'Vocational':
+        return 'Technical or vocational training institution';
+      case 'Montessori':
+        return 'Montessori-method early education';
+      case 'Creche':
+        return 'Daycare and early childhood center';
+      case 'Special Needs':
+        return 'School for children with special needs';
+      case 'Other':
+        return 'Any other type of educational institution';
       default:
         return '';
     }
@@ -84,11 +94,15 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   String _getDefaultGrading(String? displayType) {
     switch (displayType) {
       case 'Primary':
+      case 'Montessori':
+      case 'Creche':
         return 'PRIMARY';
       case 'Secondary':
-        return 'WAEC';
-      case 'Both (Primary & Secondary)':
-        return 'WAEC';
+      case 'Primary & Secondary':
+      case 'Tertiary':
+      case 'Vocational':
+      case 'Special Needs':
+      case 'Other':
       default:
         return 'WAEC';
     }
@@ -177,6 +191,15 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     }
   }
 
+  String _buildLocation() {
+    final parts = <String>[];
+    if (_addressController.text.trim().isNotEmpty) parts.add(_addressController.text.trim());
+    if (_cityController.text.trim().isNotEmpty) parts.add(_cityController.text.trim());
+    if (_stateController.text.trim().isNotEmpty) parts.add(_stateController.text.trim());
+    if (_countryController.text.trim().isNotEmpty) parts.add(_countryController.text.trim());
+    return parts.join(', ');
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSchoolType == null) {
@@ -186,12 +209,13 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
 
     final username = _adminUsernameController.text.trim().toLowerCase();
     setState(() => _isUploading = true);
+
     try {
       final exists = await _adminUsernameExists(username);
       if (exists) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white), const SizedBox(width: 10), Expanded(child: Text('Admin username "$username" already exists. Use a different username.'))]),
+            content: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.white), const SizedBox(width: 10), Expanded(child: Text('Admin username "$username" already exists.'))]),
             backgroundColor: const Color(0xFFD32F2F),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -200,7 +224,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
         return;
       }
     } catch (e) {
-      debugPrint('USERNAME CHECK ERR: $e');
+      debugPrint('Username check error: $e');
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -234,52 +258,39 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     try {
       final dbType = _mapSchoolType(_selectedSchoolType);
       final defaultGrading = _getDefaultGrading(_selectedSchoolType);
+      final location = _buildLocation();
 
-      final schoolResponse = await Supabase.instance.client.from('schools').insert({
+      final insertData = <String, dynamic>{
         'name': _schoolNameController.text.trim(),
-        'location': _addressController.text.trim(),
+        'location': location,
         'whatsapp': _whatsappController.text.trim(),
         'school_type': dbType,
         'is_active': true,
-        'has_paid_current_term': false,
         'admin_username': username,
         'admin_password': _adminPasswordController.text.trim(),
-      }).select().single();
+        'motto': _mottoController.text.trim(),
+      };
+      if (_emailController.text.trim().isNotEmpty) {
+        insertData['official_email'] = _emailController.text.trim();
+      }
+
+      final schoolResponse = await Supabase.instance.client
+          .from('schools')
+          .insert(insertData)
+          .select()
+          .single();
 
       final schoolId = schoolResponse['id'] as String;
 
-      final logoUrl = await _uploadLogo(schoolId);
+      final results = await Future.wait([
+        _uploadLogo(schoolId),
+        _createSchoolSettings(schoolId, defaultGrading),
+      ]);
+
+      final logoUrl = results[0] as String?;
+
       if (logoUrl != null) {
         await Supabase.instance.client.from('schools').update({'logo_url': logoUrl}).eq('id', schoolId);
-      }
-
-      await Supabase.instance.client.from('school_settings').insert({
-        'school_id': schoolId,
-        'exam_template': defaultGrading,
-        'current_session': '',
-        'current_term': '',
-        'grading_system': _getDefaultGradingSystem(defaultGrading),
-        'assessment_types': _getDefaultAssessmentTypes(defaultGrading),
-        'subject_max_score': 100,
-        'show_position': true,
-        'show_grade_only': false,
-        'date_format': 'dd/MM/yyyy',
-        'timezone': 'UTC',
-        'principal_name': '',
-        'motto': _mottoController.text.trim(),
-      });
-
-      if (_mottoController.text.trim().isNotEmpty) {
-        await Supabase.instance.client.from('schools').update({'motto': _mottoController.text.trim()}).eq('id', schoolId);
-      }
-
-      final locationUpdates = <String, dynamic>{};
-      if (_emailController.text.trim().isNotEmpty) locationUpdates['email'] = _emailController.text.trim();
-      if (_countryController.text.trim().isNotEmpty) locationUpdates['country'] = _countryController.text.trim();
-      if (_stateController.text.trim().isNotEmpty) locationUpdates['state'] = _stateController.text.trim();
-      if (_cityController.text.trim().isNotEmpty) locationUpdates['city'] = _cityController.text.trim();
-      if (locationUpdates.isNotEmpty) {
-        await Supabase.instance.client.from('schools').update(locationUpdates).eq('id', schoolId);
       }
 
       if (mounted) _showSuccessDialog(schoolId);
@@ -287,9 +298,13 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       if (mounted) {
         String msg = 'Error creating school';
         if (e.code == '23505') {
-          msg = 'Admin username "$username" already exists. Use a different username.';
+          msg = 'Admin username "$username" already exists.';
+        } else if (e.code == '23514') {
+          msg = 'Invalid school type value. Please contact support.';
         } else if (e.message?.contains('admin_username') == true) {
           msg = 'Admin username already taken.';
+        } else {
+          msg = 'Error: ${e.message ?? e.code}';
         }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
       }
@@ -300,6 +315,24 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
+  }
+
+  Future<void> _createSchoolSettings(String schoolId, String defaultGrading) async {
+    await Supabase.instance.client.from('school_settings').insert({
+      'school_id': schoolId,
+      'exam_template': defaultGrading,
+      'current_session': '',
+      'current_term': '',
+      'grading_system': _getDefaultGradingSystem(defaultGrading),
+      'assessment_types': _getDefaultAssessmentTypes(defaultGrading),
+      'subject_max_score': 100,
+      'show_position': true,
+      'show_grade_only': false,
+      'date_format': 'dd/MM/yyyy',
+      'timezone': 'UTC',
+      'principal_name': '',
+      'motto': _mottoController.text.trim(),
+    });
   }
 
   List<Map<String, dynamic>> _getDefaultGradingSystem(String template) {
@@ -406,11 +439,11 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
                     children: [
                       Icon(Icons.fingerprint_rounded, size: 14, color: Colors.grey.shade400),
                       const SizedBox(width: 6),
-                      const Text("School ID (for support)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+                      Text("School ID (for support)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(schoolId, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.grey.shade600)),
+                  Text(schoolId, style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.grey.shade600)),
                 ],
               ),
             ),
@@ -435,7 +468,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       backgroundColor: const Color(0xFFF7F8FA),
       body: Column(
         children: [
-          // ── Header ──
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -461,8 +493,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
-
-          // ── Stepper ──
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
@@ -475,8 +505,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
-
-          // ── Content ──
           Expanded(
             child: Form(
               key: _formKey,
@@ -493,8 +521,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       ),
     );
   }
-
-  // ── Stepper Widgets ──
 
   Widget _stepIndicator(int step, String label, IconData icon) {
     final active = _currentStep >= step;
@@ -539,14 +565,11 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     );
   }
 
-  // ── Step 1: School Info ──
-
   Widget _buildStepOne() {
     return Column(
       key: const ValueKey('step1'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Logo Upload ──
         Center(
           child: Column(
             children: [
@@ -582,13 +605,10 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
           ),
         ),
         const SizedBox(height: 24),
-
-        // ── School Fields ──
         _sectionHeader('School Details', Icons.domain_rounded, const Color(0xFFF0F4FF), const Color(0xFF1A237E)),
         const SizedBox(height: 14),
         _textField('School Name *', _schoolNameController, validator: (v) => _validateRequired(v, 'School name')),
         _dropdownField('School Type *', _selectedSchoolType, _schoolTypes, (val) => setState(() => _selectedSchoolType = val)),
-
         if (_selectedSchoolType != null)
           Container(
             width: double.infinity,
@@ -603,14 +623,12 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
               ],
             ),
           ),
-
-        _textField('Address / Location *', _addressController, validator: (v) => _validateRequired(v, 'Address')),
+        _textField('Address *', _addressController, validator: (v) => _validateRequired(v, 'Address')),
         Row(children: [Expanded(child: _textField('City', _cityController)), const SizedBox(width: 12), Expanded(child: _textField('State', _stateController))]),
         _textField('Country', _countryController, hintText: 'e.g. Nigeria, Ghana'),
         _textField('WhatsApp / Phone *', _whatsappController, keyboardType: TextInputType.phone, validator: (v) => _validateRequired(v, 'Phone'), hintText: '+2348012345678'),
         _textField('School Email', _emailController, keyboardType: TextInputType.emailAddress, validator: _validateEmail, hintText: 'info@schoolname.com'),
         _textField('School Motto', _mottoController, hintText: 'Excellence in Character and Learning'),
-
         const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
@@ -630,8 +648,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       ],
     );
   }
-
-  // ── Step 2: Admin Credentials ──
 
   Widget _buildStepTwo() {
     return Column(
@@ -662,7 +678,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
           hintText: 'Min 6 chars, include uppercase & number',
           suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20, color: Colors.grey.shade500), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
         ),
-
         const SizedBox(height: 28),
         Row(
           children: [
@@ -695,8 +710,6 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       ],
     );
   }
-
-  // ── UI Helpers ──
 
   Widget _sectionHeader(String title, IconData icon, Color bgColor, Color iconColor) {
     return Row(

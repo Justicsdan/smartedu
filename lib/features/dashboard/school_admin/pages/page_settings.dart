@@ -100,7 +100,7 @@ class _PageSettingsState extends State<PageSettings>
         backgroundColor:
             success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: const StadiumBorder(),
         margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
       ),
     );
@@ -273,10 +273,6 @@ class _PageSettingsState extends State<PageSettings>
       ),
     );
   }
-
-  // ═══════════════════════════════════════════
-  // SHARED BUILDERS
-  // ═══════════════════════════════════════════
 
   Widget _pageHeader(String title, String subtitle) {
     return Column(
@@ -529,11 +525,11 @@ class _PageSettingsState extends State<PageSettings>
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: const Color(0xFFF7F8FA),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.add_photo_alternate_outlined,
-              size: 22, color: Colors.grey.shade400),
+          child: const Icon(Icons.add_photo_alternate_outlined,
+              size: 22, color: Color(0xFFBDBDBD)),
         ),
         const SizedBox(height: 6),
         Text(
@@ -681,7 +677,7 @@ class _PageSettingsState extends State<PageSettings>
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: const Color(0xFFF7F8FA),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Icon(icon, size: 36, color: Colors.grey.shade400),
@@ -752,10 +748,6 @@ class _PageSettingsState extends State<PageSettings>
       ),
     );
   }
-
-  // ═══════════════════════════════════════════
-  // PROFILE TAB
-  // ═══════════════════════════════════════════
 
   Widget _buildProfileTab(SchoolAdminProvider provider) {
     return SingleChildScrollView(
@@ -870,10 +862,6 @@ class _PageSettingsState extends State<PageSettings>
     );
   }
 
-  // ═══════════════════════════════════════════
-  // BRANDING TAB
-  // ═══════════════════════════════════════════
-
   Widget _buildBrandingTab(SchoolAdminProvider provider) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -985,10 +973,6 @@ class _PageSettingsState extends State<PageSettings>
     );
   }
 
-  // ═══════════════════════════════════════════
-  // GRADING TAB
-  // ═══════════════════════════════════════════
-
   Widget _buildGradingTab(SchoolAdminProvider provider) {
     final tier = _gradingTier;
     final gs = provider.getEffectiveGradingForTier(tier);
@@ -1014,7 +998,6 @@ class _PageSettingsState extends State<PageSettings>
             style: TextStyle(fontSize: 13, color: _tierColors[tier]),
           ),
           const SizedBox(height: 20),
-          // Standard selector
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1043,7 +1026,7 @@ class _PageSettingsState extends State<PageSettings>
                     Expanded(
                       child: _standardCard(
                         title: 'Nigerian',
-                        sub: 'WAEC · BECE · Primary',
+                        sub: 'WAEC \u00B7 BECE \u00B7 Primary',
                         icon: Icons.flag_rounded,
                         on: !isAm,
                         tap: () async {
@@ -1075,7 +1058,6 @@ class _PageSettingsState extends State<PageSettings>
           const SizedBox(height: 20),
           _tierSelector(tier, (t) => setState(() => _gradingTier = t)),
           const SizedBox(height: 12),
-          // Override badge
           Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1165,7 +1147,6 @@ class _PageSettingsState extends State<PageSettings>
             ],
           ),
           const SizedBox(height: 16),
-          // Errors
           if (errs.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(14),
@@ -1189,28 +1170,28 @@ class _PageSettingsState extends State<PageSettings>
                     ],
                   ),
                   const SizedBox(height: 8),
-                  ...errs.take(3).map((e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('• ',
-                                style: TextStyle(color: Colors.red)),
-                            Expanded(
-                              child: Text(e,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.red.shade700)),
-                            ),
-                          ],
-                        ),
-                      )),
+                  for (final e in errs.take(3))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('\u2022 ',
+                              style: TextStyle(color: Colors.red)),
+                          Expanded(
+                            child: Text(e,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red.shade700)),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
           ],
-          // Table or empty
           if (gs.isEmpty)
             _emptyState(Icons.grade_outlined, 'No grading system for $tier',
                 'Click "Add Grade" or "Copy Default as Override"')
@@ -1265,86 +1246,88 @@ class _PageSettingsState extends State<PageSettings>
                         ],
                       ),
                     ),
-                    ...gs.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final g = entry.value;
-                      final mn = (g['min'] as num?)?.toInt() ?? 0;
-                      final mx = (g['max'] as num?)?.toInt() ?? 0;
-                      final gr = (g['grade'] ?? '').toString();
-                      final fail = !GradingUtils.isPassingGrade(gr, gs);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: i.isEven
-                              ? Colors.white
-                              : const Color(0xFFFAFBFC),
-                          border: Border(
-                            bottom: BorderSide(
-                                color: Colors.grey.shade100),
+                    for (int i = 0; i < gs.length; i++)
+                      Builder(builder: (_) {
+                        final g = gs[i];
+                        final mn = (g['min'] as num?)?.toInt() ?? 0;
+                        final mx = (g['max'] as num?)?.toInt() ?? 0;
+                        final gr = (g['grade'] ?? '').toString();
+                        final fail =
+                            !GradingUtils.isPassingGrade(gr, gs);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: i.isEven
+                                ? Colors.white
+                                : const Color(0xFFFAFBFC),
+                            border: Border(
+                              bottom: BorderSide(
+                                  color: Colors.grey.shade100),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text('$mn',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF1B2A4A))),
-                            ),
-                            Expanded(
-                              child: Text('$mx',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF1B2A4A))),
-                            ),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: fail
-                                      ? Colors.red.shade50
-                                      : _tierColors[tier]!
-                                          .withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  gr,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text('$mn',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF1B2A4A))),
+                              ),
+                              Expanded(
+                                child: Text('$mx',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF1B2A4A))),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
                                     color: fail
-                                        ? Colors.red
-                                        : _tierColors[tier],
+                                        ? Colors.red.shade50
+                                        : _tierColors[tier]!
+                                            .withOpacity(0.1),
+                                    borderRadius:
+                                        BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    gr,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: fail
+                                          ? Colors.red
+                                          : _tierColors[tier],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                (g['remark'] ?? '').toString(),
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF1B2A4A)),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  (g['remark'] ?? '').toString(),
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF1B2A4A)),
+                                ),
                               ),
-                            ),
-                            _rowActions(
-                              onEdit: () => _editGradingRow(
-                                  provider, tier, i, g),
-                              onDelete: gs.length > 1
-                                  ? () => _deleteGradingRow(
-                                      provider, tier, i)
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+                              _rowActions(
+                                onEdit: () => _editGradingRow(
+                                    provider, tier, i, g),
+                                onDelete: gs.length > 1
+                                    ? () => _deleteGradingRow(
+                                        provider, tier, i)
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                   ],
                 ),
               ),
@@ -1363,10 +1346,6 @@ class _PageSettingsState extends State<PageSettings>
       ),
     );
   }
-
-  // ═══════════════════════════════════════════
-  // ASSESSMENT TAB
-  // ═══════════════════════════════════════════
 
   Widget _buildAssessmentTab(SchoolAdminProvider provider) {
     final tier = _assessmentTier;
@@ -1393,7 +1372,6 @@ class _PageSettingsState extends State<PageSettings>
           _tierSelector(
               tier, (t) => setState(() => _assessmentTier = t)),
           const SizedBox(height: 12),
-          // Override badge
           Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1483,7 +1461,6 @@ class _PageSettingsState extends State<PageSettings>
             ],
           ),
           const SizedBox(height: 16),
-          // Validation
           if (ats.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(14),
@@ -1509,8 +1486,8 @@ class _PageSettingsState extends State<PageSettings>
                   Expanded(
                     child: Text(
                       ok
-                          ? 'Total: $total/100 — Valid configuration'
-                          : 'Total: $total/100 — ${((val['errors'] as List).first).toString()}',
+                          ? 'Total: $total/100 \u2014 Valid configuration'
+                          : 'Total: $total/100 \u2014 ${((val['errors'] as List).first).toString()}',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -1524,134 +1501,133 @@ class _PageSettingsState extends State<PageSettings>
               ),
             ),
           const SizedBox(height: 12),
-          // Cards or empty
           if (ats.isEmpty)
             _emptyState(
                 Icons.tune_outlined,
                 'No assessment types for $tier',
                 'Click "Add Assessment" or "Copy Default as Override"')
           else
-            ...ats.asMap().entries.map((entry) {
-              final i = entry.key;
-              final at = entry.value;
-              final nm =
-                  (at['name'] ?? at['id'] ?? '').toString();
-              final mx = (at['max'] as num?)?.toInt() ?? 0;
-              final pct = total > 0
-                  ? ((mx / total) * 100).toStringAsFixed(0)
-                  : '0';
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: const Color(0xFFE8EAED)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(width: 4, color: _tierColors[tier]),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: _tierColors[tier]!
-                                      .withOpacity(0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(10),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '$pct%',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: _tierColors[tier],
+            for (int i = 0; i < ats.length; i++)
+              Builder(builder: (_) {
+                final at = ats[i];
+                final nm =
+                    (at['name'] ?? at['id'] ?? '').toString();
+                final mx = (at['max'] as num?)?.toInt() ?? 0;
+                final pct = total > 0
+                    ? ((mx / total) * 100).toStringAsFixed(0)
+                    : '0';
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border:
+                          Border.all(color: const Color(0xFFE8EAED)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                            width: 4, color: _tierColors[tier]),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: _tierColors[tier]!
+                                        .withOpacity(0.1),
+                                    borderRadius:
+                                        BorderRadius.circular(10),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$pct%',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: _tierColors[tier],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      nm,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF111827),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        nm,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF111827),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Max: $mx marks',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF9CA3AF),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Max: $mx marks',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF9CA3AF),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              SizedBox(
-                                width: 90,
-                                child: Column(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: mx / 100,
-                                        backgroundColor:
-                                            Colors.grey.shade100,
-                                        valueColor:
-                                            AlwaysStoppedAnimation(
-                                                _tierColors[tier]!),
-                                        minHeight: 6,
+                                SizedBox(
+                                  width: 90,
+                                  child: Column(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                        child:
+                                            LinearProgressIndicator(
+                                          value: mx / 100,
+                                          backgroundColor:
+                                              Colors.grey.shade100,
+                                          valueColor:
+                                              AlwaysStoppedAnimation(
+                                                  _tierColors[tier]!),
+                                          minHeight: 6,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '$mx/100',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF9CA3AF),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '$mx/100',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF9CA3AF),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              _rowActions(
-                                onEdit: () =>
-                                    _editAssessmentType(
-                                        provider, tier, i, at),
-                                onDelete: ats.length > 1
-                                    ? () =>
-                                        _deleteAssessmentType(
-                                            provider, tier, i)
-                                    : null,
-                              ),
-                            ],
+                                const SizedBox(width: 12),
+                                _rowActions(
+                                  onEdit: () => _editAssessmentType(
+                                      provider, tier, i, at),
+                                  onDelete: ats.length > 1
+                                      ? () => _deleteAssessmentType(
+                                          provider, tier, i)
+                                      : null,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
           const SizedBox(height: 24),
           _saveBtn(
             label: 'Save Assessment for $tier',
@@ -1667,12 +1643,7 @@ class _PageSettingsState extends State<PageSettings>
     );
   }
 
-  // ═══════════════════════════════════════════
-  // LOGO UPLOAD
-  // ═══════════════════════════════════════════
-
-  Future<void> _pickAndUploadLogo(
-      SchoolAdminProvider provider) async {
+  Future<void> _pickAndUploadLogo(SchoolAdminProvider provider) async {
     try {
       final input = html.FileUploadInputElement()..accept = 'image/*';
       final changeFuture = input.onChange.first;
@@ -1777,12 +1748,7 @@ class _PageSettingsState extends State<PageSettings>
     }
   }
 
-  // ═══════════════════════════════════════════
-  // GRADING ACTIONS
-  // ═══════════════════════════════════════════
-
-  Future<void> _addGradingRow(
-      SchoolAdminProvider p, String t) async {
+  Future<void> _addGradingRow(SchoolAdminProvider p, String t) async {
     final r = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (c) => const _GradingDialog(title: 'Add Grade'),
@@ -1838,10 +1804,6 @@ class _PageSettingsState extends State<PageSettings>
     setState(() => _isSaving = false);
     _snack(ok ? 'Grading saved for $t!' : 'Failed to save');
   }
-
-  // ═══════════════════════════════════════════
-  // ASSESSMENT ACTIONS
-  // ═══════════════════════════════════════════
 
   Future<void> _addAssessmentType(
       SchoolAdminProvider p, String t) async {
@@ -1900,10 +1862,6 @@ class _PageSettingsState extends State<PageSettings>
     _snack(ok ? 'Assessment saved for $t!' : 'Failed to save');
   }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// DIALOGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class _GradingDialog extends StatefulWidget {
   final String title;
@@ -2083,7 +2041,9 @@ class _GradingDialogState extends State<_GradingDialog> {
                           const SnackBar(
                             content:
                                 Text('Fill all required fields'),
-                            backgroundColor: Colors.red,
+                            backgroundColor: Color(0xFFD32F2F),
+                            behavior: SnackBarBehavior.floating,
+                            shape: StadiumBorder(),
                           ),
                         );
                         return;
@@ -2269,7 +2229,9 @@ class _AssessDialogState extends State<_AssessDialog> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Fill all fields'),
-                            backgroundColor: Colors.red,
+                            backgroundColor: Color(0xFFD32F2F),
+                            behavior: SnackBarBehavior.floating,
+                            shape: StadiumBorder(),
                           ),
                         );
                         return;

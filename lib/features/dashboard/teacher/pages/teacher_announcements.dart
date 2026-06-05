@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:smartedu/core/teacher_provider.dart';
+import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 
 class TeacherAnnouncementsPage extends StatefulWidget {
   const TeacherAnnouncementsPage({super.key});

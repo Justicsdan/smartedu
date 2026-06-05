@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
@@ -95,16 +96,14 @@ class _PagePublishResultsState extends State<PagePublishResults> {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600),
-        ),
+        content: Text(message,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600)),
         backgroundColor:
             success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         margin: const EdgeInsets.only(
             bottom: 24, left: 16, right: 16),
       ),
@@ -225,8 +224,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
           gradingSystem: _gradingSystem,
         );
 
-        allStudentSummaries
-            .add({'student_id': sid, ...summary});
+        allStudentSummaries.add({'student_id': sid, ...summary});
       }
 
       if (withScores < students.length) {
@@ -422,9 +420,8 @@ class _PagePublishResultsState extends State<PagePublishResults> {
           .from('student_term_summaries')
           .update({
             'is_published': publish,
-            'published_at': publish
-                ? DateTime.now().toIso8601String()
-                : null,
+            'published_at':
+                publish ? DateTime.now().toIso8601String() : null,
             'published_by':
                 publish ? _provider.currentUserId : null,
           })
@@ -495,8 +492,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
             ratingsMap: Map<String, String>.from(behavioralRatings),
           );
         } catch (e) {
-          debugPrint(
-              'Behavioral ratings save skipped: $e');
+          debugPrint('Behavioral ratings save skipped: $e');
         }
       }
 
@@ -557,12 +553,154 @@ class _PagePublishResultsState extends State<PagePublishResults> {
     );
   }
 
+  String _getClassName() {
+    if (_selectedClassId == null) return '';
+    try {
+      final cls = _provider.classes.firstWhere((c) => c['id'].toString() == _selectedClassId);
+      final name = (cls['name'] ?? '').toString().trim();
+      final section = (cls['section'] ?? '').toString().trim();
+      return section.isNotEmpty ? '$name $section' : name;
+    } catch (_) { return ''; }
+  }
+
   String _statusOf(String? studentId) {
     final s = _summaryFor(studentId);
     if (s == null) return 'none';
     return (s['is_published'] == true)
         ? 'published'
         : 'draft';
+  }
+
+  Future<void> _printAllReportCards() async {
+    if (_selectedClassId == null) return;
+    final published = _summaries.where((s) => s['is_published'] == true).toList();
+    if (published.isEmpty) {
+      _snack('No published results to print', success: false);
+      return;
+    }
+    setState(() => _isPublishing = true);
+    try {
+      final sn = _provider.schoolName;
+      final sl = _provider.schoolLogoUrl;
+      final sm = _provider.schoolMotto;
+      final sa = _provider.schoolAddress;
+      final pn = _provider.principalName;
+      final psig = _provider.principalSignatureUrl;
+      final cn = _getClassName();
+      final sen = _provider.currentSession?['name']?.toString() ?? '';
+      final tn = _provider.currentTerm?['name']?.toString() ?? '';
+      final tier = _classTier;
+      final grading = _gradingSystem;
+      final atypes = GradingUtils.getAssessmentTypesForTier(tier, _provider.schoolSettings ?? {});
+      final ah = atypes.map((a) => {'n': a['name'].toString(), 'm': a['max'].toString()}).toList();
+      final ath = ah.map((a) => "<th>${a['n']}<br/>(${a['m']})</th>").join('');
+      final grow = grading.map((g) => "<tr><td>${g['grade']}</td><td>${g['min']}-${g['max']}</td><td>${g['remark'] ?? ''}</td></tr>").join('');
+      final bkeys = GradingUtils.behavioralFieldKeys;
+      final blabels = GradingUtils.behavioralFieldLabels;
+      final bcol = {'Excellent': '#166534', 'Very Good': '#2E7D32', 'Good': '#1565C0', 'Fair': '#E65100', 'Poor': '#D32F2F'};
+      final csList = await _supabase.from('class_subjects').select('subject_id,subjects(name,code)').eq('class_id', _selectedClassId!).eq('school_id', _provider.schoolId);
+      final sMap = <String, Map<String, String>>{};
+      for (final cs in csList) {
+        final s = cs['subjects'] as Map<String, dynamic>?;
+        if (s != null) {
+          sMap[cs['subject_id'].toString()] = {'name': s['name'].toString(), 'code': (s['code'] ?? '').toString()};
+        }
+      }
+      final allSc = await _supabase.from('scores').select().eq('school_id', _provider.schoolId).eq('class_id', _selectedClassId!).eq('session_id', _sessionId).eq('term_id', _termId);
+      final scBySt = <String, List<Map<String, dynamic>>>{};
+      for (final sc in allSc) {
+        final sid = (sc['student_id'] ?? '').toString();
+        scBySt.putIfAbsent(sid, () => []).add(sc);
+      }
+      final cards = <String>[];
+      for (final sum in published) {
+        final stId = (sum['student_id'] ?? '').toString();
+        final st = _studentsInClass.firstWhere((s) => s['id'].toString() == stId, orElse: () => <String, dynamic>{});
+        final nm = _sName(st);
+        final adm = (st['admission_no'] ?? '').toString();
+        final pp = (st['passport_url'] ?? '').toString();
+        final scs = scBySt[stId] ?? [];
+        final com = _commentFor(stId);
+        final beh = _behavioralFor(stId);
+        final tot = (sum['total_score'] as num?)?.toInt() ?? 0;
+        final avg = (sum['average_score'] as num?)?.toDouble() ?? 0;
+        final gr = (sum['grade'] ?? '').toString();
+        final pos = sum['position'];
+        final po = sum['position_out_of'];
+        final dp = (sum['days_present'] as num?)?.toInt() ?? 0;
+        final da = (sum['days_absent'] as num?)?.toInt() ?? 0;
+        final brows = bkeys.asMap().entries.map((e) {
+          final v = (beh?[e.value] ?? 'Good').toString();
+          final cl = bcol[v] ?? '#1565C0';
+          return "<tr><td>${blabels[e.value]}</td><td style=\"color:$cl;font-weight:700\">$v</td></tr>";
+        }).join('');
+        final srows = scs.map((sc) {
+          final si = (sc['subject_id'] ?? '').toString();
+          final su = sMap[si] ?? {'name': 'Unknown', 'code': ''};
+          final sj = sc['scores_json'] as Map<String, dynamic>? ?? {};
+          final ac = ah.map((a) {
+            final k = a['n'].toString().toLowerCase();
+            final v = sj[k] ?? 0;
+            return "<td>${v is num ? v : 0}</td>";
+          }).join('');
+          final st2 = (sc['total'] as num?)?.toInt() ?? 0;
+          final sg = (sc['grade'] ?? '').toString();
+          final codeStr = (su['code'] ?? '').toString();
+          return "<tr><td style=\"text-align:left;font-weight:600\">${su['name']}${codeStr.isNotEmpty ? ' ($codeStr)' : ''}</td>$ac<td style=\"font-weight:700\">$st2</td><td>$sg</td></tr>";
+        }).join('');
+        final tc = ah.length + 1;
+        final psigStr = (psig ?? '').toString();
+        cards.add(
+            '<div class="c">'
+            '<div class="hd"><div class="hl"><div class="sn">$sn</div>${sm.isNotEmpty ? "<div class=\"mt\">$sm</div>" : ""}${sa.isNotEmpty ? "<div class=\"ad\">$sa</div>" : ""}</div>${sl.isNotEmpty ? "<img class=\"lo\" src=\"$sl\"/>" : ""}</div>'
+            '<div class="si"><div class="sl"><table><tr><td class="l">Name:</td><td class="v">$nm</td></tr><tr><td class="l">Adm No:</td><td class="v">$adm</td></tr><tr><td class="l">Class:</td><td class="v">$cn</td></tr><tr><td class="l">Session:</td><td class="v">$sen</td></tr><tr><td class="l">Term:</td><td class="v">$tn</td></tr></table></div>'
+            '${pp.isNotEmpty ? "<img class=\"pp\" src=\"$pp\"/>" : "<div class=\"pph\">${nm.isNotEmpty ? nm[0].toUpperCase() : ''}</div>"}'
+            '</div>'
+            '<table class="st"><thead><tr><th style="text-align:left;width:170px">Subject</th>$ath<th>Total</th><th>Grade</th></tr></thead><tbody>$srows</tbody>'
+            '<tfoot><tr style="font-weight:700;background:#F0F4FF"><td style="text-align:left">TOTAL</td>${ah.map((_) => "<td></td>").join("")}<td>$tot</td><td>$gr</td></tr>'
+            '<tr style="background:#F0F4FF"><td style="text-align:left">Position</td><td colspan="$tc"></td><td colspan="2" style="font-weight:700">${pos ?? '-'}${po != null ? '/$po' : ''}</td></tr>'
+            '<tr style="background:#F0F4FF"><td style="text-align:left">Average</td><td colspan="$tc"></td><td colspan="2" style="font-weight:700">${avg.toStringAsFixed(1)}</td></tr></tfoot></table>'
+            '<div class="tw"><div class="co"><div class="ct">Attendance</div><table><tr><td>Present</td><td class="b">$dp</td></tr><tr><td>Absent</td><td class="b r">$da</td></tr></table></div>'
+            '<div class="co"><div class="ct">Behavioural Ratings</div><table>$brows</table></div></div>'
+            '${(com?["teacher_comment"] ?? "").toString().isNotEmpty ? "<div class=\"cm\"><div class=\"ct\">Teacher Comment</div><div class=\"ct2\">${com!["teacher_comment"] ?? ""}</div></div>" : ""}'
+            '${(com?["principal_comment"] ?? "").toString().isNotEmpty ? "<div class=\"cm\"><div class=\"ct\">Principal Comment</div><div class=\"ct2\">${com!["principal_comment"] ?? ""}</div></div>" : ""}'
+            '<div class="gk"><div class="ct">Grading Key</div><table><tr><th>Grade</th><th>Range</th><th>Remark</th></tr>$grow</table></div>'
+            '<div class="sg2"><div class="s"><div class="sl2"></div><div>Class Teacher</div></div>'
+            '${psigStr.isNotEmpty ? "<div class=\"s\"><img class=\"si2\" src=\"$psigStr\"/><div>Principal</div></div>" : "<div class=\"s\"><div class=\"sl2\"></div><div>Principal</div></div>"}'
+            '</div></div>'
+        );
+      }
+      final h = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report Cards</title>'
+          '<style>@page{size:A4 portrait;margin:12mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:11px;color:#111}'
+          '.c{page-break-after:always;padding:0 4mm;min-height:270mm}.c:last-child{page-break-after:auto}'
+          '.hd{display:flex;justify-content:space-between;align-items:center;border-bottom:3px double #1A237E;padding-bottom:10px;margin-bottom:10px}'
+          '.sn{font-size:18px;font-weight:800;color:#1A237E}.mt{font-size:11px;color:#4B5563;font-style:italic}.ad{font-size:10px;color:#6B7280}'
+          '.lo{height:60px}.pp{width:80px;height:95px;object-fit:cover;border-radius:8px;border:2px solid #E5E7EB}'
+          '.pph{width:80px;height:95px;border-radius:8px;border:2px solid #E5E7EB;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#1A237E;background:#F0F4FF}'
+          '.si{display:flex;justify-content:space-between;margin-bottom:12px}.sl table td{padding:2px 8px 2px 0;font-size:11px}.l{color:#6B7280;width:90px}.v{font-weight:600}'
+          '.st{width:100%;border-collapse:collapse;margin-bottom:12px}.st th,.st td{border:1px solid #D1D5DB;padding:5px 6px;text-align:center;font-size:10px}'
+          '.st th{background:#1E293B;color:white;font-weight:700;font-size:9px}.st tfoot td{font-size:11px;padding:6px}'
+          '.tw{display:flex;gap:16px;margin-bottom:12px}.co{flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:10px;overflow:hidden}'
+          '.ct{font-size:11px;font-weight:700;color:#1A237E;background:#F0F4FF;padding:6px 10px;margin:-10px -10px 10px -10px;text-transform:uppercase;letter-spacing:0.5px}'
+          '.co table{width:100%;border-collapse:collapse}.co td{padding:3px 8px;font-size:10px;border-bottom:1px solid #F3F4F6}.b{font-weight:700}.r{color:#D32F2F}'
+          '.cm{border:1px solid #E5E7EB;border-radius:8px;padding:10px;margin-bottom:12px;overflow:hidden}.ct2{font-size:11px;color:#374151;line-height:1.5;min-height:24px}'
+          '.gk{margin-bottom:12px}.gk table{width:100%;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}'
+          '.gk th{background:#1E293B;color:white;font-size:9px;padding:5px 8px}.gk td{padding:4px 8px;font-size:10px;border-bottom:1px solid #F3F4F6;text-align:center}'
+          '.sg2{display:flex;justify-content:space-between;margin-top:30px;padding:0 40px}.s{text-align:center;width:150px}.sl2{border-top:1px solid #111;margin-top:40px}.s div:last-child{font-size:10px;margin-top:4px;color:#374151}'
+          '.si2{height:40px;margin-bottom:4px}</style></head><body>'
+          '<div class="no-print" style="position:fixed;top:10px;right:10px;z-index:999"><button onclick="window.print()" style="padding:10px 24px;background:#1A237E;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2)">Print All Cards</button></div>'
+          '${cards.join("")}'
+          '</body></html>';
+      final blob = html.Blob([h], 'text/html');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.window.open(url, '_blank');
+      html.Url.revokeObjectUrl(url);
+    } catch (e) {
+      debugPrint('Print err: $e');
+      _snack('Print error: $e', success: false);
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
   }
 
   @override
@@ -595,7 +733,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 const Text(
@@ -618,19 +755,15 @@ class _PagePublishResultsState extends State<PagePublishResults> {
             ),
             const SizedBox(height: 4),
             Text(
-              '$sessionName — $termName',
-              style: const TextStyle(
-                  fontSize: 13, color: Colors.grey),
+              '$sessionName - $termName',
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 24),
-
-            // Class selector
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFFE8EAED)),
+                border: Border.all(color: const Color(0xFFE8EAED)),
               ),
               child: DropdownButtonFormField<String>(
                 value: _selectedClassId,
@@ -651,7 +784,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                   final tier =
                       (c['tier'] ?? '').toString();
                   final label =
-                      sec.isNotEmpty ? '$n — $sec' : n;
+                      sec.isNotEmpty ? '$n - $sec' : n;
                   final tierLabel =
                       tier.isNotEmpty ? ' [$tier]' : '';
                   return DropdownMenuItem(
@@ -677,10 +810,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Content when class selected
             if (_selectedClassId != null) ...[
-              // Action buttons
               Row(
                 children: [
                   Expanded(
@@ -763,12 +893,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                                 published == 0)
                             ? null
                             : _unpublishAll,
-                        icon: const Icon(Icons.undo, size: 18),
-                        label: const Text('Unpublish',
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF6B7280))),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
                               color: Colors.grey.shade300),
@@ -776,14 +900,43 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               borderRadius:
                                   BorderRadius.circular(8)),
                         ),
+                        icon: const Icon(Icons.undo, size: 18),
+                        label: const Text('Unpublish',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280))),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: (published == 0 || _isPublishing)
+                            ? null
+                            : _printAllReportCards,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: Color(0xFFC5CAE9)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.print_rounded,
+                            size: 18),
+                        label: const Text('Print Cards',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A237E))),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-
-              // Info banner
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
@@ -803,7 +956,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${students.length} students  •  $computed computed  •  $published published  •  Tier: $_classTier',
+                        '${students.length} students  |  $computed computed  |  $published published  |  Tier: $_classTier',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -816,8 +969,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Loading state
               if (_isLoadingData)
                 Center(
                   child: Padding(
@@ -832,14 +983,14 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                             borderRadius:
                                 BorderRadius.circular(14),
                           ),
-                          child: const CircularProgressIndicator(
-                              strokeWidth: 3),
+                          child:
+                              const CircularProgressIndicator(
+                                  strokeWidth: 3),
                         ),
                       ],
                     ),
                   ),
                 )
-              // Empty class
               else if (students.isEmpty)
                 Center(
                   child: Padding(
@@ -869,9 +1020,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                     ),
                   ),
                 )
-              // Student table
               else ...[
-                // Table header
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 12),
@@ -957,7 +1106,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                // Table body
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -1047,7 +1195,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               child: Text(
                                 summary != null
                                     ? '$total'
-                                    : '—',
+                                    : '-',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 12,
@@ -1055,7 +1203,8 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                                   color: summary != null
                                       ? const Color(
                                           0xFF111827)
-                                      : Colors.grey.shade400,
+                                      : Colors
+                                          .grey.shade400,
                                 ),
                               ),
                             ),
@@ -1063,15 +1212,18 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               width: 52,
                               child: Text(
                                 summary != null
-                                    ? avg.toStringAsFixed(1)
-                                    : '—',
+                                    ? avg
+                                        .toStringAsFixed(
+                                            1)
+                                    : '-',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: summary != null
                                       ? const Color(
                                           0xFF111827)
-                                      : Colors.grey.shade400,
+                                      : Colors
+                                          .grey.shade400,
                                 ),
                               ),
                             ),
@@ -1083,27 +1235,39 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                                         padding:
                                             const EdgeInsets
                                                 .symmetric(
-                                                horizontal: 6,
+                                                horizontal:
+                                                    6,
                                                 vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: GradingUtils.isPassingGrade(grade, _gradingSystem)
+                                        decoration:
+                                            BoxDecoration(
+                                          color: GradingUtils
+                                              .isPassingGrade(
+                                                  grade,
+                                                  _gradingSystem)
                                               ? const Color(
                                                   0xFFDCFCE7)
                                               : const Color(
                                                   0xFFFEE2E2),
                                           borderRadius:
-                                              BorderRadius.circular(
-                                                  6),
+                                              BorderRadius
+                                                  .circular(
+                                                      6),
                                         ),
                                         child: Text(
                                           grade,
-                                          textAlign: TextAlign
-                                              .center,
-                                          style: TextStyle(
+                                          textAlign:
+                                              TextAlign
+                                                  .center,
+                                          style:
+                                              TextStyle(
                                             fontSize: 11,
                                             fontWeight:
-                                                FontWeight.bold,
-                                            color: GradingUtils.isPassingGrade(grade, _gradingSystem)
+                                                FontWeight
+                                                    .bold,
+                                            color: GradingUtils
+                                                .isPassingGrade(
+                                                    grade,
+                                                    _gradingSystem)
                                                 ? const Color(
                                                     0xFF166534)
                                                 : const Color(
@@ -1111,10 +1275,12 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                                           ),
                                         ),
                                       )
-                                    : const Text('—',
+                                    : Text(
+                                        '-',
                                         style: TextStyle(
-                                            color: Color(
-                                                0xFF9CA3AF))),
+                                            color:
+                                                Color(
+                                                    0xFF9CA3AF))),
                               ),
                             ),
                             SizedBox(
@@ -1122,14 +1288,15 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               child: Text(
                                 pos != null
                                     ? '$pos/$posOut'
-                                    : '—',
+                                    : '-',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: pos != null
                                       ? const Color(
                                           0xFF111827)
-                                      : Colors.grey.shade400,
+                                      : Colors
+                                          .grey.shade400,
                                 ),
                               ),
                             ),
@@ -1138,31 +1305,35 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               child: Text(
                                 summary != null
                                     ? 'P:$daysP  A:$daysA'
-                                    : '—',
+                                    : '-',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: summary != null
                                       ? const Color(
                                           0xFF111827)
-                                      : Colors.grey.shade400,
+                                      : Colors
+                                          .grey.shade400,
                                 ),
                               ),
                             ),
                             SizedBox(
                               width: 80,
                               child: Center(
-                                child: _buildStatusBadge(
-                                    status),
+                                child:
+                                    _buildStatusBadge(
+                                        status),
                               ),
                             ),
                             SizedBox(
                               width: 36,
                               height: 36,
                               child: IconButton(
-                                icon: const Icon(Icons.edit,
+                                icon: const Icon(
+                                    Icons.edit,
                                     size: 15,
-                                    color: Color(0xFF1A237E)),
+                                    color:
+                                        Color(0xFF1A237E)),
                                 padding: EdgeInsets.zero,
                                 constraints:
                                     const BoxConstraints(
@@ -1180,7 +1351,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                 ),
               ],
             ]
-            // No class selected
             else
               Center(
                 child: Padding(
@@ -1284,10 +1454,6 @@ class _PagePublishResultsState extends State<PagePublishResults> {
     }
   }
 }
-
-// =========================================================
-// STUDENT EDIT SHEET
-// =========================================================
 
 class _StudentEditSheet extends StatefulWidget {
   final String studentName;
@@ -1508,7 +1674,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
               Center(
                 child: Container(
                   width: 40,
@@ -1520,8 +1685,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Header
               Row(
                 children: [
                   Container(
@@ -1564,8 +1727,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Attendance section
               if (widget.showAttendance) ...[
                 _sectionTitle('Attendance',
                     Icons.calendar_today_rounded, Color(0xFFE65100)),
@@ -1589,8 +1750,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                     'Attendance Remark', maxLines: 2),
                 const SizedBox(height: 20),
               ],
-
-              // Behavioral ratings section
               if (widget.showConduct) ...[
                 _sectionTitle(
                     'Behavioral Ratings (Nigerian Standard)',
@@ -1599,7 +1758,8 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.05),
+                    color:
+                        const Color(0xFF2E7D32).withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                         color: const Color(0xFF2E7D32)
@@ -1631,8 +1791,8 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                           padding: const EdgeInsets.only(
                               bottom: 8),
                           child: _ratingDropdown(
-                            GradingUtils.getBehavioralFieldLabel(
-                                key),
+                            GradingUtils
+                                .getBehavioralFieldLabel(key),
                             _ratings[key] ?? 'Good',
                             (v) =>
                                 setState(() => _ratings[key] = v),
@@ -1640,17 +1800,14 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                         )),
                 const SizedBox(height: 20),
               ],
-
-              // Teacher comment
               if (widget.showTeacherComment) ...[
                 _sectionTitle('Teacher Comment',
-                    Icons.chat_bubble_outline_rounded, Color(0xFF1A237E)),
+                    Icons.chat_bubble_outline_rounded,
+                    Color(0xFF1A237E)),
                 _inputField(_teacherCommentCtrl, '',
                     maxLines: 3),
                 const SizedBox(height: 20),
               ],
-
-              // Principal comment
               if (widget.showPrincipalComment) ...[
                 _sectionTitle(
                     'Principal Comment',
@@ -1660,8 +1817,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                     maxLines: 3),
                 const SizedBox(height: 24),
               ],
-
-              // Save button
               SizedBox(
                 width: double.infinity,
                 height: 48,

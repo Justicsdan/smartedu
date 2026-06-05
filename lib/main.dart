@@ -23,6 +23,8 @@ import 'features/dashboard/school_admin/pages/page_credentials.dart';
 import 'features/dashboard/school_admin/pages/page_students.dart';
 import 'features/dashboard/school_admin/pages/page_teachers.dart';
 import 'features/dashboard/teacher/teacher_dashboard.dart';
+import 'features/dashboard/school_admin/add_student_page.dart';
+import 'features/dashboard/school_admin/add_teacher_page.dart';
 import 'features/dashboard/student/student_dashboard.dart';
 
 void main() async {
@@ -623,6 +625,9 @@ class _AdminShellState extends State<_AdminShell> {
           activeCbtCount:
               p.cbtExams.where((e) => e['is_published'] == true).length,
           classes: p.classes,
+          schoolName: p.schoolName,
+          schoolUrl: p.schoolLogoUrl,
+          onNavigate: (i) => setState(() => _selectedIndex = i),
         );
       case 1:
         return PageStudents(
@@ -631,7 +636,7 @@ class _AdminShellState extends State<_AdminShell> {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text('Delete: $id')));
           },
-          onAdd: () {},
+          onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddStudentPage(classes: p.classes))).then((_) async { await p.reloadData(); if (mounted) setState(() {}); }),
           onRefresh: () {},
         );
       case 2:
@@ -641,7 +646,7 @@ class _AdminShellState extends State<_AdminShell> {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text('Delete: $id')));
           },
-          onAdd: () {},
+          onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTeacherPage())).then((_) async { await p.reloadData(); if (mounted) setState(() {}); }),
         );
       case 3:
         return PageClasses(

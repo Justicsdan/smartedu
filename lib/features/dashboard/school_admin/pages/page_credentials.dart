@@ -1,469 +1,1037 @@
-// ==========================================
-// File: lib/features/dashboard/school_admin/pages/page_credentials.dart
-// ==========================================
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
+import '../../../../utils/pdf_download_utils.dart';
 import '../../../../core/providers/school_admin_provider.dart';
 
 class PageCredentials extends StatefulWidget {
   const PageCredentials({super.key});
-
   @override
   State<PageCredentials> createState() => _PageCredentialsState();
 }
 
 class _PageCredentialsState extends State<PageCredentials>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late TabController _tabCtrl;
+  String? _teacherClassId;
+  String? _studentClassId;
+  bool _generating = false;
+  bool _printing = false;
   final Set<String> _loadingIds = {};
-  bool _isPrintingAll = false;
-  bool _isGeneratingAll = false;
-  String? _selectedTeacherClassId;
-  String? _selectedStudentClassId;
+  String? _viewingId;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabCtrl.dispose();
     super.dispose();
   }
 
-  void _snack(String message, {bool success = true}) {
+  void _snack(String msg, {bool ok = true}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor:
-            success ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+        content: Text(msg),
+        backgroundColor: ok ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8)),
-        margin: const EdgeInsets.only(
-            bottom: 24, left: 16, right: 16),
+        shape: const StadiumBorder(),
+        margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
       ),
     );
   }
 
-  String _getSchoolName(SchoolAdminProvider p) {
-    final getterName = p.schoolName;
-    final mapName =
-        p.schoolInfoMap['name']?.toString() ?? '';
-    if (getterName.isNotEmpty) return getterName;
-    if (mapName.isNotEmpty) return mapName;
-    return 'School';
+  void _copy(String username, String secret, bool isTeacher) {
+    final label = isTeacher ? 'Password' : 'PIN';
+    final text = 'Username: $username\n$label: $secret';
+    Clipboard.setData(ClipboardData(text: text));
+    _snack('Credentials copied');
   }
 
-  String? _getLogoUrl(SchoolAdminProvider p) {
-    return p.schoolLogoUrl.isNotEmpty ? p.schoolLogoUrl : null;
-  }
-
-  String _getSchoolAddress(SchoolAdminProvider p) {
-    return p.fullAddress.isNotEmpty ? p.fullAddress : '';
-  }
-
-  String _getSchoolMotto(SchoolAdminProvider p) {
-    return p.schoolMotto.isNotEmpty ? p.schoolMotto : '';
-  }
-
-  String _displayName(Map<String, dynamic> m) {
+  String _name(Map<String, dynamic> m) {
     final f = (m['first_name'] ?? '').toString().trim();
     final l = (m['last_name'] ?? '').toString().trim();
     if (f.isNotEmpty && l.isNotEmpty) return '$f $l';
-    if (f.isNotEmpty) return f;
-    if (l.isNotEmpty) return l;
-    return '';
+    return f.isNotEmpty ? f : l;
   }
 
-  void _copy(BuildContext context, String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied!'),
-        backgroundColor: Color(0xFF2E7D32),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8))),
+  String _secret(Map<String, dynamic> it, bool isTeacher) {
+    if (isTeacher) {
+      return (it['password'] ?? '').toString();
+    }
+    return (it['pin'] ?? '').toString();
+  }
+
+  bool _needsRegen(String secret, bool isTeacher) {
+    if (secret.startsWith('\$2')) return true;
+    if (isTeacher && RegExp(r'^\d{4}$').hasMatch(secret)) return true;
+    return false;
+  }
+
+  String _generateStrongPassword() {
+    final r = Random();
+    final digits = List.generate(6, (_) => r.nextInt(10)).join();
+    return 'Tchr@$digits!';
+  }
+
+  String _generatePin() {
+    return '${Random().nextInt(9000) + 1000}';
+  }
+
+  Future<void> _regenerateOne(SchoolAdminProvider p, Map<String, dynamic> it,
+      bool isTeacher) async {
+    final id = it['id'].toString();
+    setState(() => _loadingIds.add(id));
+    try {
+      final secret = isTeacher ? _generateStrongPassword() : _generatePin();
+      final updates = <String, String>{};
+      if (isTeacher) {
+        updates['password'] = secret;
+      } else {
+        updates['pin'] = secret;
+      }
+      if ((it['username'] ?? '').toString().isEmpty) {
+        final fn = (it['first_name'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z]'), '');
+        final ln = (it['last_name'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z]'), '');
+        final adm = (it['admission_no'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]'), '');
+        final base = isTeacher
+            ? '$fn${ln.isNotEmpty ? '_$ln' : ''}'
+            : (adm.isNotEmpty ? adm : '$fn$ln');
+        updates['username'] = '$base${Random().nextInt(9000) + 1000}';
+      }
+      await Supabase.instance.client
+          .from(isTeacher ? 'teachers' : 'students')
+          .update(updates)
+          .eq('id', it['id']);
+      await p.reloadData();
+      if (mounted) _snack('New ${isTeacher ? 'password' : 'PIN'} generated');
+    } catch (e) {
+      if (mounted) _snack('Error: $e', ok: false);
+    } finally {
+      if (mounted) {
+        setState(() => _loadingIds.remove(id));
+        setState(() => _viewingId = null);
+      }
+    }
+  }
+
+  Future<void> _generate(
+      SchoolAdminProvider p, bool isTeacher, List<dynamic> items) async {
+    final missing = items
+        .where((e) => (e['username'] ?? '').toString().isEmpty)
+        .toList();
+    if (missing.isEmpty) {
+      _snack('All already have credentials');
+      return;
+    }
+    setState(() => _generating = true);
+    try {
+      for (final it in missing) {
+        final fn = (it['first_name'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z]'), '');
+        final ln = (it['last_name'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z]'), '');
+        final adm = (it['admission_no'] ?? '')
+            .toString()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]'), '');
+        final base = isTeacher
+            ? '$fn${ln.isNotEmpty ? '_$ln' : ''}'
+            : (adm.isNotEmpty ? adm : '$fn$ln');
+        final uname = '$base${Random().nextInt(9000) + 1000}';
+        final secret = isTeacher ? _generateStrongPassword() : _generatePin();
+        final updates = {'username': uname};
+        if (isTeacher) {
+          updates['password'] = secret;
+        } else {
+          updates['pin'] = secret;
+        }
+        await Supabase.instance.client
+            .from(isTeacher ? 'teachers' : 'students')
+            .update(updates)
+            .eq('id', it['id']);
+      }
+      await p.reloadData();
+      if (mounted) {
+        _snack(
+            'Generated for ${missing.length} ${isTeacher ? 'teacher(s)' : 'student(s)'}');
+      }
+    } catch (e) {
+      if (mounted) _snack('Error: $e', ok: false);
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  Future<pw.MemoryImage?> _fetchLogo(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final resp = await Supabase.instance.client
+          .storage
+          .from('school-logos')
+          .download(url);
+      return pw.MemoryImage(resp);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  pw.Widget _credCard(
+      String schoolName,
+      String name,
+      String username,
+      String secret,
+      String secretLabel,
+      String? extra,
+      pw.MemoryImage? logo) {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: PdfColor.fromInt(0xFFD0D5DD), width: 0.5),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: const pw.BoxDecoration(
+              color: PdfColor.fromInt(0xFF1A237E),
+              borderRadius: pw.BorderRadius.only(
+                topLeft: pw.Radius.circular(6),
+                topRight: pw.Radius.circular(6),
+              ),
+            ),
+            child: pw.Row(
+              children: [
+                if (logo != null)
+                  pw.Container(
+                    width: 22,
+                    height: 22,
+                    margin: const pw.EdgeInsets.only(right: 6),
+                    child: pw.Image(logo, fit: pw.BoxFit.contain),
+                  ),
+                pw.Expanded(
+                  child: pw.Text(
+                    schoolName.toUpperCase(),
+                    style: const pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+                if (logo != null) pw.SizedBox(width: 22),
+              ],
+            ),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  name,
+                  style: const pw.TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromInt(0xFF111827),
+                  ),
+                ),
+                if (extra != null)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 1),
+                    child: pw.Text(
+                      extra,
+                      style: const pw.TextStyle(
+                        fontSize: 6.5,
+                        color: PdfColors.grey600,
+                      ),
+                    ),
+                  ),
+                pw.SizedBox(height: 6),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromInt(0xFFF8F9FC),
+                    borderRadius: pw.BorderRadius.circular(4),
+                    border: pw.Border.all(
+                        color: PdfColor.fromInt(0xFFE8EAED), width: 0.5),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _credRow('USERNAME', username),
+                      pw.SizedBox(height: 5),
+                      _credRow(secretLabel.toUpperCase(), secret),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 4),
+            child: pw.Text(
+              '-- Keep confidential --',
+              style: pw.TextStyle(
+                fontSize: 5,
+                color: PdfColors.grey400,
+                fontStyle: pw.FontStyle.italic,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _generateAll(SchoolAdminProvider p, bool isTeacher,
-      List<dynamic> users) async {
-    setState(() => _isGeneratingAll = true);
-    int generated = 0;
-    int skipped = 0;
-
-    for (final u in users) {
-      final id =
-          (u as Map<String, dynamic>)['id']?.toString() ?? '';
-      final hasCreds =
-          (u['username'] ?? '').toString().isNotEmpty;
-      if (hasCreds) {
-        skipped++;
-        continue;
-      }
-      try {
-        final result = isTeacher
-            ? await p.generateTeacherCredentialInDb(id)
-            : await p.generateStudentCredentialInDb(id);
-        if (result != null) generated++;
-      } catch (e) {
-        debugPrint('Generate error for $id: $e');
-      }
-    }
-
-    if (mounted) {
-      setState(() => _isGeneratingAll = false);
-      String msg =
-          '$generated credential${generated != 1 ? 's' : ''} generated';
-      if (skipped > 0) {
-        msg += ', $skipped already had credentials';
-      }
-      _snack(msg, success: generated > 0);
-    }
-  }
-
-  Future<void> _printSlip(SchoolAdminProvider p, String name,
-      String username, String secret, String secretLabel,
-      {String? extraInfo}) async {
-    try {
-      final pdf = pw.Document(
-          theme: pw.ThemeData.withFont(
-              base: pw.Font.helvetica()));
-      final schoolName = _getSchoolName(p);
-      final schoolAddress = _getSchoolAddress(p);
-      final schoolMotto = _getSchoolMotto(p);
-
-      pw.ImageProvider? logoImg;
-      final logoUrl = _getLogoUrl(p);
-      if (logoUrl != null) {
-        try {
-          final res = await http.get(Uri.parse(logoUrl));
-          if (res.statusCode == 200 &&
-              res.bodyBytes.isNotEmpty) {
-            logoImg = pw.MemoryImage(res.bodyBytes);
-          }
-        } catch (e) {
-          debugPrint('Logo fetch error: $e');
-        }
-      }
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          build: (context) => pw.Center(
-            child: pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(24),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(
-                    color: PdfColors.blue800, width: 1.5),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                mainAxisSize: pw.MainAxisSize.min,
-                children: [
-                  if (logoImg != null)
-                    pw.Container(
-                        height: 70,
-                        width: 70,
-                        child: pw.Image(logoImg,
-                            fit: pw.BoxFit.contain)),
-                  if (logoImg != null) pw.SizedBox(height: 10),
-                  pw.Text(schoolName.toUpperCase(),
-                      style: pw.TextStyle(
-                          fontSize: 20,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.blue800)),
-                  if (schoolAddress.isNotEmpty) ...[
-                    pw.SizedBox(height: 4),
-                    pw.Text(schoolAddress,
-                        style: pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey600)),
-                  ],
-                  if (schoolMotto.isNotEmpty) ...[
-                    pw.SizedBox(height: 2),
-                    pw.Text('"$schoolMotto"',
-                        style: pw.TextStyle(
-                            fontSize: 9,
-                            fontStyle: pw.FontStyle.italic,
-                            color: PdfColors.grey600)),
-                  ],
-                  pw.SizedBox(height: 4),
-                  pw.Divider(color: PdfColors.blue200),
-                  pw.SizedBox(height: 16),
-                  pw.Text('$secretLabel Slip',
-                      style: pw.TextStyle(
-                          fontSize: 13, color: PdfColors.grey700)),
-                  pw.SizedBox(height: 20),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(16),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.grey100,
-                      borderRadius: pw.BorderRadius.circular(8),
-                    ),
-                    child: pw.Column(
-                      crossAxisAlignment:
-                          pw.CrossAxisAlignment.start,
-                      children: [
-                        _pdfRow('Name', name),
-                        pw.SizedBox(height: 10),
-                        _pdfRow('Username', username),
-                        pw.SizedBox(height: 10),
-                        _pdfRow(secretLabel, secret),
-                        if (extraInfo != null &&
-                            extraInfo.isNotEmpty) ...[
-                          pw.SizedBox(height: 10),
-                          _pdfRow('Class', extraInfo),
-                        ],
-                      ],
-                    ),
-                  ),
-                  pw.SizedBox(height: 20),
-                  pw.Text(
-                      'Keep this information safe. Do not share your $secretLabel.',
-                      style: pw.TextStyle(
-                          fontSize: 9, color: PdfColors.grey500),
-                      textAlign: pw.TextAlign.center),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
-          name: '${name}_credentials.pdf');
-    } catch (e) {
-      debugPrint('Print slip error: $e');
-      if (mounted) {
-        _snack('Print error: $e', success: false);
-      }
-    }
-  }
-
-  pw.Widget _pdfRow(String label, String value) {
-    return pw.Row(
+  pw.Widget _credRow(String label, String value) {
+    return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('$label: ',
-            style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold, fontSize: 12)),
-        pw.Expanded(
-            child: pw.Text(value,
-                style: pw.TextStyle(fontSize: 12))),
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            fontSize: 5.5,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColor.fromInt(0xFF9CA3AF),
+            letterSpacing: 0.8,
+          ),
+        ),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          value,
+          style: const pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColor.fromInt(0xFF111827),
+            letterSpacing: 0.8,
+          ),
+        ),
       ],
     );
   }
 
-  Future<void> _printAll(SchoolAdminProvider p, bool isTeacher,
-      List<dynamic> filteredUsers) async {
-    setState(() => _isPrintingAll = true);
-
+  Future<void> _printOne(
+      SchoolAdminProvider p, Map<String, dynamic> it, bool isTeacher) async {
+    final id = it['id'].toString();
+    setState(() => _loadingIds.add(id));
     try {
-      final pdf = pw.Document(
-          theme: pw.ThemeData.withFont(
-              base: pw.Font.helvetica()));
-      final schoolName = _getSchoolName(p);
-      final schoolAddress = _getSchoolAddress(p);
-      final schoolMotto = _getSchoolMotto(p);
-
-      pw.ImageProvider? logoImg;
-      final logoUrl = _getLogoUrl(p);
-      if (logoUrl != null) {
-        try {
-          final res = await http.get(Uri.parse(logoUrl));
-          if (res.statusCode == 200 &&
-              res.bodyBytes.isNotEmpty) {
-            logoImg = pw.MemoryImage(res.bodyBytes);
-          }
-        } catch (_) {}
+      final nm = _name(it);
+      final un = (it['username'] ?? '').toString();
+      final sec = _secret(it, isTeacher);
+      final sl = isTeacher ? 'Password' : 'PIN';
+      String? ex;
+      if (isTeacher) {
+        final s = (it['staff_id'] ?? '').toString();
+        if (s.isNotEmpty) ex = 'Staff ID: $s';
+      } else {
+        final s = (it['admission_no'] ?? '').toString();
+        if (s.isNotEmpty) ex = 'Adm No: $s';
       }
-
-      final withCreds = filteredUsers.where((u) {
-        final hasUsername =
-            (u['username'] ?? '').toString().isNotEmpty;
-        final hasSecret = isTeacher
-            ? (u['password'] ?? '').toString().isNotEmpty
-            : (u['pin'] ?? '').toString().isNotEmpty;
-        return hasUsername && hasSecret;
-      }).toList();
-
-      if (withCreds.isEmpty) {
-        if (mounted) {
-          _snack(
-              'No credentials to print. Generate first.',
-              success: false);
-        }
-        setState(() => _isPrintingAll = false);
-        return;
-      }
-
+      final sn = p.schoolName;
+      final logo = await _fetchLogo(p.schoolLogoUrl);
+      final pdf = pw.Document(theme: pw.ThemeData.withFont());
       pdf.addPage(
-        pw.MultiPage(
+        pw.Page(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (context) => withCreds.map((u) {
-            final displayName = _displayName(
-                u as Map<String, dynamic>);
-            final username =
-                (u['username'] ?? '').toString();
-            final secret = isTeacher
-                ? (u['password'] ?? '').toString()
-                : (u['pin'] ?? '').toString();
-            final secretLabel =
-                isTeacher ? 'Password' : 'PIN';
+          margin: const pw.EdgeInsets.all(24),
+          build: (_) => pw.Center(
+            child: pw.SizedBox(
+              width: 260,
+              child: _credCard(sn, nm, un, sec, sl, ex, logo),
+            ),
+          ),
+        ),
+      );
+      downloadPdfBytes(
+          await pdf.save(), '${nm.replaceAll(' ', '_')}_creds.pdf');
+    } catch (e) {
+      if (mounted) _snack('Print error: $e', ok: false);
+    } finally {
+      if (mounted) setState(() => _loadingIds.remove(id));
+    }
+  }
 
-            String? extraInfo;
-            if (!isTeacher) {
-              final admNo =
-                  (u['admission_no'] ?? '').toString().trim();
-              final className =
-                  (u['class_name'] ?? '').toString().trim();
-              if (className.isNotEmpty) extraInfo = className;
-              if (admNo.isNotEmpty && extraInfo != null) {
-                extraInfo = '$extraInfo (Adm: $admNo)';
-              } else if (admNo.isNotEmpty) {
-                extraInfo = 'Adm: $admNo';
-              }
-            } else {
-              final staffId =
-                  (u['staff_id'] ?? '').toString().trim();
-              if (staffId.isNotEmpty) {
-                extraInfo = 'Staff ID: $staffId';
-              }
-            }
+  Future<void> _printAll(
+      SchoolAdminProvider p, bool isTeacher, List<dynamic> items) async {
+    final have = items
+        .where((e) =>
+            (e['username'] ?? '').toString().isNotEmpty &&
+            !_needsRegen(_secret(e, isTeacher), isTeacher))
+        .toList();
+    if (have.isEmpty) {
+      _snack('No credentials to print. Generate first.', ok: false);
+      return;
+    }
+    setState(() => _printing = true);
+    try {
+      final sn = p.schoolName;
+      final sl = isTeacher ? 'Password' : 'PIN';
+      final logo = await _fetchLogo(p.schoolLogoUrl);
+      final pdf = pw.Document(theme: pw.ThemeData.withFont());
+      const cols = 2;
+      const rows = 3;
+      const perPage = cols * rows;
+      final pageW = PdfPageFormat.a4.width - 48;
+      final pageH = PdfPageFormat.a4.height - 48;
+      final cardW = (pageW - 12) / cols;
+      final cardH = (pageH - 16) / rows;
 
-            return pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(14),
-              margin:
-                  const pw.EdgeInsets.only(bottom: 14),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(
-                    color: PdfColors.blue800),
-                borderRadius: pw.BorderRadius.circular(8),
+      for (var i = 0; i < have.length; i += perPage) {
+        final pageItems = have.skip(i).take(perPage).toList();
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(24),
+            build: (_) => pw.Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                for (final it in pageItems)
+                  pw.SizedBox(
+                    width: cardW,
+                    height: cardH,
+                    child: _credCard(
+                      sn,
+                      _name(it),
+                      (it['username'] ?? '').toString(),
+                      _secret(it, isTeacher),
+                      sl,
+                      isTeacher
+                          ? (it['staff_id'] ?? '').toString().isNotEmpty
+                              ? 'Staff ID: ${it['staff_id']}'
+                              : null
+                          : (it['admission_no'] ?? '').toString().isNotEmpty
+                              ? 'Adm No: ${it['admission_no']}'
+                              : null,
+                      logo,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+      downloadPdfBytes(await pdf.save(),
+          '${isTeacher ? 'Teachers' : 'Students'}_Creds.pdf');
+      if (mounted) _snack('Printed ${have.length} credential(s)');
+    } catch (e) {
+      if (mounted) _snack('Print error: $e', ok: false);
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
+  }
+
+  List<dynamic> _filterTeachers(SchoolAdminProvider p) {
+    if (_teacherClassId == null) return p.teachers;
+    return p.teachers
+        .where((t) => p.assignments.any((a) =>
+            a['teacher_id']?.toString() == t['id']?.toString() &&
+            a['class_id']?.toString() == _teacherClassId))
+        .toList();
+  }
+
+  List<dynamic> _filterStudents(SchoolAdminProvider p) {
+    if (_studentClassId == null) return p.students;
+    return p.students
+        .where((s) => s['class_id']?.toString() == _studentClassId)
+        .toList();
+  }
+
+  Widget _iconBtn(IconData icon, Color color, bool loading,
+      VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F4FF),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(icon, size: 15, color: color),
+      ),
+    );
+  }
+
+  Widget _inlineCreds(Map<String, dynamic> it, bool isTeacher) {
+    final un = (it['username'] ?? '').toString();
+    final sec = _secret(it, isTeacher);
+    final sl = isTeacher ? 'Password' : 'PIN';
+    final bad = _needsRegen(sec, isTeacher);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(10),
+          bottomRight: Radius.circular(10),
+        ),
+        border: Border.all(color: const Color(0xFFD0D5DD)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: TextEditingController(text: un),
+                  readOnly: true,
+                  style: const TextStyle(
+                      fontSize: 13, color: Color(0xFF111827)),
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    labelStyle: TextStyle(
+                        color: Colors.grey.shade600, fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFFAFBFC),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                  ),
+                ),
               ),
-              child: pw.Column(
-                crossAxisAlignment:
-                    pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Row(
-                    crossAxisAlignment:
-                        pw.CrossAxisAlignment.start,
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: TextEditingController(
+                      text: bad
+                          ? (sec.startsWith('\$2')
+                              ? '[bcrypt hash]'
+                              : '[weak password]')
+                          : sec),
+                  readOnly: true,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: bad ? Colors.red.shade400 : const Color(0xFF111827),
+                    letterSpacing: bad ? 0 : 1.2,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: sl,
+                    labelStyle: TextStyle(
+                        color: Colors.grey.shade600, fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    filled: true,
+                    fillColor:
+                        bad ? const Color(0xFFFFFBFB) : const Color(0xFFFAFBFC),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (!bad)
+                GestureDetector(
+                  onTap: () => _copy(un, sec, isTeacher),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.copy_rounded,
+                            size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Copy',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                GestureDetector(
+                  onTap: () => _regenerateOne(
+                      context.read<SchoolAdminProvider>(), it, isTeacher),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.refresh_rounded,
+                            size: 14, color: Color(0xFFE65100)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Regenerate',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFE65100),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: bad
+                    ? null
+                    : () => _printOne(
+                        context.read<SchoolAdminProvider>(), it, isTeacher),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color:
+                        bad ? Colors.grey.shade300 : const Color(0xFF1A237E),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (logoImg != null)
-                        pw.Container(
-                            height: 36,
-                            width: 36,
-                            margin:
-                                const pw.EdgeInsets.only(right: 10),
-                            child: pw.Image(logoImg,
-                                fit: pw.BoxFit.contain)),
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment:
-                              pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text(
-                                schoolName.toUpperCase(),
-                                style: pw.TextStyle(
-                                    fontSize: 13,
-                                    fontWeight:
-                                        pw.FontWeight.bold,
-                                    color:
-                                        PdfColors.blue800)),
-                            if (schoolAddress.isNotEmpty)
-                              pw.Text(schoolAddress,
-                                  style: pw.TextStyle(
-                                      fontSize: 8,
-                                      color: PdfColors
-                                          .grey600)),
-                            if (schoolMotto.isNotEmpty)
-                              pw.Text('"$schoolMotto"',
-                                  style: pw.TextStyle(
-                                      fontSize: 7,
-                                      fontStyle:
-                                          pw.FontStyle.italic,
-                                      color: PdfColors
-                                          .grey600)),
-                          ],
+                      Icon(Icons.print_rounded,
+                          size: 14,
+                          color: bad ? Colors.grey.shade500 : Colors.white),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Print',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: bad ? Colors.grey.shade500 : Colors.white,
                         ),
                       ),
                     ],
                   ),
-                  pw.SizedBox(height: 6),
-                  pw.Divider(color: PdfColors.blue200),
-                  pw.SizedBox(height: 10),
-                  pw.Text(displayName,
-                      style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold)),
-                  if (extraInfo != null) ...[
-                    pw.SizedBox(height: 4),
-                    pw.Text(extraInfo,
-                        style: pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey600)),
-                  ],
-                  pw.SizedBox(height: 10),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(10),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.grey100,
-                      borderRadius:
-                          pw.BorderRadius.circular(6),
-                    ),
-                    child: pw.Column(
-                      crossAxisAlignment:
-                          pw.CrossAxisAlignment.start,
-                      children: [
-                        _pdfRow('Username', username),
-                        pw.SizedBox(height: 6),
-                        _pdfRow(secretLabel, secret),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            );
-          }).toList(),
+            ],
+          ),
+          if (bad) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    size: 14, color: Colors.orange.shade700),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    sec.startsWith('\$2')
+                        ? 'This ${isTeacher ? 'teacher' : 'student'} has a hashed password. Click "Regenerate" to set a new plain-text credential.'
+                        : 'This password is too weak (4-digit). Click "Regenerate" to set a strong password.',
+                    style: TextStyle(
+                        fontSize: 11, color: Colors.orange.shade700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(
+      List<dynamic> items, SchoolAdminProvider p, bool isTeacher) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                isTeacher
+                    ? Icons.person_off_rounded
+                    : Icons.school_rounded,
+                size: 28,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No ${isTeacher ? 'teachers' : 'students'} found',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Adjust the filter or add ${isTeacher ? 'teachers' : 'students'} first',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+            ),
+          ],
         ),
       );
-
-      await Printing.layoutPdf(
-          onLayout: (format) async => pdf.save(),
-          name:
-              '${isTeacher ? 'Teachers' : 'Students'}_Credentials.pdf');
-    } catch (e) {
-      debugPrint('Bulk print error: $e');
-      if (mounted) {
-        _snack('Print error: $e', success: false);
-      }
-    } finally {
-      if (mounted) setState(() => _isPrintingAll = false);
     }
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 4),
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final it = items[i];
+        final id = it['id'].toString();
+        final nm = _name(it);
+        final un = (it['username'] ?? '').toString();
+        final sec = _secret(it, isTeacher);
+        final has = un.isNotEmpty;
+        final bad = _needsRegen(sec, isTeacher);
+        final ld = _loadingIds.contains(id);
+        final isOpen = _viewingId == id;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          child: Column(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color:
+                      i.isEven ? const Color(0xFFFAFBFC) : Colors.white,
+                  borderRadius: isOpen
+                      ? const BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10))
+                      : BorderRadius.circular(10),
+                  border: Border.all(
+                      color: isOpen
+                          ? const Color(0xFFD0D5DD)
+                          : const Color(0xFFE8EAED)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFF0F4FF),
+                      child: Text(
+                        nm.isNotEmpty ? nm[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A237E)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nm,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          if (has)
+                            Text(
+                              isOpen
+                                  ? (bad
+                                      ? 'Weak password -- see below'
+                                      : 'Credentials shown below')
+                                  : (bad
+                                      ? '$un | [weak password]'
+                                      : '$un | ${isTeacher ? 'Pwd' : 'PIN'}: $sec'),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: bad
+                                      ? Colors.orange.shade600
+                                      : (isOpen
+                                          ? const Color(0xFF1A237E)
+                                          : Colors.grey.shade500),
+                                  fontStyle:
+                                      isOpen ? FontStyle.italic : null),
+                            )
+                          else
+                            Text(
+                              'No credentials',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade400,
+                                  fontStyle: FontStyle.italic),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (has && !bad)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Ready',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2E7D32)),
+                        ),
+                      )
+                    else if (has && bad)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          sec.startsWith('\$2') ? 'Hashed' : 'Weak',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFE65100)),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Pending',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFE65100)),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    if (has && !bad)
+                      _iconBtn(
+                          Icons.print_rounded,
+                          const Color(0xFF1A237E),
+                          ld,
+                          ld
+                              ? null
+                              : () => _printOne(p, it, isTeacher))
+                    else
+                      const SizedBox(width: 27),
+                    const SizedBox(width: 6),
+                    _iconBtn(
+                      isOpen
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      isOpen
+                          ? const Color(0xFFE65100)
+                          : (has
+                              ? const Color(0xFF1A237E)
+                              : Colors.grey.shade400),
+                      false,
+                      has
+                          ? () => setState(
+                              () => _viewingId = isOpen ? null : id)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              if (isOpen) _inlineCreds(it, isTeacher),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String label, Color color, bool loading,
+      VoidCallback onTap) {
+    return GestureDetector(
+      onTap: loading ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loading)
+              const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tabContent(SchoolAdminProvider p, bool isTeacher) {
+    final items = isTeacher ? _filterTeachers(p) : _filterStudents(p);
+    final sel = isTeacher ? _teacherClassId : _studentClassId;
+    final miss =
+        items.where((e) => (e['username'] ?? '').toString().isEmpty).length;
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE8EAED)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButton<String?>(
+                    value: sel,
+                    hint: const Text(
+                      'All Classes',
+                      style:
+                          TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                    ),
+                    isDense: true,
+                    underline: const SizedBox(),
+                    borderRadius: BorderRadius.circular(8),
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(
+                          'All Classes',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      for (final c in p.classes)
+                        DropdownMenuItem(
+                          value: c['id'].toString(),
+                          child: Text(
+                            c['name'].toString(),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      if (isTeacher) {
+                        _teacherClassId = v;
+                      } else {
+                        _studentClassId = v;
+                      }
+                    }),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (miss > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$miss pending',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFE65100)),
+                  ),
+                ),
+              const SizedBox(width: 10),
+              _actionBtn(
+                Icons.auto_awesome_rounded,
+                'Generate',
+                const Color(0xFF2E7D32),
+                _generating,
+                () => _generate(p, isTeacher, items),
+              ),
+              const SizedBox(width: 8),
+              _actionBtn(
+                Icons.print_rounded,
+                'Print All',
+                const Color(0xFF1A237E),
+                _printing,
+                () => _printAll(p, isTeacher, items),
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: _buildList(items, p, isTeacher)),
+      ],
+    );
   }
 
   @override
@@ -472,7 +1040,6 @@ class _PageCredentialsState extends State<PageCredentials>
       color: const Color(0xFFF7F8FA),
       child: Column(
         children: [
-          // Tab bar
           Container(
             margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
             decoration: BoxDecoration(
@@ -481,849 +1048,43 @@ class _PageCredentialsState extends State<PageCredentials>
               border: Border.all(color: const Color(0xFFE8EAED)),
             ),
             child: TabBar(
-              controller: _tabController,
+              controller: _tabCtrl,
               labelColor: const Color(0xFF1A237E),
               unselectedLabelColor: Colors.grey.shade500,
               indicatorColor: const Color(0xFF1A237E),
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 2.5,
-              labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 14),
-              unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w500, fontSize: 14),
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              unselectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              tabAlignment: TabAlignment.start,
               tabs: const [
-                Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.person_outline, size: 18),
-                      SizedBox(width: 6),
-                      Text('Teachers'),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.school_rounded, size: 18),
-                      SizedBox(width: 6),
-                      Text('Students'),
-                    ],
-                  ),
-                ),
+                Tab(text: 'Teachers'),
+                Tab(text: 'Students'),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // Content
           Expanded(
             child: Consumer<SchoolAdminProvider>(
-              builder: (context, provider, child) {
-                if (_isPrintingAll || _isGeneratingAll) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const CircularProgressIndicator(
-                              strokeWidth: 3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _isGeneratingAll
-                              ? 'Generating credentials...'
-                              : 'Preparing print...',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildTeacherTab(provider),
-                    _buildStudentTab(provider),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterBar({
-    required SchoolAdminProvider provider,
-    required String? selectedClassId,
-    required ValueChanged<String?> onChanged,
-    required int withoutCreds,
-    required VoidCallback onGenerate,
-    required VoidCallback onPrint,
-  }) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8EAED)),
-      ),
-      child: Row(
-        children: [
-          // Filter dropdown
-          Expanded(
-            child: Container(
-              height: 40,
-              padding:
-                  const EdgeInsets.only(left: 12, right: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAFBFC),
-                borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: const Color(0xFFE8EAED)),
-              ),
-              alignment: Alignment.centerLeft,
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedClassId,
-                  hint: Text('Filter by Class',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade500,
-                      )),
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Color(0xFF6B7280), size: 20),
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem(
-                        value: null,
-                        child: Text('All',
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF111827)))),
-                    ...provider.classes.map((c) {
-                      final name =
-                          (c['name'] ?? '').toString();
-                      final sec =
-                          (c['section'] ?? '').toString();
-                      final display =
-                          sec.isNotEmpty ? '$name — $sec' : name;
-                      return DropdownMenuItem(
-                        value: c['id']?.toString(),
-                        child: Text(display,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF111827)),
-                            overflow: TextOverflow.ellipsis),
-                      );
-                    }),
-                  ],
-                  onChanged: onChanged,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Generate All button
-          _actionPill(
-            icon: withoutCreds > 0
-                ? Icons.key_rounded
-                : Icons.check_circle_rounded,
-            label: withoutCreds > 0
-                ? 'Generate All ($withoutCreds)'
-                : 'All Generated',
-            color: withoutCreds > 0
-                ? const Color(0xFF1A237E)
-                : const Color(0xFF2E7D32),
-            onTap: withoutCreds > 0 ? onGenerate : null,
-          ),
-          const SizedBox(width: 8),
-          // Print All button
-          _actionPill(
-            icon: Icons.print_rounded,
-            label: 'Print All',
-            color: Colors.grey.shade600,
-            onTap: onPrint,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionPill({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback? onTap,
-  }) {
-    final disabled = onTap == null;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: disabled ? color.withOpacity(0.1) : null,
-          border: Border.all(
-            color: disabled
-                ? color.withOpacity(0.2)
-                : color.withOpacity(0.4),
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: 16,
-                color: disabled
-                    ? color.withOpacity(0.4)
-                    : color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: disabled
-                    ? color.withOpacity(0.4)
-                    : color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeacherTab(SchoolAdminProvider provider) {
-    final teachers = provider.teachers;
-
-    List<dynamic> filteredTeachers;
-    if (_selectedTeacherClassId == null) {
-      filteredTeachers = teachers;
-    } else {
-      try {
-        final classId = _selectedTeacherClassId!;
-        filteredTeachers = teachers.where((t) {
-          try {
-            final assignments = provider.assignments ?? [];
-            return assignments.any((a) =>
-                a['teacher_id']?.toString() ==
-                    t['id']?.toString() &&
-                a['class_id']?.toString() == classId);
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-      } catch (_) {
-        filteredTeachers = teachers;
-      }
-    }
-
-    final withoutCreds = filteredTeachers
-        .where((t) =>
-            (t['username'] ?? '').toString().isEmpty)
-        .length;
-
-    return Column(
-      children: [
-        _buildFilterBar(
-          provider: provider,
-          selectedClassId: _selectedTeacherClassId,
-          onChanged: (v) => setState(
-              () => _selectedTeacherClassId = v),
-          withoutCreds: withoutCreds,
-          onGenerate: () => _generateAll(
-              provider, true, filteredTeachers),
-          onPrint: () => _printAll(
-              provider, true, filteredTeachers),
-        ),
-        Expanded(
-          child: _buildPersonList(
-            items: filteredTeachers,
-            provider: provider,
-            isTeacher: true,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStudentTab(SchoolAdminProvider provider) {
-    final allStudents = provider.students;
-
-    final filteredStudents = _selectedStudentClassId == null
-        ? allStudents
-        : allStudents
-            .where((s) =>
-                s['class_id']?.toString() ==
-                _selectedStudentClassId)
-            .toList();
-
-    final withoutCreds = filteredStudents
-        .where((s) =>
-            (s['username'] ?? '').toString().isEmpty)
-        .length;
-
-    return Column(
-      children: [
-        _buildFilterBar(
-          provider: provider,
-          selectedClassId: _selectedStudentClassId,
-          onChanged: (v) => setState(
-              () => _selectedStudentClassId = v),
-          withoutCreds: withoutCreds,
-          onGenerate: () => _generateAll(
-              provider, false, filteredStudents),
-          onPrint: () => _printAll(
-              provider, false, filteredStudents),
-        ),
-        Expanded(
-          child: _buildPersonList(
-            items: filteredStudents,
-            provider: provider,
-            isTeacher: false,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPersonList({
-    required List<dynamic> items,
-    required SchoolAdminProvider provider,
-    required bool isTeacher,
-  }) {
-    if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                isTeacher
-                    ? Icons.person_outline
-                    : Icons.school_outlined,
-                size: 36,
-                color: Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No ${isTeacher ? 'teachers' : 'students'} found',
-              style: TextStyle(
-                color: Colors.grey.shade700,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final m = items[index];
-        final id = m['id']?.toString() ?? '';
-        final displayName =
-            _displayName(m as Map<String, dynamic>);
-        final hasCreds =
-            (m['username'] ?? '').toString().isNotEmpty;
-        final bgColor = index % 2 == 0
-            ? Colors.white
-            : const Color(0xFFFAFBFC);
-
-        // Sub-info
-        String subInfo = '';
-        if (isTeacher) {
-          final staffId =
-              (m['staff_id'] ?? '').toString().trim();
-          if (staffId.isNotEmpty) subInfo = staffId;
-        } else {
-          final admNo =
-              (m['admission_no'] ?? '').toString().trim();
-          try {
-            final cls =
-                m['classes'] as Map<String, dynamic>?;
-            if (cls != null) {
-              final cn = cls['name']?.toString() ?? '';
-              final cs =
-                  cls['section']?.toString() ?? '';
-              final classDisplay =
-                  cs.isNotEmpty ? '$cn $cs' : cn;
-              subInfo = classDisplay;
-              if (admNo.isNotEmpty) {
-                subInfo =
-                    '$subInfo  •  Adm: $admNo';
-              }
-            } else if (admNo.isNotEmpty) {
-              subInfo = 'Adm: $admNo';
-            }
-          } catch (_) {
-            if (admNo.isNotEmpty) subInfo = 'Adm: $admNo';
-          }
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFE8EAED)),
-          ),
-          child: Row(
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: hasCreds
-                    ? const Color(0xFF1A237E)
-                    : Colors.grey.shade300,
-                child: Text(
-                  displayName.isNotEmpty
-                      ? displayName
-                          .substring(0, 1)
-                          .toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    color: hasCreds
-                        ? Colors.white
-                        : Colors.grey.shade600,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Name + sub
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (subInfo.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        subInfo,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Status badge
-              _buildCredBadge(hasCreds),
-              const SizedBox(width: 8),
-              // Action
-              _loadingIds.contains(id)
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2))
-                  : hasCreds
-                      ? InkWell(
-                          borderRadius: BorderRadius.circular(6),
-                          onTap: () => _handleView(
-                              provider, id, isTeacher),
-                          child: Container(
-                            height: 32,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A237E)
-                                  .withOpacity(0.1),
-                              border: Border.all(
-                                color: const Color(0xFF1A237E)
-                                    .withOpacity(0.3),
-                              ),
-                              borderRadius:
-                                  BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'View',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A237E),
-                              ),
-                            ),
-                          ),
-                        )
-                      : const SizedBox(
-                          width: 36,
-                          child: Text('—',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Color(0xFF9CA3AF),
-                                  fontSize: 12))),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCredBadge(bool hasCreds) {
-    if (hasCreds) {
-      return Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDCFCE7),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_rounded,
-                size: 12, color: Color(0xFF2E7D32)),
-            SizedBox(width: 4),
-            Text('Ready',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2E7D32),
-                )),
-          ],
-        ),
-      );
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text('Pending',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
-          )),
-    );
-  }
-
-  Future<void> _handleView(SchoolAdminProvider provider,
-      String id, bool isTeacher) async {
-    setState(() => _loadingIds.add(id));
-
-    try {
-      final users =
-          isTeacher ? provider.teachers : provider.students;
-      Map<String, dynamic>? user;
-      try {
-        user = users
-            .cast<Map<String, dynamic>?>()
-            .firstWhere(
-                (u) => u?['id']?.toString() == id,
-                orElse: () => null);
-      } catch (_) {}
-
-      if (user == null) {
-        _snack('User not found', success: false);
-        return;
-      }
-
-      final displayName = _displayName(user);
-      final username =
-          (user['username'] ?? '').toString();
-      final secret = isTeacher
-          ? (user['password'] ?? '').toString()
-          : (user['pin'] ?? '').toString();
-      final secretLabel = isTeacher ? 'Password' : 'PIN';
-
-      String? extraInfo;
-      if (!isTeacher) {
-        final admNo =
-            (user['admission_no'] ?? '').toString().trim();
-        final className =
-            (user['class_name'] ?? '').toString().trim();
-        if (className.isNotEmpty) extraInfo = className;
-        if (admNo.isNotEmpty && extraInfo != null) {
-          extraInfo = '$extraInfo (Adm: $admNo)';
-        } else if (admNo.isNotEmpty) {
-          extraInfo = 'Adm: $admNo';
-        }
-      } else {
-        final staffId =
-            (user['staff_id'] ?? '').toString().trim();
-        if (staffId.isNotEmpty) {
-          extraInfo = 'Staff ID: $staffId';
-        }
-      }
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              builder: (_, p, __) => TabBarView(
+                controller: _tabCtrl,
                 children: [
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F4FF),
-                          borderRadius:
-                              BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          isTeacher
-                              ? Icons.person_rounded
-                              : Icons.school_rounded,
-                          size: 22,
-                          color: const Color(0xFF1A237E),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          isTeacher
-                              ? 'Teacher Credentials'
-                              : 'Student Credentials',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _tabContent(p, true),
                   ),
-                  const SizedBox(height: 20),
-                  // Name
-                  Text(
-                    displayName,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  if (extraInfo != null) ...[
-                    const SizedBox(height: 4),
-                    Text(extraInfo,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600)),
-                  ],
-                  const SizedBox(height: 16),
-                  // Username field
-                  TextField(
-                    controller: TextEditingController(
-                        text: username),
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      labelStyle: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 13),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade300),
-                      ),
-                      disabledBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade200),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFFAFBFC),
-                      isDense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.copy_rounded,
-                            size: 16, color: Color(0xFF1A237E)),
-                        onPressed: () =>
-                            _copy(ctx, username),
-                        tooltip: 'Copy',
-                      ),
-                    ),
-                    readOnly: true,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF111827)),
-                  ),
-                  const SizedBox(height: 12),
-                  // Secret field
-                  TextField(
-                    controller:
-                        TextEditingController(text: secret),
-                    decoration: InputDecoration(
-                      labelText: secretLabel,
-                      labelStyle: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 13),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade300),
-                      ),
-                      disabledBorder: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                            color: Colors.grey.shade200),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFFAFBFC),
-                      isDense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.copy_rounded,
-                            size: 16, color: Color(0xFF1A237E)),
-                        onPressed: () => _copy(ctx, secret),
-                        tooltip: 'Copy',
-                      ),
-                    ),
-                    readOnly: true,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF111827)),
-                  ),
-                  const SizedBox(height: 20),
-                  // Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                                color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(
-                                        10)),
-                            padding:
-                                const EdgeInsets.symmetric(
-                                    vertical: 12),
-                          ),
-                          child: const Text('Close',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _printSlip(
-                              provider,
-                              displayName,
-                              username,
-                              secret,
-                              secretLabel,
-                              extraInfo: extraInfo,
-                            );
-                          },
-                          icon: const Icon(Icons.print_rounded,
-                              size: 18),
-                          label: const Text('Print Slip',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF1A237E),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(
-                                        10)),
-                            padding:
-                                const EdgeInsets.symmetric(
-                                    vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _tabContent(p, false),
                   ),
                 ],
               ),
             ),
           ),
-        );
-      }
-    } catch (e) {
-      debugPrint('View credential error: $e');
-      _snack('Error: $e', success: false);
-    } finally {
-      if (mounted) setState(() => _loadingIds.remove(id));
-    }
+        ],
+      ),
+    );
   }
 }

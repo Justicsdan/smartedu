@@ -15,6 +15,7 @@ abstract class StudentBase extends ChangeNotifier {
   String get studentId => _studentId;
 
   bool _isInitialized = false;
+  final List<RealtimeChannel> _realtimeChannels = [];
   bool get isInitialized => _isInitialized;
 
   Map<String, dynamic>? _currentSession;
@@ -285,10 +286,10 @@ abstract class StudentBase extends ChangeNotifier {
 
       if (data == null) return;
 
-      _firstName = data['first_name']?.toString() ?? '';
-      _lastName = data['last_name']?.toString() ?? '';
+      _firstName = data['firstName'] ?? data['first_name']?.toString() ?? '';
+      _lastName = data['lastName'] ?? data['last_name']?.toString() ?? '';
       _middleName = data['middle_name']?.toString() ?? '';
-      _admissionNo = data['admission_no']?.toString() ?? '';
+      _admissionNo = data['admissionNo'] ?? data['admission_no']?.toString() ?? '';
       _gender = data['gender']?.toString() ?? '';
       _dateOfBirth = data['date_of_birth']?.toString() ?? '';
       _classId = data['classId']?.toString() ?? data['class_id']?.toString() ?? '';
@@ -625,8 +626,36 @@ abstract class StudentBase extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  void _setupRealtime() {
+    if (_schoolId.isEmpty || _realtimeChannels.isNotEmpty) return;
+    final ch = supabase.channel('student-realtime-\${_schoolId}');
+    ch.onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'school_settings',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadSettings(); },
+    ).onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'academic_sessions',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadSessions(); },
+    ).onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'terms',
+      filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'school_id', value: _schoolId),
+      callback: (_) { _loadTerms(); loadStudentData(); },
+    ).subscribe();
+    _realtimeChannels.add(ch);
+  }
+
   @override
   void dispose() {
+    for (final ch in _realtimeChannels) { try { ch.unsubscribe(); } catch (_) {} }
+    _realtimeChannels.clear();
     reset();
     super.dispose();
   }

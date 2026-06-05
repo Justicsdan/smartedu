@@ -31,8 +31,7 @@ class _PageAcademicState extends State<PageAcademic> {
   @override
   void initState() {
     super.initState();
-    _loadSessions();
-    _loadTerms();
+    Future.wait([_loadSessions(), _loadTerms()]);
   }
 
   // ── Helpers ──────────────────────────────────────────────

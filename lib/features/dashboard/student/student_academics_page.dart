@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import '../../../../utils/pdf_download_utils.dart';
 
 class StudentAcademicsPage extends StatefulWidget {
   const StudentAcademicsPage({super.key});
@@ -33,93 +33,98 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
   Future<void> _generatePdf(Map<String, Map<String, dynamic>> grades, String studentName, String className) async {
     setState(() => isGeneratingPdf = true);
 
-    final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: pw.Font.helvetica(),
-        bold: pw.Font.helveticaBold(),
-      ),
-    );
+    try {
+      final pdf = pw.Document(
+        theme: pw.ThemeData.withFont(
+          base: pw.Font.helvetica(),
+          bold: pw.Font.helveticaBold(),
+        ),
+      );
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
-        build: (pw.Context context) {
-          return [
-            pw.Center(
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
-                  pw.Text("STUDENT TERMLY REPORT CARD",
-                      style: const pw.TextStyle(
-                          fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 5),
-                  pw.Divider(thickness: 2),
-                  pw.SizedBox(height: 10),
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text("Name: $studentName",
-                          style: const pw.TextStyle(fontSize: 14)),
-                      pw.Text("Class: $className",
-                          style: const pw.TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                  pw.SizedBox(height: 5),
-                  pw.Text("Term: $selectedTerm",
-                      style: const pw.TextStyle(
-                          fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 20),
-                  pw.Divider(thickness: 1),
-                  pw.SizedBox(height: 10),
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) {
+            return [
+              pw.Center(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Text("STUDENT TERMLY REPORT CARD",
+                        style: const pw.TextStyle(
+                            fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 5),
+                    pw.Divider(thickness: 2),
+                    pw.SizedBox(height: 10),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text("Name: $studentName",
+                            style: const pw.TextStyle(fontSize: 14)),
+                        pw.Text("Class: $className",
+                            style: const pw.TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                    pw.SizedBox(height: 5),
+                    pw.Text("Term: $selectedTerm",
+                        style: const pw.TextStyle(
+                            fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 20),
+                    pw.Divider(thickness: 1),
+                    pw.SizedBox(height: 10),
+                  ],
+                ),
+              ),
+              pw.TableHelper.fromTextArray(
+                headerStyle: const pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerDecoration:
+                    const pw.BoxDecoration(color: PdfColors.blue800),
+                cellAlignment: pw.Alignment.center,
+                data: [
+                  ["Subject", "Total Score", "Grade", "Remark"],
+                  ...grades.entries
+                      .map((entry) => [
+                            entry.key,
+                            "${entry.value["total"] ?? 0}",
+                            "${entry.value["grade"] ?? "-"}",
+                            "${entry.value["meaning"] ?? "-"}",
+                          ]),
                 ],
               ),
-            ),
-            pw.TableHelper.fromTextArray(
-              headerStyle: const pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.blue800),
-              cellAlignment: pw.Alignment.center,
-              data: [
-                ["Subject", "Total Score", "Grade", "Remark"],
-                ...grades.entries
-                    .map((entry) => [
-                          entry.key,
-                          "${entry.value["total"] ?? 0}",
-                          "${entry.value["grade"] ?? "-"}",
-                          "${entry.value["meaning"] ?? "-"}",
-                        ]),
-              ],
-            ),
-            pw.SizedBox(height: 40),
-          ];
-        },
-      ),
-    );
+              pw.SizedBox(height: 40),
+            ];
+          },
+        ),
+      );
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
-
-    setState(() => isGeneratingPdf = false);
+      final bytes = await pdf.save();
+      downloadPdfBytes(bytes, '${studentName}_results.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate PDF: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isGeneratingPdf = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // [FIX] Changed from SchoolDataProvider to StudentProvider (correct provider for student features)
     final provider = context.watch<StudentProvider>();
     final myName = provider.fullName;
     final myClass = provider.className;
-    
-    // [FIX] Build grades map safely from provider scores
+
     final Map<String, Map<String, dynamic>> myGrades = {};
     for (final score in provider.scores) {
       final subjectName = (score['subjectName'] ?? score['subject_name'] ?? '').toString();
       final total = (score['total'] ?? 0).toDouble();
       final grade = (score['grade'] ?? '').toString();
       final isPass = total >= 40;
-      
+
       myGrades[subjectName] = {
         'total': total,
         'grade': grade,

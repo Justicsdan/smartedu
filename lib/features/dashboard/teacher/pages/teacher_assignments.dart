@@ -9,7 +9,8 @@ class TeacherAssignmentsPage extends StatefulWidget {
   const TeacherAssignmentsPage({super.key});
 
   @override
-  State<TeacherAssignmentsPage> createState() => _TeacherAssignmentsPageState();
+  State<TeacherAssignmentsPage> createState() =>
+      _TeacherAssignmentsPageState();
 }
 
 class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
@@ -49,188 +50,320 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
     String? selectedSubjectId;
     DateTime? dueDate;
 
+    final border = OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.grey.shade300));
+    final focusedBorder = OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF1A237E), width: 1.5));
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => Padding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.assignment_outlined, size: 18, color: Color(0xFFF57F17)),
+        builder: (ctx, setSt) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+                20, 12, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.assignment_outlined,
+                          size: 20, color: Color(0xFFF57F17)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('New Assignment',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827))),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: titleCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Title *',
+                    prefixIcon: const Icon(Icons.title_outlined, color: Colors.grey),
+                    border: border,
+                    enabledBorder: border,
+                    focusedBorder: focusedBorder,
                   ),
-                  const SizedBox(width: 12),
-                  const Text('New Assignment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-                ],
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
-                  prefixIcon: Icon(Icons.title_outlined),
-                  border: OutlineInputBorder(),
                 ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: descCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  prefixIcon: Icon(Icons.description_outlined),
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    prefixIcon: const Icon(Icons.description_outlined, color: Colors.grey),
+                    alignLabelWithHint: true,
+                    border: border,
+                    enabledBorder: border,
+                    focusedBorder: focusedBorder,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                value: selectedClassId,
-                decoration: const InputDecoration(
-                  labelText: 'Class *',
-                  prefixIcon: Icon(Icons.class_outlined),
-                  border: OutlineInputBorder(),
-                ),
-                items: provider.assignedClassIds
-                    .map((id) => DropdownMenuItem(value: id, child: Text(provider.getClassName(id))))
-                    .toList(),
-                onChanged: (v) => setSt(() { selectedClassId = v; selectedSubjectId = null; }),
-              ),
-              const SizedBox(height: 14),
-              if (selectedClassId != null)
+                const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: selectedSubjectId,
-                  decoration: const InputDecoration(
-                    labelText: 'Subject *',
-                    prefixIcon: Icon(Icons.book_outlined),
-                    border: OutlineInputBorder(),
+                  value: selectedClassId,
+                  decoration: InputDecoration(
+                    labelText: 'Class *',
+                    prefixIcon: const Icon(Icons.class_outlined, color: Colors.grey),
+                    border: border,
+                    enabledBorder: border,
+                    focusedBorder: focusedBorder,
                   ),
-                  items: provider.assignedSubjects
-                      .where((a) => a['class_id']?.toString() == selectedClassId)
-                      .map((a) => DropdownMenuItem(
-                            value: a['subject_id']?.toString(),
-                            child: Text(provider.getSubjectName(a['subject_id'])),
-                          ))
+                  items: provider.assignedClassIds
+                      .map((id) => DropdownMenuItem(
+                          value: id,
+                          child: Text(provider.getClassName(id))))
                       .toList(),
-                  onChanged: (v) => setSt(() => selectedSubjectId = v),
+                  onChanged: (v) => setSt(() {
+                    selectedClassId = v;
+                    selectedSubjectId = null;
+                  }),
                 ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: marksCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Total Marks',
-                        prefixIcon: Icon(Icons.star_outline),
-                        border: OutlineInputBorder(),
+                const SizedBox(height: 14),
+                if (selectedClassId != null)
+                  DropdownButtonFormField<String>(
+                    value: selectedSubjectId,
+                    decoration: InputDecoration(
+                      labelText: 'Subject *',
+                      prefixIcon: const Icon(Icons.book_outlined, color: Colors.grey),
+                      border: border,
+                      enabledBorder: border,
+                      focusedBorder: focusedBorder,
+                    ),
+                    items: provider.assignedSubjects
+                        .where((a) =>
+                            a['class_id']?.toString() == selectedClassId)
+                        .map((a) => DropdownMenuItem(
+                            value: a['subject_id']?.toString(),
+                            child: Text(provider.getSubjectName(
+                                a['subject_id']))))
+                        .toList(),
+                    onChanged: (v) => setSt(() => selectedSubjectId = v),
+                  ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: marksCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Total Marks',
+                          prefixIcon: const Icon(Icons.star_outline, color: Colors.grey),
+                          border: border,
+                          enabledBorder: border,
+                          focusedBorder: focusedBorder,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: ctx,
-                          initialDate: DateTime.now().add(const Duration(days: 7)),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate:
+                                DateTime.now().add(const Duration(days: 7)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now()
+                                .add(const Duration(days: 365)),
+                          );
+                          if (picked != null) setSt(() => dueDate = picked);
+                        },
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: 'Due Date',
+                            prefixIcon: const Icon(Icons.calendar_today_outlined, color: Colors.grey),
+                            border: border,
+                            enabledBorder: border,
+                            focusedBorder: focusedBorder,
+                          ),
+                          child: Text(
+                            dueDate != null
+                                ? _formatDate(dueDate!.toIso8601String())
+                                : 'Pick a date',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: dueDate != null
+                                    ? const Color(0xFF111827)
+                                    : Colors.grey.shade500),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (titleCtrl.text.trim().isEmpty ||
+                          selectedClassId == null ||
+                          selectedSubjectId == null) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('Fill required fields'),
+                            backgroundColor: Color(0xFFD32F2F),
+                            behavior: SnackBarBehavior.floating,
+                            shape: StadiumBorder(),
+                          ),
                         );
-                        if (picked != null) setSt(() => dueDate = picked);
-                      },
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Due Date',
-                          prefixIcon: Icon(Icons.calendar_today_outlined),
-                          border: OutlineInputBorder(),
+                        return;
+                      }
+                      provider.addAssignment({
+                        'title': titleCtrl.text.trim(),
+                        'description': descCtrl.text.trim(),
+                        'class_id': selectedClassId,
+                        'subject_id': selectedSubjectId,
+                        'due_date': dueDate?.toIso8601String(),
+                        'total_marks': int.tryParse(marksCtrl.text) ?? 20,
+                      });
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Assignment created'),
+                          backgroundColor: Color(0xFF2E7D32),
+                          behavior: SnackBarBehavior.floating,
+                          shape: StadiumBorder(),
                         ),
-                        child: Text(
-                          dueDate != null ? _formatDate(dueDate!.toIso8601String()) : 'Pick a date',
-                          style: TextStyle(fontSize: 14, color: dueDate != null ? const Color(0xFF111827) : Colors.grey.shade500),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (titleCtrl.text.trim().isEmpty || selectedClassId == null || selectedSubjectId == null) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Fill required fields'), backgroundColor: Color(0xFFD32F2F)),
                       );
-                      return;
-                    }
-                    provider.addAssignment({
-                      'title': titleCtrl.text.trim(),
-                      'description': descCtrl.text.trim(),
-                      'class_id': selectedClassId,
-                      'subject_id': selectedSubjectId,
-                      'due_date': dueDate?.toIso8601String(),
-                      'total_marks': int.tryParse(marksCtrl.text) ?? 20,
-                    });
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Assignment created'), backgroundColor: Color(0xFF2E7D32)),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A237E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Create Assignment',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
                   ),
-                  child: const Text('Create Assignment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, TeacherProvider provider, Map<String, dynamic> a) {
+  void _showDeleteConfirm(
+      BuildContext context, TeacherProvider provider, Map<String, dynamic> a) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.delete_outline, color: Colors.red, size: 24),
-            SizedBox(width: 10),
-            Text('Delete Assignment'),
-          ],
-        ),
-        content: Text('Delete "${a['title'] ?? 'this assignment'}"? This cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              provider.deleteAssignment(a['id'].toString());
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Assignment deleted'), backgroundColor: Color(0xFFD32F2F)),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: const Text('Delete'),
+      builder: (ctx) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.delete_outline,
+                        color: Color(0xFFD32F2F), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Delete Assignment',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111827))),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                  'Delete "${a['title'] ?? 'this assignment'}"? This cannot be undone.',
+                  style: const TextStyle(
+                      fontSize: 14, color: Color(0xFF555555))),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    height: 40,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF111827),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(
+                                color: Color(0xFFE8EAED))),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        provider.deleteAssignment(a['id'].toString());
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Assignment deleted'),
+                            backgroundColor: Color(0xFFD32F2F),
+                            behavior: SnackBarBehavior.floating,
+                            shape: StadiumBorder(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD32F2F),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Delete',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -242,7 +375,9 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
 
     final filtered = _filterClassId == 'all'
         ? all
-        : all.where((a) => a['class_id']?.toString() == _filterClassId).toList();
+        : all
+            .where((a) => a['class_id']?.toString() == _filterClassId)
+            .toList();
 
     return Stack(
       children: [
@@ -253,27 +388,52 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
                 children: [
-                  const Text('Assignments', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111827), letterSpacing: -0.5)),
+                  const Text('Assignments',
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111827),
+                          letterSpacing: -0.5)),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(12)),
-                    child: Text('${all.length} total', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFF57F17))),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('${all.length} total',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF57F17))),
                   ),
                   const SizedBox(width: 12),
                   if (provider.assignedClassIds.length > 1)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE8EAED)), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE8EAED)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: DropdownButton<String>(
                         value: _filterClassId,
                         underline: const SizedBox(),
                         isDense: true,
                         items: [
-                          const DropdownMenuItem(value: 'all', child: Text('All Classes', style: TextStyle(fontSize: 12))),
-                          ...provider.assignedClassIds.map((id) => DropdownMenuItem(value: id, child: Text(provider.getClassName(id), style: const TextStyle(fontSize: 12)))),
+                          const DropdownMenuItem(
+                              value: 'all',
+                              child: Text('All Classes',
+                                  style: TextStyle(fontSize: 12))),
+                          for (final id in provider.assignedClassIds)
+                            DropdownMenuItem(
+                                value: id,
+                                child: Text(provider.getClassName(id),
+                                    style:
+                                        const TextStyle(fontSize: 12))),
                         ],
-                        onChanged: (v) => setState(() => _filterClassId = v ?? 'all'),
+                        onChanged: (v) =>
+                            setState(() => _filterClassId = v ?? 'all'),
                       ),
                     ),
                 ],
@@ -281,7 +441,8 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(24, 4, 24, 0),
-              child: Text('Create and manage homework for your classes', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              child: Text('Create and manage homework for your classes',
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -291,14 +452,25 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 64, height: 64,
-                            decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(16)),
-                            child: const Icon(Icons.assignment_outlined, size: 32, color: Color(0xFFF57F17)),
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FA),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.assignment_outlined,
+                                size: 28, color: Color(0xFFBDBDBD)),
                           ),
                           const SizedBox(height: 16),
-                          const Text('No assignments yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+                          const Text('No assignments yet',
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF111827),
+                                  fontWeight: FontWeight.w500)),
                           const SizedBox(height: 4),
-                          const Text('Tap the button below to create one', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                          const Text('Tap the button below to create one',
+                              style:
+                                  TextStyle(fontSize: 13, color: Colors.grey)),
                         ],
                       ),
                     )
@@ -308,90 +480,192 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
                       itemBuilder: (context, index) {
                         final a = filtered[index];
                         final isPublished = a['is_published'] == true;
-                        final overdue = !isPublished && _isOverdue(a['due_date']);
+                        final overdue =
+                            !isPublished && _isOverdue(a['due_date']);
                         final dueStr = _formatDate(a['due_date']);
 
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
+                          margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: index.isEven
+                                ? Colors.white
+                                : const Color(0xFFFAFBFC),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: overdue ? Colors.red.shade300 : const Color(0xFFE8EAED)),
+                            border: Border.all(
+                                color: overdue
+                                    ? Colors.red.shade300
+                                    : const Color(0xFFE8EAED)),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                width: 44, height: 44,
+                                width: 44,
+                                height: 44,
                                 decoration: BoxDecoration(
-                                  color: overdue ? Colors.red.shade50 : const Color(0xFFFFF8E1),
+                                  color: overdue
+                                      ? const Color(0xFFFFEBEE)
+                                      : const Color(0xFFFFF8E1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Icon(Icons.assignment, size: 22, color: overdue ? Colors.red.shade400 : const Color(0xFFF57F17)),
+                                child: Icon(Icons.assignment,
+                                    size: 22,
+                                    color: overdue
+                                        ? Colors.red.shade400
+                                        : const Color(0xFFF57F17)),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [
                                         Expanded(
                                           child: Text(
                                             a['title'] ?? 'Untitled',
-                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
-                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF111827)),
+                                            overflow:
+                                                TextOverflow.ellipsis,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: isPublished ? const Color(0xFFE8F5E9) : const Color(0xFFF5F5F5),
-                                            borderRadius: BorderRadius.circular(4),
+                                            color: isPublished
+                                                ? const Color(0xFFE8F5E9)
+                                                : const Color(0xFFF7F8FA),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
                                           ),
-                                          child: Text(
-                                            isPublished ? 'Published' : 'Draft',
-                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isPublished ? const Color(0xFF2E7D32) : Colors.grey.shade600),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isPublished)
+                                                const Icon(Icons.check_circle,
+                                                    size: 12,
+                                                    color: Color(0xFF2E7D32)),
+                                              if (isPublished)
+                                                const SizedBox(width: 3),
+                                              Text(
+                                                isPublished
+                                                    ? 'Published'
+                                                    : 'Draft',
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                    color: isPublished
+                                                        ? const Color(
+                                                            0xFF2E7D32)
+                                                        : Colors.grey.shade600),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${_getSubjectName(a)}  ·  ${_getClassName(a)}',
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      '${_getSubjectName(a)}  \u00B7  ${_getClassName(a)}',
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey),
                                     ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
                                         if (dueStr.isNotEmpty) ...[
-                                          Icon(Icons.schedule, size: 12, color: overdue ? Colors.red.shade400 : Colors.grey.shade400),
+                                          Icon(Icons.schedule,
+                                              size: 12,
+                                              color: overdue
+                                                  ? Colors.red.shade400
+                                                  : Colors.grey.shade400),
                                           const SizedBox(width: 3),
                                           Text(
                                             'Due: $dueStr',
-                                            style: TextStyle(fontSize: 11, color: overdue ? Colors.red.shade400 : Colors.grey.shade500),
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: overdue
+                                                    ? Colors.red.shade400
+                                                    : Colors.grey.shade500),
                                           ),
                                           const SizedBox(width: 12),
                                         ],
-                                        Icon(Icons.star_outline, size: 12, color: Colors.grey.shade400),
+                                        Icon(Icons.star_outline,
+                                            size: 12,
+                                            color: Colors.grey.shade400),
                                         const SizedBox(width: 3),
-                                        Text('${a['total_marks'] ?? 20} marks', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                        Text(
+                                            '${a['total_marks'] ?? 20} marks',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color:
+                                                    Colors.grey.shade500)),
                                       ],
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              IconButton(
-                                icon: Icon(isPublished ? Icons.unpublished_outlined : Icons.publish_outlined, size: 20, color: isPublished ? Colors.orange : const Color(0xFF2E7D32)),
-                                tooltip: isPublished ? 'Unpublish' : 'Publish',
-                                onPressed: () => provider.toggleAssignmentPublished(a['id'].toString(), !isPublished),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade400),
-                                tooltip: 'Delete',
-                                onPressed: () => _showDeleteConfirm(context, provider, a),
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: const Color(0xFFE8EAED)),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                          isPublished
+                                              ? Icons.unpublished_outlined
+                                              : Icons.publish_outlined,
+                                          size: 18,
+                                          color: isPublished
+                                              ? const Color(0xFFE65100)
+                                              : const Color(0xFF2E7D32)),
+                                      tooltip: isPublished
+                                          ? 'Unpublish'
+                                          : 'Publish',
+                                      padding: EdgeInsets.zero,
+                                      constraints:
+                                          const BoxConstraints(
+                                              minWidth: 32, minHeight: 28),
+                                      onPressed: () => provider
+                                          .toggleAssignmentPublished(
+                                              a['id'].toString(),
+                                              !isPublished),
+                                    ),
+                                    Container(
+                                      height: 1,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 4),
+                                      color: const Color(0xFFE8EAED),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete_outline,
+                                          size: 18,
+                                          color: Colors.red.shade400),
+                                      tooltip: 'Delete',
+                                      padding: EdgeInsets.zero,
+                                      constraints:
+                                          const BoxConstraints(
+                                              minWidth: 32, minHeight: 28),
+                                      onPressed: () =>
+                                          _showDeleteConfirm(
+                                              context, provider, a),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -407,18 +681,29 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
           child: GestureDetector(
             onTap: () => _showAddSheet(context, provider),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A237E),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                      color:
+                          const Color(0xFF1A237E).withOpacity(0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4)),
+                ],
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.add, color: Colors.white, size: 20),
                   SizedBox(width: 8),
-                  Text('Add New', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text('Add New',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
