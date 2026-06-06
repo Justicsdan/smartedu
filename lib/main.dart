@@ -22,6 +22,7 @@ import 'features/dashboard/school_admin/pages/page_settings.dart';
 import 'features/dashboard/school_admin/pages/page_credentials.dart';
 import 'features/dashboard/school_admin/pages/page_students.dart';
 import 'features/dashboard/school_admin/pages/page_teachers.dart';
+import 'features/dashboard/school_admin/pages/page_fees.dart';
 import 'features/dashboard/teacher/teacher_dashboard.dart';
 import 'features/dashboard/school_admin/add_student_page.dart';
 import 'features/dashboard/school_admin/add_teacher_page.dart';
@@ -430,6 +431,7 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.publish_rounded, label: 'Publish'),
     _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
     _NavItem(icon: Icons.vpn_key_rounded, label: 'Credentials'),
+    _NavItem(icon: Icons.payment_rounded, label: 'Fees'),
   ];
 
   @override
@@ -697,6 +699,8 @@ class _AdminShellState extends State<_AdminShell> {
         );
       case 8:
         return const PageCredentials();
+      case 9:
+        return PageFees();
       default:
         return const SizedBox.shrink();
     }
