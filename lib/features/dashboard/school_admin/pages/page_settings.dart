@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
+import '../widgets/change_password_section.dart';
 
 class PageSettings extends StatefulWidget {
   final String schoolName;
@@ -856,13 +857,24 @@ class _PageSettingsState extends State<PageSettings>
             loading: _isSaving,
             onTap: _isSaving ? null : _saveProfile,
           ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
+              const SizedBox(height: 24),
+              ChangePasswordSection(
+                title: 'Change Admin Password',
+                subtitle: 'Update your login credentials',
+                currentLabel: 'Current Password',
+                newLabel: 'New Password',
+                confirmLabel: 'Confirm New Password',
+                onSubmit: (current, newPass) async {
+                  final res = await Supabase.instance.client.rpc('change_admin_password', params: {'school_id_param': provider.schoolId, 'old_password': current, 'new_password': newPass});
+                  return res as bool? ?? false;
+                },
+              ),
+            ],
+          ),
+        );
+      }
 
-  Widget _buildBrandingTab(SchoolAdminProvider provider) {
+      Widget _buildBrandingTab(SchoolAdminProvider provider) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

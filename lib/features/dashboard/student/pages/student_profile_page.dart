@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
+import '../../school_admin/widgets/change_password_section.dart';
 
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
@@ -97,6 +98,19 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               _row('Admission Mode', admMode),
               _row('Class', p.classDisplay),
             ],
+          ),
+          const SizedBox(height: 14),
+          ChangePasswordSection(
+            title: 'Change PIN',
+            subtitle: 'Update your login PIN',
+            currentLabel: 'Current PIN',
+            newLabel: 'New PIN',
+            confirmLabel: 'Confirm New PIN',
+            buttonLabel: 'Change PIN',
+            onSubmit: (current, newPin) async {
+              final res = await Supabase.instance.client.rpc('change_student_pin', params: {'student_id_param': p.studentId, 'old_pin': current, 'new_pin': newPin});
+              return res as bool? ?? false;
+            },
           ),
           const SizedBox(height: 20),
           SizedBox(

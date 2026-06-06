@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../school_admin/widgets/change_password_section.dart';
 import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 import '../school_admin/widgets/chat_bot_widget.dart';
 import 'pages/teacher_my_classes.dart';
@@ -172,6 +174,33 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
+  void _showChangePasswordDialog(TeacherProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF57F17), size: 22)),
+          const SizedBox(width: 12),
+          const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+        ]),
+        content: SingleChildScrollView(child: ChangePasswordSection(
+          title: 'Update Password',
+          subtitle: 'Enter your details below',
+          currentLabel: 'Current Password',
+          newLabel: 'New Password',
+          confirmLabel: 'Confirm New Password',
+          onSubmit: (current, newPass) async {
+            final res = await Supabase.instance.client.rpc('change_teacher_password', params: {'teacher_id_param': provider.teacherId, 'old_password': current, 'new_password': newPass});
+            final ok = res as bool? ?? false;
+            if (ok && ctx.mounted) Navigator.pop(ctx);
+            return ok;
+          },
+        )),
+      ),
+    );
+  }
+
   Widget _buildDesktopSidebar(TeacherProvider provider, List<_NavItem> items) {
     return Container(
       width: 260,
@@ -292,6 +321,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               ),
             ),
             const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () => _showChangePasswordDialog(provider),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                  child: const Row(children: [Icon(Icons.lock_outline_rounded, color: Colors.orange, size: 20), SizedBox(width: 12), Text('Change Password', style: TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.w500))]),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.all(12),
               child: GestureDetector(
