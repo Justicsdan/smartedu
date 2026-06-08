@@ -12,6 +12,7 @@ import 'core/providers/student/student_provider.dart';
 import 'features/home/home_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/role_selection_page.dart';
+import 'features/auth/super_admin_login_page.dart';
 import 'features/dashboard/super_admin/super_admin_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_classes.dart';
@@ -75,6 +76,10 @@ final _router = GoRouter(
         final role = state.extra as String? ?? 'Student';
         return LoginPage(selectedRole: role);
       },
+    ),
+    GoRoute(
+      path: '/super-admin-login',
+      builder: (_, __) => const SuperAdminLoginPage(),
     ),
     GoRoute(
       path: '/dashboard/superadmin',

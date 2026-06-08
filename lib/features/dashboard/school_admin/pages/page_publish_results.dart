@@ -20,6 +20,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
   bool _isLoadingData = false;
   bool _isComputing = false;
   bool _isPublishing = false;
+  bool _isLocked = false;
 
   List<Map<String, dynamic>> _summaries = [];
   List<Map<String, dynamic>> _comments = [];
@@ -28,6 +29,43 @@ class _PagePublishResultsState extends State<PagePublishResults> {
   final Map<String, Map<String, dynamic>> _studentData = {};
 
   SchoolAdminProvider get _provider => context.read<SchoolAdminProvider>();
+
+  Future<void> _loadLockStatus() async {
+    if (_selectedClassId == null || _sessionId.isEmpty || _termId.isEmpty) return;
+    try {
+      final res = await _supabase
+          .from('score_locks')
+          .select('is_locked')
+          .eq('school_id', _provider.schoolId)
+          .eq('class_id', _selectedClassId!)
+          .eq('session_id', _sessionId)
+          .eq('term_id', _termId)
+          .maybeSingle();
+      if (mounted) setState(() => _isLocked = res?['is_locked'] == true);
+    } catch (_) {
+      if (mounted) setState(() => _isLocked = false);
+    }
+  }
+
+  Future<void> _toggleLock() async {
+    if (_selectedClassId == null) return;
+    final wasLocked = _isLocked;
+    final now = DateTime.now().toIso8601String();
+    try {
+      final existing = await _supabase.from('score_locks').select('id').eq('school_id', _provider.schoolId).eq('class_id', _selectedClassId!).eq('session_id', _sessionId).eq('term_id', _termId).maybeSingle();
+      if (existing != null) {
+        await _supabase.from('score_locks').update({'is_locked': !wasLocked, 'locked_at': !wasLocked ? now : null, 'updated_at': now}).eq('id', existing['id']);
+      } else {
+        await _supabase.from('score_locks').insert({'school_id': _provider.schoolId, 'class_id': _selectedClassId!, 'session_id': _sessionId, 'term_id': _termId, 'is_locked': true, 'locked_at': now});
+      }
+      if (mounted) {
+        setState(() => _isLocked = !wasLocked);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(!wasLocked ? 'Scores locked for this term' : 'Scores unlocked for this term'), backgroundColor: !wasLocked ? Color(0xFFE65100) : Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ' + e.toString()), backgroundColor: Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
+    }
+  }
   String get _sessionId => _provider.currentSession?['id']?.toString() ?? '';
   String get _termId => _provider.currentTerm?['id']?.toString() ?? '';
 
@@ -805,7 +843,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                     _behavioralRatings = [];
                     _studentData.clear();
                   });
-                  if (v != null) _loadData();
+                  if (v != null) { _loadData(); _loadLockStatus(); }
                 },
               ),
             ),
@@ -934,8 +972,39 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: _isLocked
+                          ? ElevatedButton.icon(
+                              onPressed: _isPublishing ? null : _toggleLock,
+                              icon: const Icon(Icons.lock_rounded, size: 18),
+                              label: const Text('Locked', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFE65100), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                            )
+                          : OutlinedButton.icon(
+                              onPressed: _isPublishing ? null : _toggleLock,
+                              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF2E7D32)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                              icon: const Icon(Icons.lock_open_rounded, size: 18, color: Color(0xFF2E7D32)),
+                              label: const Text('Lock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+                            ),
+                    ),
+                  ),
                 ],
               ),
+              if (_isLocked)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(color: const Color(0xFFFFF3E0), border: Border.all(color: const Color(0xFFFFE082)), borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [
+                    Icon(Icons.lock_rounded, size: 16, color: Color(0xFFE65100)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Scores are locked — teachers cannot edit scores for this class this term', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFE65100)))),
+                  ]),
+                ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(

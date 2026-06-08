@@ -1,6 +1,3 @@
-// ==========================================
-// File: lib/features/auth/login_page.dart
-// ==========================================
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -103,35 +100,45 @@ class _LoginPageState extends State<LoginPage> {
     return 'Login failed. Please try again.';
   }
 
-  /// RPC helper — calls a PostgreSQL function, returns first row or null
+  /// RPC helper — calls a PostgreSQL function, returns first row or null.
+  /// Handles both List (RETURN QUERY) and single Map (RETURN row) responses.
   Future<Map<String, dynamic>?> _rpcLogin(String functionName, Map<String, dynamic> params) async {
     final response = await Supabase.instance.client.rpc(functionName, params: params);
     if (response == null) return null;
-    final list = response as List;
-    if (list.isEmpty) return null;
-    return list.first as Map<String, dynamic>;
+    if (response is List) {
+      if (response.isEmpty) return null;
+      return response.first as Map<String, dynamic>;
+    }
+    if (response is Map<String, dynamic>) {
+      if (response.isEmpty) return null;
+      return response;
+    }
+    return null;
   }
 
-  // ── Student: RPC (bcrypt or plain text) ──
+  // ── Student: direct .eq() query (plain text PINs) ──
 
   Future<void> _loginStudent() async {
     final admissionNo = _fieldOneController.text.trim();
     final pin = _fieldTwoController.text.trim();
 
-    final r = await _rpcLogin('login_student', {
-      'p_admission_no': admissionNo,
-      'p_pin': pin,
-    });
-    if (r == null) throw Exception('Invalid credentials');
-    if (r['is_active'] == false) throw Exception('Account deactivated');
+    final response = await Supabase.instance.client
+        .from('students')
+        .select('id, school_id, first_name, last_name, class_id, is_active')
+        .eq('admission_no', admissionNo)
+        .eq('pin', pin)
+        .maybeSingle();
+
+    if (response == null) throw Exception('Invalid credentials');
+    if (response['is_active'] == false) throw Exception('Account deactivated');
 
     if (mounted) {
       context.go('/dashboard/student', extra: {
-        'id': r['id'],
-        'schoolId': r['school_id'],
-        'firstName': r['first_name'],
-        'lastName': r['last_name'],
-        'classId': r['class_id'],
+        'id': response['id'],
+        'schoolId': response['school_id'],
+        'firstName': response['first_name'],
+        'lastName': response['last_name'],
+        'classId': response['class_id'],
         'admissionNo': admissionNo,
       });
     }
@@ -202,7 +209,6 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/dashboard/superadmin', extra: {
         'id': r['id'],
         'name': r['name'],
-        'username': username,
         'username': username,
       });
     }

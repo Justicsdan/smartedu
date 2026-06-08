@@ -20,6 +20,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
   String? _selectedSubjectId;
   bool _isSaving = false;
   bool _isPrefilling = false;
+  bool _isLocked = false;
   final Map<String, TextEditingController> _controllers = {};
 
   String _studentName(Map<String, dynamic> s) {
@@ -148,6 +149,28 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
       if (score >= min && score <= max) return (g['grade'] ?? 'F').toString();
     }
     return 'F';
+  }
+
+  Future<void> _checkLockStatus() async {
+    if (_selectedClassId == null) return;
+    final provider = context.read<TeacherProvider>();
+    final session = provider.currentSession;
+    final term = provider.currentTerm;
+    if (session == null || term == null) return;
+    try {
+      final res = await Supabase.instance.client
+          .from('score_locks')
+          .select('is_locked')
+          .eq('school_id', provider.schoolId)
+          .eq('class_id', _selectedClassId!)
+          .eq('session_id', session['id'].toString())
+          .eq('term_id', term['id'].toString())
+          .eq('is_locked', true)
+          .maybeSingle();
+      if (mounted) setState(() => _isLocked = res != null);
+    } catch (_) {
+      if (mounted) setState(() => _isLocked = false);
+    }
   }
 
   @override
@@ -397,8 +420,10 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                       setState(() {
                         _selectedClassId = v;
                         _selectedSubjectId = null;
+                        _isLocked = false;
                         _clearControllers();
                       });
+                      _checkLockStatus();
                     },
                   ),
                 ),
@@ -435,6 +460,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                         _clearControllers();
                       });
                       if (v != null) {
+                        _checkLockStatus();
                         _prefill();
                       }
                     },
@@ -501,7 +527,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                           ),
                         ),
                       )
-                    : _buildScoreTable()
+                    : _isLocked ? _buildLockedState() : _buildScoreTable()
           else
             Center(
               child: Padding(
@@ -649,6 +675,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                             horizontal: 4, vertical: 4),
                         child: TextField(
                           controller: _getController(sid, key),
+                          readOnly: _isLocked,
                           keyboardType:
                               const TextInputType.numberWithOptions(decimal: true),
                           textAlign: TextAlign.center,
@@ -752,6 +779,31 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildLockedState() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(color: const Color(0xFFFFF3E0), border: Border.all(color: const Color(0xFFFFE082)), borderRadius: BorderRadius.circular(12)),
+          child: Row(
+            children: [
+              Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFFFE082), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.lock_rounded, color: Color(0xFFE65100), size: 22)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Scores Locked', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFFE65100))),
+                const SizedBox(height: 4),
+                Text('Scores have been locked by the admin for this class and term. Contact your admin to unlock.', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+              ])),
+            ],
+          ),
+        ),
+        _buildScoreTable(),
       ],
     );
   }
