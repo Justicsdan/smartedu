@@ -4,11 +4,13 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 class ChatBotWidget extends StatefulWidget {
   final String role;
   final String apiKey;
+  final Map<String, dynamic> schoolContext;
 
   const ChatBotWidget({
     super.key,
     required this.role,
     this.apiKey = '',
+    this.schoolContext = const {},
   });
 
   @override
@@ -30,6 +32,44 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     _initializeAI();
   }
 
+  String _buildContextBlock() {
+    final ctx = widget.schoolContext;
+    if (ctx.isEmpty) return '';
+
+    final schoolName = ctx['schoolName'] as String? ?? 'the school';
+    final session = ctx['currentSession'] as String? ?? 'N/A';
+    final term = ctx['currentTerm'] as String? ?? 'N/A';
+    final studentCount = ctx['studentCount'] as int? ?? 0;
+    final teacherCount = ctx['teacherCount'] as int? ?? 0;
+    final classCount = ctx['classCount'] as int? ?? 0;
+    final subjectCount = ctx['subjectCount'] as int? ?? 0;
+    final gradingStandard = ctx['gradingStandard'] as String? ?? 'Nigerian';
+    final classList = ctx['classList'] as List? ?? [];
+
+    final buffer = StringBuffer();
+    buffer.writeln('SCHOOL DATA CONTEXT:');
+    buffer.writeln('- School Name: $schoolName');
+    buffer.writeln('- Current Session: $session');
+    buffer.writeln('- Current Term: $term');
+    buffer.writeln('- Total Students: $studentCount');
+    buffer.writeln('- Total Teachers: $teacherCount');
+    buffer.writeln('- Total Classes: $classCount');
+    buffer.writeln('- Total Subjects: $subjectCount');
+    buffer.writeln('- Grading Standard: $gradingStandard');
+
+    if (classList.isNotEmpty) {
+      buffer.writeln('- Classes breakdown:');
+      for (final c in classList) {
+        final name = c['name'] as String? ?? '?';
+        final count = c['student_count'] as int? ?? 0;
+        final tier = c['tier'] as String? ?? '';
+        buffer.writeln('  * $name${tier.isNotEmpty ? ' ($tier)' : ''}: $count students');
+      }
+    }
+
+    return buffer.toString();
+  }
+
   void _initializeAI() {
     if (widget.apiKey.isEmpty) {
       setState(() => _isKeyMissing = true);
@@ -37,19 +77,33 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
       return;
     }
 
+    final contextBlock = _buildContextBlock();
+
     String systemPrompt = '';
     if (widget.role == 'School Admin') {
-      systemPrompt = 'You are a helpful internal AI Assistant for a School Administrator. '
-          'CRITICAL RULE: NEVER mention the name of the software platform, app developer, or any external branding. '
-          'Act strictly as a built-in feature of their specific school.';
+      systemPrompt = 'You are a helpful AI Assistant for a School Administrator at their school. '
+          'You help with school management tasks, answer questions about school data, provide guidance on using the system, '
+          'and assist with educational administration matters.\n\n';
     } else if (widget.role == 'Teacher') {
-      systemPrompt = 'You are a helpful internal AI Assistant for a Teacher. '
-          'CRITICAL RULE: NEVER mention the name of the software platform, app developer, or any external branding. '
-          'Act strictly as a built-in feature of their specific school.';
+      systemPrompt = 'You are a helpful AI Assistant for a Teacher at their school. '
+          'You help with teaching tasks, classroom management, student data queries, score entry guidance, '
+          'lesson planning ideas, and educational best practices.\n\n';
     } else {
-      systemPrompt = 'You are a helpful internal AI Assistant for a Student. '
-          'CRITICAL RULE: NEVER mention the name of the software platform, app developer, or any external branding. '
-          'Act strictly as a built-in feature of their specific school.';
+      systemPrompt = 'You are a helpful AI Assistant for a Student at their school. '
+          'You help with academic questions, study tips, and general student concerns.\n\n';
+    }
+
+    systemPrompt += 'CRITICAL RULES:\n'
+        '1. NEVER mention the name of the software platform, app developer, or any external branding. '
+        'Act strictly as a built-in feature of their specific school.\n'
+        '2. If asked about data not provided in the context below, say you do not have that information available right now.\n'
+        '3. Be concise and practical in your answers.\n';
+
+    if (contextBlock.isNotEmpty) {
+      systemPrompt += '\n$contextBlock\n'
+          'Use the above data to answer questions accurately when relevant. '
+          'When giving counts, use the exact numbers provided. '
+          'When listing classes, use the exact names provided.\n';
     }
 
     try {
