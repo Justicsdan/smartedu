@@ -671,7 +671,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 14),
-          Text('\u00a9 2025. All rights reserved.', style: TextStyle(color: Colors.white.withOpacity(0.12), fontSize: 11)),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text('© 2025. All rights reserved.', style: TextStyle(color: Colors.white.withOpacity(0.12), fontSize: 11)),
+            const SizedBox(width: 6),
+            GestureDetector(onTap: () => context.go('/super-admin-login'), child: Icon(Icons.shield_outlined, size: 11, color: Colors.white.withOpacity(0.08))),
+          ]),
         ],
       ),
     );
