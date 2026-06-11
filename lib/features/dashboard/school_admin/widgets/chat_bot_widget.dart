@@ -36,15 +36,15 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     final ctx = widget.schoolContext;
     if (ctx.isEmpty) return '';
 
-    final schoolName = ctx['schoolName'] as String? ?? 'the school';
-    final session = ctx['currentSession'] as String? ?? 'N/A';
-    final term = ctx['currentTerm'] as String? ?? 'N/A';
-    final studentCount = ctx['studentCount'] as int? ?? 0;
-    final teacherCount = ctx['teacherCount'] as int? ?? 0;
-    final classCount = ctx['classCount'] as int? ?? 0;
-    final subjectCount = ctx['subjectCount'] as int? ?? 0;
-    final gradingStandard = ctx['gradingStandard'] as String? ?? 'Nigerian';
-    final classList = ctx['classList'] as List? ?? [];
+    final schoolName = ctx['schoolName']?.toString() ?? 'the school';
+    final session = ctx['currentSession']?.toString() ?? 'N/A';
+    final term = ctx['currentTerm']?.toString() ?? 'N/A';
+    final studentCount = ctx['studentCount']?.toString() ?? '0';
+    final teacherCount = ctx['teacherCount']?.toString() ?? '0';
+    final classCount = ctx['classCount']?.toString() ?? '0';
+    final subjectCount = ctx['subjectCount']?.toString() ?? '0';
+    final gradingStandard = ctx['gradingStandard']?.toString() ?? 'Nigerian';
+    final classList = (ctx['classList'] as List?) ?? [];
 
     final buffer = StringBuffer();
     buffer.writeln('SCHOOL DATA CONTEXT:');
@@ -71,7 +71,8 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
   }
 
   void _initializeAI() {
-    if (widget.apiKey.isEmpty) {
+    final key = widget.apiKey.isNotEmpty ? widget.apiKey : 'AIzaSyBBFhpL1zsiDe-V9bFSVCk5HHuYjNYhHe8';
+    if (key.isEmpty) {
       setState(() => _isKeyMissing = true);
       _addBotMessage("AI Configuration Error: API Key is missing.");
       return;
@@ -109,7 +110,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     try {
       _model = GenerativeModel(
         model: 'gemini-2.0-flash',
-        apiKey: widget.apiKey,
+        apiKey: key,
         systemInstruction: Content.text(systemPrompt),
       );
       _addBotMessage("Hello! I'm your School AI Assistant. How can I help you today?");

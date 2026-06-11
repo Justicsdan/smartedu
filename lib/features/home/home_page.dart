@@ -2,6 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../auth/school_code_login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +22,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final AnimationController _borderAnim;
 
   Offset _mouseOffset = Offset.zero;
+  final _codeCtrl = TextEditingController();
+  final _codeFocus = FocusNode();
+  bool _codeLoading = false;
+  String? _codeError;
   int _hoveredFeature = -1;
   int _hoveredStep = -1;
   bool _showScrollTop = false;
@@ -41,6 +48,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _pulseAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 6000))..repeat();
     _borderAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000))..repeat();
     _scrollCtrl.addListener(_onScroll);
+    _checkLastCode();
   }
 
   void _onScroll() {
@@ -57,8 +65,43 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _gradientAnim.dispose();
     _pulseAnim.dispose();
     _borderAnim.dispose();
+    _codeCtrl.dispose();
+    _codeFocus.dispose();
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+
+  Future<void> _lookupSchoolCode() async {
+    final code = _codeCtrl.text.trim();
+    if (code.isEmpty) return;
+    setState(() { _codeLoading = true; _codeError = null; });
+    try {
+      final res = await Supabase.instance.client
+          .from('schools')
+          .select()
+          .eq('school_code', code)
+          .maybeSingle();
+      if (res == null) {
+        setState(() => _codeError = 'School code not found');
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('last_school_code', code);
+        if (mounted) context.go('/s/$code', extra: res);
+      }
+    } catch (e) {
+      setState(() => _codeError = 'Error looking up code');
+    } finally {
+      if (mounted) setState(() => _codeLoading = false);
+    }
+  }
+
+  void _checkLastCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastCode = prefs.getString('last_school_code');
+    if (lastCode != null && lastCode.isNotEmpty) {
+      _codeCtrl.text = lastCode;
+    }
   }
 
   void _openWhatsApp() {
@@ -241,10 +284,237 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 32),
-        _ctaButton('Get Started', w, () => context.go('/role-selection')),
+        _ctaButton('Get Started', w, _showEntryOptions),
         const SizedBox(height: 12),
         _ghostButton('Learn More', w, () => _scrollCtrl.animateTo(500, duration: const Duration(milliseconds: 800), curve: Curves.easeInOutCubic)),
         if (w) ...[const SizedBox(height: 28), _pills()],
+      ],
+    );
+  }
+
+
+  void _showEntryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E0E2A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            const Text('How would you like to sign in?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 8),
+            Text('Choose your preferred method', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4))),
+            const SizedBox(height: 24),
+            _entryOptionCard(ctx, Icons.qr_code_rounded, 'Enter with School Code', 'Use your school code for a branded experience', const Color(0xFF6366F1), () {
+              Navigator.pop(ctx);
+              _showCodeSheet(ctx);
+            }),
+            const SizedBox(height: 12),
+            _entryOptionCard(ctx, Icons.login_rounded, 'Continue without code', 'Go directly to role selection', const Color(0xFF10B981), () {
+              Navigator.pop(ctx);
+              context.go('/role-selection');
+            }),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  void _showCodeSheet(BuildContext parentCtx) {
+    showModalBottomSheet(
+      context: parentCtx,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0E0E2A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 20),
+              const Text('Enter School Code', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+              const SizedBox(height: 6),
+              Text('Type the 4-digit code provided by your school', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4))),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16163A),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _codeError != null ? Colors.red.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _codeCtrl,
+                        focusNode: _codeFocus,
+                        enabled: !_codeLoading,
+                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 4),
+                        textAlign: TextAlign.center,
+                        cursorColor: Color(0xFF6366F1),
+                        maxLength: 4,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          hintText: 'e.g. 4821',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontWeight: FontWeight.w400, letterSpacing: 0),
+                          border: InputBorder.none,
+                          counterText: '',
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        ),
+                        onSubmitted: (_) => _lookupSchoolCode(),
+                      ),
+                    ),
+                    Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(
+                        color: _codeLoading ? Colors.white.withOpacity(0.1) : const Color(0xFF6366F1),
+                        borderRadius: const BorderRadius.only(topRight: Radius.circular(14), bottomRight: Radius.circular(14)),
+                      ),
+                      child: _codeLoading
+                          ? const Padding(padding: EdgeInsets.all(18), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))
+                          : IconButton(icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24), onPressed: _lookupSchoolCode),
+                    ),
+                  ],
+                ),
+              ),
+              if (_codeError != null)
+                Padding(padding: const EdgeInsets.only(top: 10), child: Text(_codeError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12))),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _entryOptionCard(BuildContext ctx, IconData icon, String title, String subtitle, Color color, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(begin: Alignment(-0.3, -0.3), end: Alignment(1.0, 1.0), colors: [color, color.withOpacity(0.6)]),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 6))],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.3)),
+                        const SizedBox(height: 5),
+                        Text(subtitle, style: TextStyle(fontSize: 12.5, color: Colors.white.withOpacity(0.4), height: 1.35)),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [color.withOpacity(0.15), color.withOpacity(0.05)]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.arrow_forward_rounded, size: 20, color: color.withOpacity(0.7)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _codeInput(bool w) {
+    return Column(
+      children: [
+        Text('Enter your school code', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.7), letterSpacing: 0.3)),
+        const SizedBox(height: 12),
+        Container(
+          constraints: BoxConstraints(maxWidth: w ? 360 : 300),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _codeError != null ? Colors.red.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _codeCtrl,
+                  focusNode: _codeFocus,
+                  enabled: !_codeLoading,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 2),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 4821',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontWeight: FontWeight.w400, letterSpacing: 0),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                  onSubmitted: (_) => _lookupSchoolCode(),
+                ),
+              ),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: _codeLoading ? Colors.white.withOpacity(0.1) : const Color(0xFF6366F1),
+                  borderRadius: const BorderRadius.only(topRight: Radius.circular(14), bottomRight: Radius.circular(14)),
+                ),
+                child: _codeLoading
+                    ? const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))
+                    : IconButton(
+                        icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
+                        onPressed: _lookupSchoolCode,
+                      ),
+              ),
+            ],
+          ),
+        ),
+        if (_codeError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(_codeError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+          ),
       ],
     );
   }

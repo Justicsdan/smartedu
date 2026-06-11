@@ -13,6 +13,7 @@ import 'features/home/home_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/role_selection_page.dart';
 import 'features/auth/super_admin_login_page.dart';
+import 'features/auth/school_code_login_page.dart';
 import 'features/dashboard/super_admin/super_admin_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_classes.dart';
@@ -76,6 +77,26 @@ final _router = GoRouter(
       builder: (_, state) {
         final role = state.extra as String? ?? 'Student';
         return LoginPage(selectedRole: role);
+      },
+    ),
+    GoRoute(
+      path: '/s/:code',
+      builder: (_, state) {
+        final data = state.extra as Map<String, dynamic>?;
+        final code = state.pathParameters['code'] ?? '';
+        if (data != null) return SchoolCodeLoginPage(school: data);
+        return FutureBuilder(
+          future: Supabase.instance.client.from('schools').select().eq('school_code', code).maybeSingle(),
+          builder: (ctx, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Scaffold(backgroundColor: Color(0xFFF7F8FA), body: Center(child: CircularProgressIndicator(color: Color(0xFF1A237E))));
+            }
+            if (snap.data == null) {
+              return Scaffold(backgroundColor: const Color(0xFF080C22), body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.error_outline, size: 48, color: Colors.white24), const SizedBox(height: 16), Text('School code not found', style: TextStyle(color: Colors.white54, fontSize: 16)), const SizedBox(height: 20), ElevatedButton(onPressed: () => ctx.go('/'), child: const Text('Go Home'))])));
+            }
+            return SchoolCodeLoginPage(school: snap.data!);
+          },
+        );
       },
     ),
     GoRoute(
