@@ -2,6 +2,7 @@
 // File: lib/core/providers/student/student_base.dart
 // ==========================================
 import 'package:flutter/foundation.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class StudentBase extends ChangeNotifier {
@@ -216,7 +217,7 @@ abstract class StudentBase extends ChangeNotifier {
 
   Future<bool> login(String username, String pin) async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('students')
           .select('''
             *,
@@ -339,7 +340,7 @@ abstract class StudentBase extends ChangeNotifier {
 
   Future<void> _loadSchoolInfo() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('schools')
           .select('name, logo_url, motto, address, official_phone, official_email, website, school_type, principal_signature_url, school_stamp_url, whatsapp')
           .eq('id', _schoolId)
@@ -367,7 +368,7 @@ abstract class StudentBase extends ChangeNotifier {
 
   Future<void> _loadClassName() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('classes')
           .select('name, section, tier')
           .eq('id', _classId)
@@ -386,11 +387,11 @@ abstract class StudentBase extends ChangeNotifier {
 
   Future<void> _loadSessions() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('academic_sessions')
           .select()
           .eq('school_id', _schoolId)
-          .order('name', ascending: false);
+          .order('name', ascending: false).get();
 
       _sessions = List<Map<String, dynamic>>.from(r);
 
@@ -414,12 +415,12 @@ abstract class StudentBase extends ChangeNotifier {
   Future<void> _loadTerms() async {
     if (_currentSessionId == null) return;
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('terms')
           .select()
           .eq('school_id', _schoolId)
           .eq('session_id', _currentSessionId!)
-          .order('created_at');
+          .order('created_at').get();
 
       _terms = List<Map<String, dynamic>>.from(r);
 
@@ -441,7 +442,7 @@ abstract class StudentBase extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('school_settings')
           .select()
           .eq('school_id', _schoolId)
