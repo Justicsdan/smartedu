@@ -79,6 +79,7 @@ class DbTableQuery {
   DbTableQuery isNotNull(String col) { _filters.add({'column': col, 'op': 'is_not', 'value': null}); return this; }
   DbTableQuery like(String col, String val) { _filters.add({'column': col, 'op': 'like', 'value': val}); return this; }
   DbTableQuery ilike(String col, String val) { _filters.add({'column': col, 'op': 'ilike', 'value': val}); return this; }
+  DbTableQuery inFilter(String col, List val) { _filters.add({'column': col, 'op': 'in', 'value': val}); return this; }
   DbTableQuery not(String col, String operator, dynamic value) {
     final opMap = {'in': 'not_in', 'is': 'is_not', 'like': 'not_like', 'ilike': 'not_ilike'};
     _filters.add({'column': col, 'op': opMap[operator] ?? 'neq', 'value': value});

@@ -112,6 +112,11 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     academic_sessions: ['select'],
     terms: ['select'],
     school_settings: ['select'],
+    cbt_exams: ['select'],
+    cbt_questions: ['select'],
+    cbt_attempts: ['select'],
+    fee_payments: ['select'],
+    fee_types: ['select'],
   },
   student: {
     classes: ['select'],
@@ -127,6 +132,11 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     academic_sessions: ['select'],
     terms: ['select'],
     school_settings: ['select'],
+    cbt_exams: ['select'],
+    cbt_questions: ['select'],
+    cbt_attempts: ['select'],
+    fee_payments: ['select'],
+    fee_types: ['select'],
   },
 };
 
@@ -136,7 +146,7 @@ const RPC_WHITELIST: Record<string, string[]> = {
   super_admin: ['compute_term_summaries'],
   school_admin: ['compute_term_summaries'],
   teacher: [],
-  student: [],
+  student: ['get_cbt_questions', 'score_c_attempt'],
 };
 
 // ─── JWT helpers ───

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'student_base.dart';
 
 mixin StudentFeesMixin on StudentBase {
@@ -8,16 +8,9 @@ mixin StudentFeesMixin on StudentBase {
 
   Future<List<Map<String, dynamic>>> getMyFees({String? sessionId, String? termId}) async {
     try {
-      var q = supabase
+      var q = DbProxy.instance
           .from('fee_payments')
-          .select('''
-            id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no,
-            reference_no, remark,
-            fee_types(name, amount, frequency, currency_code),
-            academic_sessions(name),
-            terms(name)
-          ''')
-          .eq('school_id', schoolId)
+          .select('id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no, reference_no, remark, fee_types(name, amount, frequency, currency_code), academic_sessions(name), terms(name)')
           .eq('student_id', studentId);
 
       if (sessionId != null && sessionId.isNotEmpty) {
@@ -27,7 +20,7 @@ mixin StudentFeesMixin on StudentBase {
         q = q.eq('term_id', termId);
       }
 
-      final response = await q.order('payment_date', ascending: false);
+      final response = await q.order('payment_date', ascending: false).get();
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('Error loading student fees: $e');
@@ -49,19 +42,13 @@ mixin StudentFeesMixin on StudentBase {
     if (schoolId.isEmpty || studentId.isEmpty) return [];
     try {
       return List<Map<String, dynamic>>.from(
-        await supabase
+        await DbProxy.instance
             .from('fee_payments')
-            .select('''
-              id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no,
-              reference_no, remark,
-              fee_types(name, amount, frequency, currency_code),
-              academic_sessions(name),
-              terms(name)
-            ''')
-            .eq('school_id', schoolId)
+            .select('id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no, reference_no, remark, fee_types(name, amount, frequency, currency_code), academic_sessions(name), terms(name)')
             .eq('student_id', studentId)
             .order('payment_date', ascending: false)
-            .limit(limit),
+            .limit(limit)
+            .get(),
       );
     } catch (e) {
       debugPrint('Error loading recent payments: $e');
@@ -73,11 +60,11 @@ mixin StudentFeesMixin on StudentBase {
     if (schoolId.isEmpty || studentId.isEmpty) return [];
 
     try {
-      final feeTypes = await supabase
+      final feeTypes = await DbProxy.instance
           .from('fee_types')
           .select('id, name, amount, frequency, currency_code')
-          .eq('school_id', schoolId)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .get();
 
       final payments = await getMyFees(sessionId: sessionId, termId: termId);
 
@@ -163,16 +150,9 @@ mixin StudentFeesMixin on StudentBase {
     if (schoolId.isEmpty || studentId.isEmpty) return null;
 
     try {
-      return await supabase
+      return await DbProxy.instance
           .from('fee_payments')
-          .select('''
-            id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no,
-            reference_no, remark,
-            fee_types(name, amount, frequency, currency_code),
-            academic_sessions(name),
-            terms(name)
-          ''')
-          .eq('school_id', schoolId)
+          .select('id, fee_type_id, amount_paid, payment_date, payment_method, receipt_no, reference_no, remark, fee_types(name, amount, frequency, currency_code), academic_sessions(name), terms(name)')
           .eq('student_id', studentId)
           .eq('receipt_no', receiptNo)
           .maybeSingle();

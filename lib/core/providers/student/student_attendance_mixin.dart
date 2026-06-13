@@ -1,23 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'student_base.dart';
 
-/// Student attendance mixin.
-/// Provides attendance data for the logged-in student.
-/// All queries are scoped by schoolId + studentId + session + term.
-///
-/// MASTER PLAN:
-/// - Student can ONLY see their own attendance (RLS enforces this)
-/// - Uses parsed UUID strings from StudentBase, not nested map access
-/// - Provides summaries, percentages, and breakdowns for result sheets
-/// - No platform branding — attendance belongs to the school
-/// - V4: Fixed Postgrest v2 `var query` type constraint crash
-
 mixin StudentAttendanceMixin on StudentBase {
-
-  // ==========================================
-  // ATTENDANCE SUMMARY
-  // ==========================================
 
   Future<Map<String, int>> getMyAttendanceSummary() async {
     if (currentSessionId == null || currentTermId == null) {
@@ -25,13 +10,13 @@ mixin StudentAttendanceMixin on StudentBase {
     }
 
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('attendance')
           .select('status')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
-          .eq('term_id', currentTermId!);
+          .eq('term_id', currentTermId!)
+          .get();
 
       final summary = <String, int>{
         'present': 0, 'absent': 0, 'late': 0, 'excused': 0, 'total_days': r.length,
@@ -68,22 +53,18 @@ mixin StudentAttendanceMixin on StudentBase {
     return '$pct% ($attended/$total days)';
   }
 
-  // ==========================================
-  // ATTENDANCE HISTORY
-  // ==========================================
-
   Future<List<Map<String, dynamic>>> getMyAttendanceHistory() async {
     if (currentSessionId == null || currentTermId == null) return [];
 
     try {
-      final response = await supabase
+      final response = await DbProxy.instance
           .from('attendance')
           .select('id, date, status, remark')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
-          .order('date', ascending: false);
+          .order('date', ascending: false)
+          .get();
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -96,10 +77,9 @@ mixin StudentAttendanceMixin on StudentBase {
     if (currentSessionId == null || currentTermId == null || date.isEmpty) return null;
 
     try {
-      return await supabase
+      return await DbProxy.instance
           .from('attendance')
           .select('id, date, status, remark, recorded_by')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
@@ -111,10 +91,6 @@ mixin StudentAttendanceMixin on StudentBase {
     }
   }
 
-  /// Get attendance for a date range.
-  /// [FIX] Postgrest v2: Changed `var query` to `dynamic query`.
-  /// `.order()` returns PostgrestTransformBuilder, but `var` locked the type 
-  /// to PostgrestFilterBuilder, causing a strict type crash in Dart.
   Future<List<Map<String, dynamic>>> getAttendanceByDateRange(
     DateTime startDate,
     DateTime endDate, {
@@ -123,10 +99,9 @@ mixin StudentAttendanceMixin on StudentBase {
     if (currentSessionId == null || currentTermId == null) return [];
 
     try {
-      dynamic query = supabase
+      var query = DbProxy.instance
           .from('attendance')
           .select('id, date, status, remark')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
@@ -139,7 +114,7 @@ mixin StudentAttendanceMixin on StudentBase {
 
       query = query.order('date', ascending: false);
 
-      return List<Map<String, dynamic>>.from(await query);
+      return List<Map<String, dynamic>>.from(await query.get());
     } catch (e) {
       debugPrint('Error fetching attendance by date range: $e');
       return [];
@@ -150,14 +125,14 @@ mixin StudentAttendanceMixin on StudentBase {
     if (currentSessionId == null || currentTermId == null) return [];
 
     try {
-      final response = await supabase
+      final response = await DbProxy.instance
           .from('attendance')
           .select('date, status')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
-          .order('date', ascending: false);
+          .order('date', ascending: false)
+          .get();
 
       final monthlyMap = <String, Map<String, dynamic>>{};
 
@@ -200,15 +175,15 @@ mixin StudentAttendanceMixin on StudentBase {
     if (currentSessionId == null || currentTermId == null) return 0;
 
     try {
-      final response = await supabase
+      final response = await DbProxy.instance
           .from('attendance')
           .select('date, status')
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
           .eq('status', 'absent')
-          .order('date', ascending: false);
+          .order('date', ascending: false)
+          .get();
 
       if (response.isEmpty) return 0;
 

@@ -1,39 +1,17 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'student_base.dart';
-
-/// Student CBT mixin.
-/// Handles CBT exam taking for the logged-in student.
-///
-/// MASTER PLAN:
-/// - Questions loaded via Postgres RPC function (RLS blocks direct reads for security)
-/// - Time window enforcement — student can only start exam between start_time and end_time
-/// - Shuffle controlled by exam.shuffle_questions setting
-/// - Double submission prevented by is_submitted check
-/// - All queries scoped by schoolId + studentId
-/// - Student cannot see correct answers (RPC strips them out)
-/// - [FIX] Renamed class to StudentCbtMixin to match student_provider.dart import
-/// - [FIX] Postgrest v2 RPC strictly requires named `params:` argument
 
 mixin StudentCbtMixin on StudentBase {
 
-  // ==========================================
-  // EXAM AVAILABILITY CHECKS
-  // ==========================================
-
-  /// Check if an exam is currently available for the student to take.
   Future<Map<String, dynamic>> checkExamAvailability(String examId) async {
     if (examId.isEmpty) return {'available': false, 'reason': 'Invalid exam ID'};
 
     try {
-      final exam = await supabase
+      final exam = await DbProxy.instance
           .from('cbt_exams')
-          .select('''
-            id, title, duration_minutes, total_questions, pass_mark,
-            is_active, start_time, end_time, shuffle_questions,
-            show_result_immediately
-          ''')
+          .select('id, title, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, shuffle_questions, show_result_immediately')
           .eq('id', examId)
           .maybeSingle();
 
@@ -62,22 +40,16 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  /// Get available CBT exams for student's class.
   Future<List<Map<String, dynamic>>> getAvailableCbtExams() async {
     if (classId.isEmpty) return [];
 
     try {
-      final allExams = await supabase
+      final allExams = await DbProxy.instance
           .from('cbt_exams')
-          .select('''
-            id, title, subject_id, class_id, duration_minutes, total_questions,
-            pass_mark, is_active, start_time, end_time, instructions,
-            show_result_immediately, shuffle_questions, created_at,
-            subjects(name, code)
-          ''')
-          .eq('school_id', schoolId)
+          .select('id, title, subject_id, class_id, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, instructions, show_result_immediately, shuffle_questions, created_at, subjects(name, code)')
           .eq('class_id', classId)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .get();
 
       final now = DateTime.now();
       final available = allExams.where((exam) {
@@ -106,17 +78,12 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  /// Get exam details by ID.
   Future<Map<String, dynamic>?> getExamDetails(String examId) async {
     if (examId.isEmpty) return null;
     try {
-      return await supabase
+      return await DbProxy.instance
           .from('cbt_exams')
-          .select('''
-            id, title, subject_id, class_id, duration_minutes, total_questions,
-            pass_mark, is_active, start_time, end_time, instructions,
-            shuffle_questions, show_result_immediately, created_by
-          ''')
+          .select('id, title, subject_id, class_id, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, instructions, shuffle_questions, show_result_immediately, created_by')
           .eq('id', examId)
           .maybeSingle();
     } catch (e) {
@@ -125,17 +92,11 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  // ==========================================
-  // QUESTIONS LOADING
-  // ==========================================
-
-  /// Load questions for an exam via secure RPC.
-  /// [FIX] Postgrest v2 requires `params:` named argument for RPC calls.
   Future<List<Map<String, dynamic>>> getCbtExamQuestions(String examId) async {
     if (examId.isEmpty) return [];
 
     try {
-      final response = await supabase.rpc('get_cbt_questions', params: {
+      final response = await DbProxy.instance.rpc('get_cbt_questions', params: {
         'p_exam_id': examId,
         'p_student_id': studentId,
       });
@@ -165,15 +126,14 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  /// Fallback: load questions directly (only works if RLS is adjusted).
   Future<List<Map<String, dynamic>>> _loadQuestionsDirect(String examId) async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('cbt_questions')
           .select('id, question_text, option_a, option_b, option_c, option_d, marks, question_order, image_url')
-          .eq('school_id', schoolId)
           .eq('exam_id', examId)
-          .order('question_order', ascending: true);
+          .order('question_order', ascending: true)
+          .get();
 
       final questions = List<Map<String, dynamic>>.from(r);
 
@@ -189,11 +149,6 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  // ==========================================
-  // EXAM SUBMISSION
-  // ==========================================
-
-  /// Submit CBT exam answers.
   Future<Map<String, dynamic>?> submitCbtExam({
     required String examId,
     required Map<String, String> answers,
@@ -218,8 +173,7 @@ mixin StudentCbtMixin on StudentBase {
         }
       }
 
-      // [FIX] Postgrest v2 requires `params:` named argument for RPC calls.
-      final response = await supabase.rpc('score_cbt_attempt', params: {
+      final response = await DbProxy.instance.rpc('score_cbt_attempt', params: {
         'p_exam_id': examId,
         'p_student_id': studentId,
         'p_answers': answers,
@@ -246,52 +200,50 @@ mixin StudentCbtMixin on StudentBase {
     }
   }
 
-  /// Check if student already attempted an exam.
   Future<bool> hasAttemptedExam(String examId) async {
     if (examId.isEmpty) return false;
     try {
-      final r = await supabase.from('cbt_attempts').select('id')
-          .eq('school_id', schoolId).eq('exam_id', examId).eq('student_id', studentId).maybeSingle();
+      final r = await DbProxy.instance
+          .from('cbt_attempts')
+          .select('id')
+          .eq('exam_id', examId)
+          .eq('student_id', studentId)
+          .maybeSingle();
       return r != null;
     } catch (_) {
       return false;
     }
   }
 
-  /// Get previous attempt for an exam (for review if show_result_immediately is true).
   Future<Map<String, dynamic>?> getPreviousAttempt(String examId) async {
     try {
-      return await supabase.from('cbt_attempts').select('''
-            id, score, total_marks, time_started, time_submitted,
-            is_submitted, created_at
-          ''')
-          .eq('school_id', schoolId).eq('exam_id', examId).eq('student_id', studentId).maybeSingle();
+      return await DbProxy.instance
+          .from('cbt_attempts')
+          .select('id, score, total_marks, time_started, time_submitted, is_submitted, created_at')
+          .eq('exam_id', examId)
+          .eq('student_id', studentId)
+          .maybeSingle();
     } catch (_) {
       return null;
     }
   }
 
-  /// Get all CBT attempts for the student (for history).
   Future<List<Map<String, dynamic>>> getMyCbtHistory() async {
     if (schoolId.isEmpty || studentId.isEmpty) return [];
     try {
       return List<Map<String, dynamic>>.from(
-        await supabase.from('cbt_attempts').select('''
-              id, exam_id, score, total_marks, time_started, time_submitted,
-              is_submitted, created_at,
-              cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark)
-            ''')
-            .eq('school_id', schoolId).eq('student_id', studentId).order('created_at', ascending: false),
+        await DbProxy.instance
+            .from('cbt_attempts')
+            .select('id, exam_id, score, total_marks, time_started, time_submitted, is_submitted, created_at, cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark)')
+            .eq('student_id', studentId)
+            .order('created_at', ascending: false)
+            .get(),
       );
     } catch (e) {
       debugPrint('Error loading CBT history: $e');
       return [];
     }
   }
-
-  // ==========================================
-  // EXAM TIMER
-  // ==========================================
 
   DateTime? _examStartTime;
   int _cachedExamDurationMinutes = 60;
