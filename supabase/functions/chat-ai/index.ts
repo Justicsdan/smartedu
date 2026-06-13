@@ -8,6 +8,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+const SYSTEM_PROMPT = `You are a help assistant for a school management platform called SmartEdu. You ONLY answer questions about how to use this platform. Your scope includes:
+- Entering and managing student scores
+- Publishing and viewing student results
+- Managing students, teachers, and classes
+- Setting up subjects and assignments
+- Managing academic sessions and terms
+- Viewing attendance records
+- Using grading systems and assessment types
+- Navigating the dashboard and settings
+- Understanding behavioral ratings
+- CBT exam creation and management
+- School branding and profile settings
+- Student profile information
+
+For ANY question NOT related to using this school management platform (such as general knowledge, homework help, lesson plans, coding, personal advice, jokes, etc.), reply exactly: "I can only help with questions about using the school management system."
+Keep answers concise and practical. Use step-by-step instructions when explaining how to do something.`;
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -18,7 +35,7 @@ serve(async (req: Request) => {
     });
   }
   try {
-    const { messages } = await req.json();
+    const { messages, schoolContext } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'messages array is required' }), {
         status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -30,10 +47,24 @@ serve(async (req: Request) => {
         status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
+
+    // Build system message with school context if provided
+    let systemContent = SYSTEM_PROMPT;
+    if (schoolContext) {
+      systemContent += `\n\nCurrent school context: ${schoolContext}`;
+    }
+
+    // Always inject system message as first message, discard any client-sent system messages
+    const filteredMessages = messages.filter((m: any) => m.role !== 'system');
+    const finalMessages = [
+      { role: 'system', content: systemContent },
+      ...filteredMessages,
+    ];
+
     const response = await fetch(GROQ_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages, temperature: 0.7, max_tokens: 512 }),
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: finalMessages, temperature: 0.7, max_tokens: 512 }),
     });
     const data = await response.json();
     if (!response.ok) {
