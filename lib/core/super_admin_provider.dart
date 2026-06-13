@@ -107,7 +107,7 @@ class SuperAdminProvider extends ChangeNotifier {
       final response = await Supabase.instance.client
           .from('schools')
           .select('''
-            id, name, location, address, logo_url, motto, official_phone, official_email,
+            id, school_code, name, location, address, logo_url, motto, official_phone, official_email,
             website, whatsapp, school_type, is_active, deactivated_at,
             subscription_plan, subscription_status, subscription_expires_at, trial_ends_at,
             max_students, max_teachers,
@@ -179,7 +179,7 @@ class SuperAdminProvider extends ChangeNotifier {
       final response = await Supabase.instance.client
           .from('schools')
           .select('''
-            id, name, location, address, logo_url, motto, official_phone, official_email,
+            id, school_code, name, location, address, logo_url, motto, official_phone, official_email,
             website, whatsapp, school_type, is_active, deactivated_at,
             subscription_plan, subscription_status, subscription_expires_at, trial_ends_at,
             max_students, max_teachers,
@@ -310,6 +310,26 @@ class SuperAdminProvider extends ChangeNotifier {
   }
 
   // ==========================================
+  // SCHOOL CODE GENERATION
+  // ==========================================
+
+  Future<String> _generateSchoolCode() async {
+    try {
+      final result = await Supabase.instance.client
+          .from('schools')
+          .select('school_code')
+          .order('school_code', ascending: false)
+          .limit(1);
+      if (result.isNotEmpty && result[0]['school_code'] != null) {
+        final maxCode = int.tryParse(result[0]['school_code'] as String) ?? 0;
+        final nextCode = maxCode + 1;
+        return nextCode.toString().padLeft(4, '0');
+      }
+    } catch (_) {}
+    return '0001';
+  }
+
+  // ==========================================
   // CREDENTIAL GENERATION
   // ==========================================
 
@@ -415,6 +435,7 @@ class SuperAdminProvider extends ChangeNotifier {
     try {
       final username = _generateUsername(name);
       final password = _generateSecurePassword();
+      final schoolCode = await _generateSchoolCode();
 
       // 1. Create school record
       final schoolResponse = await Supabase.instance.client.from('schools').insert({
@@ -426,6 +447,7 @@ class SuperAdminProvider extends ChangeNotifier {
         'official_email': officialEmail.isNotEmpty ? officialEmail : null,
         'motto': motto.isNotEmpty ? motto : null,
         'school_type': schoolType,
+        'school_code': schoolCode,
         'is_active': true,
         'subscription_plan': 'free',
         'subscription_status': 'trial',
@@ -434,7 +456,7 @@ class SuperAdminProvider extends ChangeNotifier {
         'max_teachers': 20,
         'admin_username': username,
         'admin_password': password,
-      }).select('id, name, location, logo_url, whatsapp, school_type, is_active, admin_username, created_at').single();
+      }).select('id, name, school_code, location, logo_url, whatsapp, school_type, is_active, admin_username, created_at').single();
 
       final schoolId = schoolResponse['id'];
 
@@ -504,7 +526,7 @@ class SuperAdminProvider extends ChangeNotifier {
       _trialSchools++;
       notifyListeners();
 
-      return {'username': username, 'password': password};
+      return {'username': username, 'password': password, 'school_code': schoolCode, 'school_name': schoolResponse['name']};
     } catch (e) {
       debugPrint('Error adding school with setup: $e');
       return null;

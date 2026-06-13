@@ -30,11 +30,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     'participation_in_school_activities', 'neatness', 'honesty', 'self_control',
   ];
 
-  static const List<String> _bLabels = [
-    'Punctuality', 'Relationship with Others', 'Attendance in Class', 'Games/Sports',
-    'Attentiveness in Class', 'Handling of Tools, Lab & Workshops', 'Carrying out Assignments',
-    'Participation in School Activities', 'Neatness', 'Honesty', 'Self-Control',
-  ];
+
 
   @override
   void initState() {
@@ -310,7 +306,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         );
         for (int i = 0; i < _bKeys.length; i++) {
           final key = _bKeys[i];
-          final label = _bLabels[i];
+          final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.schoolSettings?['behavioral_labels']);
           final value = _behavioralRatings?[key] ?? '';
           final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
           behavRows.add(
@@ -751,7 +747,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             final rowItems = List.generate(endIdx - startIdx, (i) {
               final idx = startIdx + i;
               final key = _bKeys[idx];
-              final label = _bLabels[idx];
+              final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.schoolSettings?['behavioral_labels']);
               final value = _behavioralRatings?[key] ?? '';
               if (value.isEmpty) return const SizedBox.shrink();
               final color = _getBehavioralColor(value);

@@ -255,6 +255,47 @@ class SchoolAdminProvider extends BaseProvider
     }
   }
 
+  /// Get current custom behavioral labels from school_settings.
+  /// Returns null if no custom labels set (uses defaults).
+  Map<String, dynamic>? get behavioralLabels {
+    final raw = schoolSettings?['behavioral_labels'];
+    if (raw == null) return null;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
+  }
+
+  /// Save custom behavioral labels to school_settings.behavioral_labels.
+  /// labels map: {"punctuality": "Punctuality", "neatness": "Personal Hygiene", ...}
+  /// Only non-empty values are saved. Empty values are removed (revert to default).
+  Future<bool> updateBehavioralLabels(Map<String, String> labels) async {
+    if (schoolId.isEmpty) return false;
+    try {
+      // Remove empty entries — they should fall back to defaults
+      final cleaned = <String, String>{};
+      for (final entry in labels.entries) {
+        if (entry.value.trim().isNotEmpty) {
+          cleaned[entry.key] = entry.value.trim();
+        }
+      }
+      // If all empty, store null to clear custom labels
+      final value = cleaned.isEmpty ? null : cleaned;
+      await supabase.from('school_settings').update({
+        'behavioral_labels': value,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('school_id', schoolId);
+      // Update local state immediately
+      if (schoolSettings != null) {
+        schoolSettings!['behavioral_labels'] = value;
+        notifyListeners();
+      }
+      logAudit(action: 'update', tableName: 'school_settings', newData: {'behavioral_labels': '${cleaned.length} custom labels'});
+      return true;
+    } catch (e) {
+      debugPrint('Error updating behavioral labels: $e');
+      return false;
+    }
+  }
+
   // ==========================================
   // SCHOOL SETTINGS (thin wrappers around BaseProvider)
   // All shadowed fields removed — uses BaseProvider's getters.

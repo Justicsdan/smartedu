@@ -30,6 +30,12 @@ mixin StudentResultsMixin on StudentBase {
   Map<String, dynamic>? _myTermSummary;
   Map<String, dynamic>? get myTermSummary => _myTermSummary;
 
+  Map<String, String> _myBehavioralRatings = {};
+  Map<String, String> get myBehavioralRatings => _myBehavioralRatings;
+
+  Map<String, dynamic>? _myTermComment;
+  Map<String, dynamic>? get myTermComment => _myTermComment;
+
   bool get areResultsPublished {
     if (_myTermSummary == null) return false;
     return _myTermSummary!['is_published'] == true;
@@ -130,8 +136,62 @@ mixin StudentResultsMixin on StudentBase {
     }
   }
 
+  Future<void> loadMyBehavioralRatings() async {
+    if (currentSessionId == null || currentTermId == null) {
+      _myBehavioralRatings = {};
+      return;
+    }
+    try {
+      final row = await supabase
+          .from('student_behavioural_ratings')
+          .select()
+          .eq('school_id', schoolId)
+          .eq('student_id', studentId)
+          .eq('session_id', currentSessionId!)
+          .eq('term_id', currentTermId!)
+          .maybeSingle();
+      if (row != null) {
+        _myBehavioralRatings = {};
+        for (final key in GradingUtils.behavioralFieldKeys) {
+          final val = row[key];
+          if (val != null && val.toString().trim().isNotEmpty) {
+            _myBehavioralRatings[key] = val.toString().trim();
+          }
+        }
+      } else {
+        _myBehavioralRatings = {};
+      }
+    } catch (e) {
+      debugPrint('Error loading behavioral ratings: $e');
+      _myBehavioralRatings = {};
+    }
+  }
+
+  Future<void> loadMyTermComment() async {
+    if (currentSessionId == null || currentTermId == null) {
+      _myTermComment = null;
+      return;
+    }
+    try {
+      final row = await supabase
+          .from('term_comments')
+          .select()
+          .eq('school_id', schoolId)
+          .eq('student_id', studentId)
+          .eq('session_id', currentSessionId!)
+          .eq('term_id', currentTermId!)
+          .maybeSingle();
+      _myTermComment = row != null ? Map<String, dynamic>.from(row) : null;
+    } catch (e) {
+      debugPrint('Error loading term comment: $e');
+      _myTermComment = null;
+    }
+  }
+
   Future<void> loadAllResults() async {
     _myScores = [];
+    _myBehavioralRatings = {};
+    _myTermComment = null;
     debugPrint("STUDENT RESULTS: loadStudentData() called");
     _myTermSummary = null;
     notifyListeners();
@@ -140,7 +200,11 @@ mixin StudentResultsMixin on StudentBase {
     await loadMyTermSummary();
 
     if (areResultsPublished) {
-      await loadMyScores();
+      await Future.wait([
+        loadMyScores(),
+        loadMyBehavioralRatings(),
+        loadMyTermComment(),
+      ]);
     }
   }
 
@@ -244,6 +308,8 @@ mixin StudentResultsMixin on StudentBase {
   void clearResults() {
     _myScores = [];
     _myTermSummary = null;
+    _myBehavioralRatings = {};
+    _myTermComment = null;
     notifyListeners();
   }
 

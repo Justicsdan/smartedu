@@ -583,6 +583,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
         showPrincipalComment:
             _provider.showPrincipalComment,
         showAttendance: _provider.showAttendanceSummary,
+        customLabels: _provider.behavioralLabels,
         onSave: (updated) {
           setState(() => _studentData[sid] = updated);
           _saveStudentData(sid);
@@ -634,7 +635,12 @@ class _PagePublishResultsState extends State<PagePublishResults> {
       final ath = ah.map((a) => "<th>${a['n']}<br/>(${a['m']})</th>").join('');
       final grow = grading.map((g) => "<tr><td>${g['grade']}</td><td>${g['min']}-${g['max']}</td><td>${g['remark'] ?? ''}</td></tr>").join('');
       final bkeys = GradingUtils.behavioralFieldKeys;
-      final blabels = GradingUtils.behavioralFieldLabels;
+      final blabelsRaw = GradingUtils.behavioralFieldLabels;
+      final customBL = _provider.behavioralLabels;
+      final blabels = <String, String>{};
+      for (final k in bkeys) {
+        blabels[k] = customBL != null && customBL[k] != null && customBL[k].toString().trim().isNotEmpty ? customBL[k].toString() : (blabelsRaw[k] ?? k);
+      }
       final bcol = {'Excellent': '#166534', 'Very Good': '#2E7D32', 'Good': '#1565C0', 'Fair': '#E65100', 'Poor': '#D32F2F'};
       final csList = await _supabase.from('class_subjects').select('subject_id,subjects(name,code)').eq('class_id', _selectedClassId!).eq('school_id', _provider.schoolId);
       final sMap = <String, Map<String, String>>{};
@@ -1532,6 +1538,7 @@ class _StudentEditSheet extends StatefulWidget {
   final bool showTeacherComment;
   final bool showPrincipalComment;
   final bool showAttendance;
+  final Map<String, dynamic>? customLabels;
   final void Function(Map<String, dynamic> updated) onSave;
 
   const _StudentEditSheet({
@@ -1542,6 +1549,7 @@ class _StudentEditSheet extends StatefulWidget {
     required this.showTeacherComment,
     required this.showPrincipalComment,
     required this.showAttendance,
+    this.customLabels,
     required this.onSave,
   });
 
@@ -1861,7 +1869,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                               bottom: 8),
                           child: _ratingDropdown(
                             GradingUtils
-                                .getBehavioralFieldLabel(key),
+                                .getBehavioralFieldLabel(key, customLabels: widget.customLabels),
                             _ratings[key] ?? 'Good',
                             (v) =>
                                 setState(() => _ratings[key] = v),

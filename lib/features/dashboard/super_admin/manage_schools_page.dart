@@ -220,7 +220,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                   );
                   Navigator.pop(ctx);
                   if (result != null) {
-                    _showCredentialsDialog(result['username']!, result['password']!);
+                    _showCredentialsDialog(result['username']!, result['password']!, schoolName: result['school_name'] ?? '', schoolCode: result['school_code'] ?? '');
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: const Text("Failed to register school"), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
@@ -252,7 +252,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     );
   }
 
-  void _showCredentialsDialog(String username, String password) {
+  void _showCredentialsDialog(String username, String password, {String schoolName = '', String schoolCode = ''}) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -276,6 +276,43 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (schoolName.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.domain_rounded, size: 16, color: Color(0xFF111827)),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(schoolName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF111827)))),
+                  ],
+                ),
+              ),
+            if (schoolCode.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.pin_rounded, size: 16, color: Color(0xFF1A237E)),
+                      const SizedBox(width: 6),
+                      const Text('School Code:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                      const SizedBox(width: 8),
+                      Text(schoolCode, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A237E), letterSpacing: 2)),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => _copyToClipboard(schoolCode, "School Code"),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                          child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF1A237E)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const Text("Save these credentials for the school admin:", style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
             const SizedBox(height: 16),
             Container(
@@ -410,6 +447,29 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                         ),
                       ),
                     Text(school.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.pin_rounded, size: 16, color: Color(0xFF1A237E)),
+                          const SizedBox(width: 6),
+                          const Text('School Code:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                          const SizedBox(width: 8),
+                          Text(school.safeSchoolCode, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A237E), letterSpacing: 2)),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => _copyToClipboard(school.safeSchoolCode, "School Code"),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(color: const Color(0xFFF57F17).withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                              child: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFFF57F17)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Container(
                       width: double.infinity,
@@ -490,7 +550,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                   Navigator.pop(ctx);
                   final result = await provider.regenerateSchoolPassword(school.id);
                   if (result != null && mounted) {
-                    _showCredentialsDialog(result['username']!, result['password']!);
+                    _showCredentialsDialog(result['username']!, result['password']!, schoolName: school.name, schoolCode: school.safeSchoolCode);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: const Text("Password regenerated successfully"), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                     );

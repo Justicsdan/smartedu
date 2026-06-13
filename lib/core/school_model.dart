@@ -11,6 +11,7 @@ class School {
   // =========================================================
 
   final String id;
+  final String schoolCode;
   final String name;
   final String? location;
   final String? logoUrl;
@@ -132,6 +133,7 @@ class School {
 
   School({
     required this.id,
+    this.schoolCode = '',
     required this.name,
     this.location,
     this.logoUrl,
@@ -213,6 +215,7 @@ class School {
 
     return School(
       id: map['id'] as String? ?? '',
+      schoolCode: map['school_code'] as String? ?? '',
       name: map['name'] as String? ?? '',
       location: map['location'] as String?,
       logoUrl: map['logo_url'] as String?,
@@ -311,6 +314,7 @@ class School {
 
   School copyWith({
     String? id,
+    String? schoolCode,
     String? name,
     String? location,
     String? logoUrl,
@@ -383,6 +387,7 @@ class School {
   }) {
     return School(
       id: id ?? this.id,
+      schoolCode: schoolCode ?? this.schoolCode,
       name: name ?? this.name,
       location: location ?? this.location,
       logoUrl: logoUrl ?? this.logoUrl,
@@ -605,6 +610,8 @@ class School {
 
   /// Safe admin password — never null for display.
   String get safeAdminPassword => adminPassword ?? '';
+
+  String get safeSchoolCode => schoolCode;
 
   // =========================================================
   // DISPLAY GETTERS

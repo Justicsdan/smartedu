@@ -62,7 +62,7 @@ class _PageSettingsState extends State<PageSettings>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _nameController = TextEditingController(text: widget.schoolName);
     _addressController = TextEditingController(text: widget.schoolAddress);
     _phoneController = TextEditingController(text: widget.schoolPhone);
@@ -255,6 +255,7 @@ class _PageSettingsState extends State<PageSettings>
                 Tab(text: 'Branding'),
                 Tab(text: 'Grading'),
                 Tab(text: 'Assessment'),
+                Tab(text: 'Behavioral'),
               ],
             ),
           ),
@@ -267,6 +268,7 @@ class _PageSettingsState extends State<PageSettings>
                 _buildBrandingTab(provider),
                 _buildGradingTab(provider),
                 _buildAssessmentTab(provider),
+                _buildBehavioralTab(provider),
               ],
             ),
           ),
@@ -1872,6 +1874,141 @@ class _PageSettingsState extends State<PageSettings>
     final ok = await p.updateTierAssessment(t, cur);
     setState(() => _isSaving = false);
     _snack(ok ? 'Assessment saved for $t!' : 'Failed to save');
+  }
+
+  Widget _buildBehavioralTab(SchoolAdminProvider provider) {
+    final customLabels = provider.behavioralLabels;
+    final allLabels = GradingUtils.getAllBehavioralLabels(customLabels: customLabels);
+    final controllers = <String, TextEditingController>{};
+    for (final item in allLabels) {
+      controllers[item['key']!] = TextEditingController(text: item['label']);
+    }
+    bool isSaving = false;
+    return StatefulBuilder(
+      builder: (context, setInner) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _pageHeader('Behavioral Ratings', 'Customize the 11 rating labels on report sheets'),
+              const SizedBox(height: 12),
+              _infoCallout('Leave any field blank to use the Nigerian default. Your custom labels replace the defaults on all printed results.'),
+              const SizedBox(height: 20),
+              if (customLabels != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_note, size: 18, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text('${customLabels.length} custom label${customLabels.length != 1 ? 's' : ''} active',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final ok = await provider.updateBehavioralLabels({});
+                          if (context.mounted) {
+                            _snack(ok ? 'All labels reset to defaults' : 'Failed to reset');
+                          }
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                        child: const Text('Reset All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8EAED)),
+                ),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < allLabels.length; i++) ...[
+                      if (i > 0) Divider(color: Colors.grey.shade100, height: 1),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              child: Text('${i + 1}.',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: controllers[allLabels[i]['key']],
+                                decoration: InputDecoration(
+                                  labelText: 'Rating ${i + 1}',
+                                  labelStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                                  hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade300),
+                                  hintText: GradingUtils.behavioralFieldLabels[allLabels[i]['key']],
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2)),
+                                  filled: true,
+                                  fillColor: const Color(0xFFFAFBFC),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: isSaving ? null : () async {
+                    setInner(() => isSaving = true);
+                    final labels = <String, String>{};
+                    for (final entry in controllers.entries) {
+                      final val = entry.value.text.trim();
+                      if (val.isNotEmpty) labels[entry.key] = val;
+                    }
+                    final ok = await provider.updateBehavioralLabels(labels);
+                    setInner(() => isSaving = false);
+                    if (context.mounted) {
+                      _snack(ok ? 'Behavioral labels saved!' : 'Failed to save');
+                    }
+                  },
+                  icon: isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.check_rounded, size: 20),
+                  label: Text(isSaving ? 'Saving...' : 'Save Behavioral Labels',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFF1A237E).withOpacity(0.5),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

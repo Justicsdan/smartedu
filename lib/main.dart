@@ -461,6 +461,20 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.payment_rounded, label: 'Fees'),
   ];
 
+  void _openAiChat() {
+    final p = context.read<SchoolAdminProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ChatBotWidget(
+        role: 'School Admin',
+        apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
+        schoolContext: 'School: ${p.schoolName}, Session: ${p.currentSession?['name'] ?? 'N/A'}, Term: ${p.currentTerm?['name'] ?? 'N/A'}, Students: ${p.students.length}, Teachers: ${p.teacherCount}, Classes: ${p.classes.length}, Subjects: ${p.subjects.length}, Grading: ${p.schoolSettings?['grading_standard'] ?? 'Nigerian'}',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = context.watch<SchoolAdminProvider>();
@@ -489,6 +503,11 @@ class _AdminShellState extends State<_AdminShell> {
                   Text(_navItems[_selectedIndex].label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                   const Spacer(),
                   IconButton(
+                    icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF1A237E)),
+                    tooltip: 'Ask AI',
+                    onPressed: _openAiChat,
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
                     tooltip: 'Logout',
                     onPressed: () => context.go('/role-selection'),
@@ -500,7 +519,6 @@ class _AdminShellState extends State<_AdminShell> {
           ],
         ),
       ),
-      floatingActionButton: _buildAiFab(),
     );
   }
 
@@ -559,7 +577,7 @@ class _AdminShellState extends State<_AdminShell> {
             onTap: () { Navigator.pop(context); context.go('/role-selection'); },
             child: const Padding(
               padding: EdgeInsets.all(16),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Row(
                   children: [
@@ -601,48 +619,6 @@ class _AdminShellState extends State<_AdminShell> {
       default:
         return const SizedBox.shrink();
     }
-  }
-
-  Widget _buildAiFab() {
-    final p = context.read<SchoolAdminProvider>();
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A237E),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => ChatBotWidget(
-                role: 'School Admin',
-                apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
-                schoolContext: {
-                  'schoolName': p.schoolName,
-                  'currentSession': p.currentSession,
-                  'currentTerm': p.currentTerm,
-                  'studentCount': p.students.length,
-                  'teacherCount': p.teacherCount,
-                  'classCount': p.classes.length,
-                  'subjectCount': p.subjects.length,
-                  'gradingStandard': p.schoolSettings?['grading_standard'] ?? 'Nigerian',
-                  'classList': p.classes.map((c) => {'name': c['name'], 'student_count': c['student_count'], 'tier': c['tier']}).toList(),
-                },
-              ),
-            );
-          },
-          child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.smart_toy, color: Colors.white, size: 20), SizedBox(width: 8), Text('Ask AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14))]),
-        ),
-      ),
-    );
   }
 }
 

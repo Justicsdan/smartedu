@@ -53,8 +53,24 @@ class GradingUtils {
   };
 
   /// Get the display label for a behavioral field key.
-  static String getBehavioralFieldLabel(String key) {
+  /// If [customLabels] is provided (from school_settings.behavioral_labels),
+  /// it checks for a custom label first. Falls back to the default
+  /// Nigerian standard label if no custom label exists for that key.
+  /// If [customLabels] is null, uses defaults only (backward compatible).
+  static String getBehavioralFieldLabel(String key, {Map<String, dynamic>? customLabels}) {
+    if (customLabels != null && customLabels.containsKey(key)) {
+      final custom = customLabels[key]?.toString().trim() ?? '';
+      if (custom.isNotEmpty) return custom;
+    }
     return behavioralFieldLabels[key] ?? key;
+  }
+
+  /// Get all 11 behavioral labels as an ordered list of {key, label} maps.
+  /// If [customLabels] is provided, uses custom labels where available.
+  static List<Map<String, String>> getAllBehavioralLabels({Map<String, dynamic>? customLabels}) {
+    return behavioralFieldKeys.map((key) {
+      return {'key': key, 'label': getBehavioralFieldLabel(key, customLabels: customLabels)};
+    }).toList();
   }
 
   // =========================================================

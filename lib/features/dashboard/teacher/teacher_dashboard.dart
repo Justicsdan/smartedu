@@ -92,6 +92,20 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     return name[0].toUpperCase();
   }
 
+  void _openAiChat() {
+    final provider = context.read<TeacherProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ChatBotWidget(
+        role: 'Teacher',
+        apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
+        schoolContext: 'School: ${provider.schoolName}, Session: ${provider.currentSession?['name'] ?? 'N/A'}, Term: ${provider.currentTerm?['name'] ?? 'N/A'}',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.width < 768;
@@ -105,67 +119,15 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
-      body: Stack(
+      body: Row(
         children: [
-          Row(
-            children: [
-              if (!isSmall) _buildDesktopSidebar(provider, navItems),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildTopBar(provider, navItems, isSmall),
-                    Expanded(child: _buildCurrentPage()),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            bottom: 24,
-            right: 24,
-            child: Container(
-              height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A237E),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1A237E).withOpacity(0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => ChatBotWidget(
-                        role: 'Teacher',
-                        apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
-                      ),
-                    );
-                  },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.smart_toy, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text('Ask AI',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
+          if (!isSmall) _buildDesktopSidebar(provider, navItems),
+          Expanded(
+            child: Column(
+              children: [
+                _buildTopBar(provider, navItems, isSmall),
+                Expanded(child: _buildCurrentPage()),
+              ],
             ),
           ),
         ],
@@ -498,6 +460,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 );
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF0D47A1)),
+            tooltip: 'Ask AI',
+            onPressed: _openAiChat,
+          ),
           GestureDetector(
             onTap: () =>
                 context.go('/teacher-profile', extra: provider.currentTeacher),
