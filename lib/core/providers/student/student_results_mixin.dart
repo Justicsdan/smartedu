@@ -1,9 +1,11 @@
 // ==========================================
 // File: lib/core/providers/student/student_results_mixin.dart
-import 'package:smartedu/utils/grading_utils.dart';
+// MIGRATED: supabase → DbProxy (Phase 4 — first migration)
 // ==========================================
+import 'package:smartedu/utils/grading_utils.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// OLD: import 'package:supabase_flutter/supabase_flutter.dart';
 import 'student_base.dart';
 
 mixin StudentResultsMixin on StudentBase {
@@ -88,17 +90,14 @@ mixin StudentResultsMixin on StudentBase {
     }
 
     try {
-      final response = await supabase
+      // MIGRATED: supabase.from → DbProxy.instance.from, added .get()
+      final response = await DbProxy.instance
           .from('scores')
-          .select('''
-            id, subject_id, scores_json, total, grade, position, position_out_of,
-            recorded_by, created_at,
-            subjects(name, code)
-          ''')
-          .eq('school_id', schoolId)
+          .select('id, subject_id, scores_json, total, grade, position, position_out_of, recorded_by, created_at, subjects(name, code)')
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
-          .eq('term_id', currentTermId!);
+          .eq('term_id', currentTermId!)
+          .get();
 
       _myScores = List<Map<String, dynamic>>.from(response);
       notifyListeners();
@@ -118,10 +117,11 @@ mixin StudentResultsMixin on StudentBase {
     }
 
     try {
-      final response = await supabase
+      // MIGRATED: supabase.from → DbProxy.instance.from
+      // Note: is_published filter sent explicitly even though db-proxy doesn't strip it
+      final response = await DbProxy.instance
           .from('student_term_summaries')
           .select()
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
@@ -143,10 +143,10 @@ mixin StudentResultsMixin on StudentBase {
       return;
     }
     try {
-      final row = await supabase
+      // MIGRATED: supabase.from → DbProxy.instance.from
+      final row = await DbProxy.instance
           .from('student_behavioural_ratings')
           .select()
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)
@@ -174,10 +174,10 @@ mixin StudentResultsMixin on StudentBase {
       return;
     }
     try {
-      final row = await supabase
+      // MIGRATED: supabase.from → DbProxy.instance.from
+      final row = await DbProxy.instance
           .from('term_comments')
           .select()
-          .eq('school_id', schoolId)
           .eq('student_id', studentId)
           .eq('session_id', currentSessionId!)
           .eq('term_id', currentTermId!)

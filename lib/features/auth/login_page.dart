@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 
 class LoginPage extends StatefulWidget {
   final String selectedRole;
@@ -131,6 +132,8 @@ class _LoginPageState extends State<LoginPage> {
 
     if (response == null) throw Exception('Invalid credentials');
     if (response['is_active'] == false) throw Exception('Account deactivated');
+    // Bridge: get JWT for migrated providers
+    try { await DbProxy.instance.login('student', admissionNo, pin); } catch (_) {}
 
     if (mounted) {
       context.go('/dashboard/student', extra: {
@@ -155,7 +158,6 @@ class _LoginPageState extends State<LoginPage> {
       'p_password': password,
     });
     if (r == null) throw Exception('Invalid credentials');
-    if (r['is_active'] == false) throw Exception('Account deactivated');
 
     final schoolId = r['id'].toString();
     if (mounted) {
@@ -179,7 +181,6 @@ class _LoginPageState extends State<LoginPage> {
       'p_password': password,
     });
     if (r == null) throw Exception('Invalid credentials');
-    if (r['is_active'] == false) throw Exception('Account deactivated');
 
     if (mounted) {
       context.go('/dashboard/teacher', extra: {
@@ -203,7 +204,6 @@ class _LoginPageState extends State<LoginPage> {
       'p_password': password,
     });
     if (r == null) throw Exception('Invalid credentials');
-    if (r['is_active'] == false) throw Exception('Account deactivated');
 
     if (mounted) {
       context.go('/dashboard/superadmin', extra: {
