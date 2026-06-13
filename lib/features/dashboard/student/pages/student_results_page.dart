@@ -306,7 +306,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         );
         for (int i = 0; i < _bKeys.length; i++) {
           final key = _bKeys[i];
-          final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.schoolSettings?['behavioral_labels']);
+          final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.behavioralLabels);
           final value = _behavioralRatings?[key] ?? '';
           final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
           behavRows.add(
@@ -733,6 +733,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
   }
 
   Widget _buildBehavioralSection() {
+    final provider = context.read<StudentProvider>();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
@@ -747,7 +748,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             final rowItems = List.generate(endIdx - startIdx, (i) {
               final idx = startIdx + i;
               final key = _bKeys[idx];
-              final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.schoolSettings?['behavioral_labels']);
+              final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.behavioralLabels);
               final value = _behavioralRatings?[key] ?? '';
               if (value.isEmpty) return const SizedBox.shrink();
               final color = _getBehavioralColor(value);

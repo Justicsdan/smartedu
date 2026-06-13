@@ -206,6 +206,8 @@ abstract class StudentBase extends ChangeNotifier {
   String get resultWatermarkText => _resultWatermarkText;
   int get totalMaxScore => _assessmentTypes.fold<int>(0, (sum, t) => sum + ((t['max'] as num?)?.toInt() ?? 0));
 
+  Map<String, dynamic>? _behavioralLabels;
+  Map<String, dynamic>? get behavioralLabels => _behavioralLabels;
   List<Map<String, dynamic>> _sessions = [];
   List<Map<String, dynamic>> _terms = [];
 
@@ -494,6 +496,7 @@ abstract class StudentBase extends ChangeNotifier {
         _headerTextColor = r['header_text_color'] as String? ?? '#ffffff';
         _fontFamily = r['font_family'] as String? ?? 'default';
         _resultWatermarkText = r['result_watermark_text'] as String? ?? '';
+        _behavioralLabels = r['behavioral_labels'] as Map<String, dynamic>?;
 
         debugPrint('Student settings loaded: template=$_examTemplate tier=$_classTier grading=${_gradingSystem.length} assessment=${_assessmentTypes.length}');
       }

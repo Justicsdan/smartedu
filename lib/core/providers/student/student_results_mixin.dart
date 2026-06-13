@@ -1,5 +1,6 @@
 // ==========================================
 // File: lib/core/providers/student/student_results_mixin.dart
+import 'package:smartedu/utils/grading_utils.dart';
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
