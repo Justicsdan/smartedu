@@ -1,6 +1,4 @@
-// ==========================================
-// File: lib/core/providers/teacher/teacher_cbt_mixin.dart
-// ==========================================
+// TODO: Migrate to DbProxy once cbt_exams and cbt_questions are added to teacher whitelist in db-proxy Edge Function.
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'teacher_base.dart';
 
@@ -32,7 +30,6 @@ mixin TeacherCbtMixin on TeacherBase {
     int durationMinutes = 60,
     int totalQuestions = 50,
   }) async {
-    // Guard: verify teacher is assigned to this class+subject
     final isAssigned = assignedSubjects.any((a) =>
         a['class_id']?.toString() == classId &&
         a['subject_id']?.toString() == subjectId);

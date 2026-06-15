@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -73,6 +74,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
       }
 
       if (mounted) {
+      try { await DbProxy.instance.login('super_admin', _usernameController.text.trim(), _passwordController.text); } catch (_) {}
         context.go('/dashboard/superadmin', extra: r);
       }
     } catch (e) {

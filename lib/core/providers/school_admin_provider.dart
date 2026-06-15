@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:smartedu/utils/grading_utils.dart';
+import '../services/db_proxy.dart';
 import 'base_provider.dart';
 import 'session_mixin.dart';
 import 'comment_mixin.dart';
@@ -138,7 +139,7 @@ class SchoolAdminProvider extends BaseProvider
         _gradingKey(tier): null,
         _assessmentKey(tier): null,
       };
-      await supabase.from('school_settings').update(updates).eq('school_id', schoolId);
+      await DbProxy.instance.from('school_settings').eq('school_id', schoolId).update(updates);
       logAudit(action: 'update', tableName: 'school_settings', newData: {'reset_tier': tier});
       await refreshSchoolInfo();
       return true;
@@ -335,11 +336,11 @@ class SchoolAdminProvider extends BaseProvider
 
       if (settingsUpdates.isNotEmpty) {
         settingsUpdates['updated_at'] = DateTime.now().toIso8601String();
-        await supabase.from('school_settings').update(settingsUpdates).eq('school_id', schoolId);
+        await DbProxy.instance.from('school_settings').eq('school_id', schoolId).update(settingsUpdates);
       }
 
       if (motto != null) {
-        await supabase.from('schools').update({'motto': motto}).eq('id', schoolId);
+        await DbProxy.instance.from('schools').eq('id', schoolId).update({'motto': motto});
       }
 
       logAudit(action: 'update_school_branding', tableName: 'school_settings', newData: settingsUpdates);
@@ -354,7 +355,7 @@ class SchoolAdminProvider extends BaseProvider
   Future<bool> updateSchoolLogo(String filePath) async {
     try {
       final publicUrl = supabase.storage.from('school-logos').getPublicUrl(filePath);
-      await supabase.from('schools').update({'logo_url': publicUrl}).eq('id', schoolId);
+      await DbProxy.instance.from('schools').eq('id', schoolId).update({'logo_url': publicUrl});
       logAudit(action: 'update_school_logo', tableName: 'schools', newData: {'logo_url': publicUrl});
       await refreshSchoolInfo();
       return true;

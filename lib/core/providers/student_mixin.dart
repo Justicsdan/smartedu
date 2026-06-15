@@ -3,6 +3,7 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/db_proxy.dart';
 import 'base_provider.dart';
 import 'comment_mixin.dart';
 import 'session_mixin.dart';
@@ -372,7 +373,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
 
     try {
       final student = getStudentById(studentId);
-      await supabase.from('students').delete().eq('id', studentId).eq('school_id', schoolId);
+      await DbProxy.instance.from('students').eq('id', studentId).eq('school_id', schoolId).update({'is_active': false});
       _students.removeWhere((s) => s['id']?.toString() == studentId);
 
       if (student != null) {
@@ -422,7 +423,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
       );
       final pin = _generatePin();
 
-      await supabase.from('students').update({'username': username, 'pin': pin}).eq('id', studentId).eq('school_id', schoolId);
+      await DbProxy.instance.from('students').eq('id', studentId).eq('school_id', schoolId).update({'username': username, 'pin': pin});
 
       final index = _students.indexWhere((s) => s['id']?.toString() == studentId);
       if (index != -1) {
@@ -502,7 +503,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
     for (int attempt = 0; attempt < 10; attempt++) {
       final suffix = List.generate(4, (i) => suffixChars[(now + i * 7) % suffixChars.length]).join();
       final candidate = '${base}_$suffix';
-      final exists = await supabase.from('students').select('id').eq('school_id', schoolId).eq('username', candidate).maybeSingle();
+      final exists = await DbProxy.instance.from('students').eq('school_id', schoolId).eq('username', candidate).select('id').maybeSingle();
       if (exists == null) return candidate;
     }
 
@@ -651,13 +652,13 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
 
   Future<bool> admissionNoExists(String admissionNo) async {
     if (schoolId.isEmpty || admissionNo.isEmpty) return false;
-    try { return (await supabase.from('students').select('id').eq('school_id', schoolId).eq('admission_no', admissionNo.trim()).maybeSingle()) != null; }
+    try { return (await DbProxy.instance.from('students').eq('school_id', schoolId).eq('admission_no', admissionNo.trim()).select('id').maybeSingle()) != null; }
     catch (e) { debugPrint('Error checking admission number: $e'); return false; }
   }
 
   Future<bool> usernameExists(String username) async {
     if (schoolId.isEmpty || username.isEmpty) return false;
-    try { return (await supabase.from('students').select('id').eq('school_id', schoolId).eq('username', username.trim()).maybeSingle()) != null; }
+    try { return (await DbProxy.instance.from('students').eq('school_id', schoolId).eq('username', username.trim()).select('id').maybeSingle()) != null; }
     catch (e) { debugPrint('Error checking username: $e'); return false; }
   }
 
@@ -722,7 +723,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
   Future<Map<String, dynamic>> canAddMoreStudents({int count = 1}) async {
     if (schoolId.isEmpty) return {'exceeded': false, 'current': 0, 'max': 100, 'remaining': 100};
     try {
-      final school = await supabase.from('schools').select('max_students, student_count').eq('id', schoolId).single();
+      final school = await DbProxy.instance.from('schools').eq('id', schoolId).select('max_students, student_count').single();
       final current = (school['student_count'] as int?) ?? 0;
       final max = (school['max_students'] as int?) ?? 100;
       final newTotal = current + count;

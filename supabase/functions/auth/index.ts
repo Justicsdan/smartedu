@@ -63,7 +63,34 @@ Deno.serve(async (req: Request) => {
   const db = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    const { role, username, password } = await req.json();
+    const body = await req.json();
+    const { verified_id, verified_role, verified_school_id } = body;
+
+    if (verified_id && verified_role) {
+      let vUser = null;
+      let vTable = '';
+      let vSchoolId = verified_school_id || '';
+      if (verified_role === 'teacher') {
+        const { data } = await db.from('teachers').select('id, school_id, first_name, last_name').eq('id', verified_id).maybeSingle();
+        if (!data) return new Response(JSON.stringify({ error: 'Teacher not found' }), { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+        vUser = data; vTable = 'teachers'; vSchoolId = data.school_id;
+      } else if (verified_role === 'school_admin') {
+        const { data } = await db.from('schools').select('id, name').eq('id', verified_id).maybeSingle();
+        if (!data) return new Response(JSON.stringify({ error: 'School not found' }), { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+        vUser = data; vTable = 'schools'; vSchoolId = data.id;
+      } else if (verified_role === 'super_admin') {
+        const { data } = await db.from('super_admins').select('id, name').eq('id', verified_id).maybeSingle();
+        if (!data) return new Response(JSON.stringify({ error: 'Super admin not found' }), { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+        vUser = data; vTable = 'super_admins';
+      } else {
+        return new Response(JSON.stringify({ error: 'Unknown verified role' }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      }
+      await db.from(vTable).update({ last_login: new Date().toISOString() }).eq('id', verified_id);
+      const vToken = await signJWT({ sub: verified_id, role: verified_role, school_id: vSchoolId }, jwtSecret, 86400);
+      return new Response(JSON.stringify({ token: vToken, user: vUser }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
+
+    const { role, username, password } = body;
     if (!role || !username || !password) {
       return new Response(JSON.stringify({ error: 'role, username, and password are required' }), {
         status: 400,
@@ -103,37 +130,56 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'teacher': {
-        const { data: rpcData, error: rpcError } = await db.rpc('login_teacher', { p_username: username, p_password: password });
-        if (rpcError) {
-          return new Response(JSON.stringify({ error: 'Login failed', detail: rpcError.message }), {
-            status: 401,
-            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-          });
-        }
-        const teacherId = extractId(rpcData);
-        if (!teacherId) {
-          return new Response(JSON.stringify({ error: 'Invalid username or password', detail: 'RPC returned no ID', rpcRaw: rpcData }), {
-            status: 401,
-            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-          });
-        }
-        const { data: profile, error: profErr } = await db
+        // Try 1: direct .eq() for plain text passwords
+        let data: Record<string, unknown> | null = null;
+        let directErr: string | null = null;
+        const { data: directData, error: directError } = await db
           .from('teachers')
           .select('id, school_id, first_name, last_name, middle_name, staff_id, passport_url, gender, email, phone, department, qualification, is_active, home_address')
-          .eq('id', teacherId)
-          .single();
-        if (profErr || !profile) {
-          return new Response(JSON.stringify({ error: 'Profile fetch failed', detail: profErr?.message, teacherId }), {
-            status: 500,
+          .eq('username', username)
+          .eq('password', password)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (!directError && directData) {
+          data = directData;
+        } else {
+          directErr = directError?.message ?? 'no match';
+        }
+
+        // Try 2: RPC fallback for bcrypt passwords
+        if (!data) {
+          console.log(`Direct eq failed (${directErr}), trying RPC for teacher ${username}`);
+          const { data: rpcData, error: rpcError } = await db.rpc('login_teacher', { p_username: username, p_password: password });
+          if (!rpcError && rpcData) {
+            const teacherId = extractId(rpcData);
+            if (teacherId) {
+              const { data: profile, error: profErr } = await db
+                .from('teachers')
+                .select('id, school_id, first_name, last_name, middle_name, staff_id, passport_url, gender, email, phone, department, qualification, is_active, home_address')
+                .eq('id', teacherId)
+                .single();
+              if (!profErr && profile) {
+                data = profile;
+              }
+            }
+          }
+          if (!data) {
+            console.log(`RPC also failed for teacher ${username}: ${rpcError?.message ?? 'no ID returned'}`);
+          }
+        }
+
+        if (!data) {
+          return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
+            status: 401,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
           });
         }
-        user = profile;
+        user = data;
         jwtRole = 'teacher';
-        jwtSchoolId = profile.school_id as string;
-        jwtUserId = profile.id as string;
+        jwtSchoolId = data.school_id as string;
+        jwtUserId = data.id as string;
         loginTable = 'teachers';
-        loginId = profile.id as string;
+        loginId = data.id as string;
         break;
       }
 
@@ -147,7 +193,7 @@ Deno.serve(async (req: Request) => {
         }
         const schoolId = extractId(rpcData);
         if (!schoolId) {
-          return new Response(JSON.stringify({ error: 'Invalid username or password', detail: 'RPC returned no ID', rpcRaw: rpcData }), {
+          return new Response(JSON.stringify({ error: 'Invalid username or password', detail: 'RPC returned no ID' }), {
             status: 401,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
           });
@@ -158,7 +204,7 @@ Deno.serve(async (req: Request) => {
           .eq('id', schoolId)
           .single();
         if (schErr || !school) {
-          return new Response(JSON.stringify({ error: 'School fetch failed', detail: schErr?.message, schoolId }), {
+          return new Response(JSON.stringify({ error: 'School fetch failed', detail: schErr?.message }), {
             status: 500,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
           });
@@ -182,7 +228,7 @@ Deno.serve(async (req: Request) => {
         }
         const saId = extractId(rpcData);
         if (!saId) {
-          return new Response(JSON.stringify({ error: 'Invalid username or password', detail: 'RPC returned no ID', rpcRaw: rpcData }), {
+          return new Response(JSON.stringify({ error: 'Invalid username or password', detail: 'RPC returned no ID' }), {
             status: 401,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
           });
@@ -193,7 +239,7 @@ Deno.serve(async (req: Request) => {
           .eq('id', saId)
           .single();
         if (saErr || !sa) {
-          return new Response(JSON.stringify({ error: 'Profile fetch failed', detail: saErr?.message, saId }), {
+          return new Response(JSON.stringify({ error: 'Profile fetch failed', detail: saErr?.message }), {
             status: 500,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
           });

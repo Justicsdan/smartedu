@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/utils/grading_utils.dart';
+import '../services/db_proxy.dart';
 
 abstract class BaseProvider extends ChangeNotifier {
 
@@ -580,7 +581,7 @@ abstract class BaseProvider extends ChangeNotifier {
     return [];
   }
 
-  Future<void> _createDefaultSettings() async {
+    Future<void> _createDefaultSettings() async {
     try {
       final defaultGrading = GradingUtils.getDefaultGradingSystem('WAEC');
       final defaultAssessments = GradingUtils.getDefaultAssessmentTypes('WAEC');
@@ -647,18 +648,31 @@ abstract class BaseProvider extends ChangeNotifier {
 
   Future<void> _loadCoreNavigationData() async {
     try {
+      // Critical: blocks render — dashboard needs these to display
       await Future.wait([
         loadClasses(),
         loadSubjects(),
-        loadClassSubjects(),
         loadStudents(),
         loadTeachers(),
+      ]);
+      // Deferred: loads in background after page is visible
+      _loadDeferredData();
+    } catch (e) {
+      debugPrint('Error loading core navigation data: $e');
+    }
+  }
+
+  Future<void> _loadDeferredData() async {
+    try {
+      await Future.wait([
+        loadClassSubjects(),
         loadScores(),
         loadAssignments(),
         loadCbtExams(),
       ]);
+      notifyListeners();
     } catch (e) {
-      debugPrint('Error loading core navigation data: $e');
+      debugPrint('Error loading deferred data: $e');
     }
   }
 
@@ -715,7 +729,7 @@ abstract class BaseProvider extends ChangeNotifier {
       if (principalSignatureUrl != null) updates['principal_signature_url'] = principalSignatureUrl;
       if (schoolStampUrl != null) updates['school_stamp_url'] = schoolStampUrl;
       if (updates.isNotEmpty) {
-        await supabase.from('schools').update(updates).eq('id', _schoolId);
+        await DbProxy.instance.from('schools').eq('id', _schoolId).update(updates);
         await logAudit(action: 'update', tableName: 'schools', recordId: _schoolId, newData: updates);
       }
       if (name != null) _schoolName = name;
@@ -742,7 +756,7 @@ abstract class BaseProvider extends ChangeNotifier {
 
   Future<bool> updateGradingSystem(List<Map<String, dynamic>> grading) async {
     try {
-      await supabase.from('school_settings').update({'grading_system': grading}).eq('school_id', _schoolId);
+      await DbProxy.instance.from('school_settings').eq('school_id', _schoolId).update({'grading_system': grading});
       _gradingSystem = grading;
       await logAudit(action: 'update', tableName: 'school_settings', newData: {'grading_system': 'updated'});
       notifyListeners();
@@ -756,10 +770,10 @@ abstract class BaseProvider extends ChangeNotifier {
   Future<bool> updateAssessmentTypes(List<Map<String, dynamic>> types) async {
     try {
       final maxScore = types.fold<int>(0, (s, t) => s + ((t['max'] as num?)?.toInt() ?? 0));
-      await supabase.from('school_settings').update({
+      await DbProxy.instance.from('school_settings').eq('school_id', _schoolId).update({
         'assessment_types': types,
         'subject_max_score': maxScore,
-      }).eq('school_id', _schoolId);
+      });
       _assessmentTypes = types;
       _subjectMaxScore = maxScore;
       await logAudit(action: 'update', tableName: 'school_settings', newData: {'assessment_types': 'updated'});
@@ -775,11 +789,11 @@ abstract class BaseProvider extends ChangeNotifier {
     try {
       final defaultGrading = GradingUtils.getDefaultGradingSystem(template);
       final defaultAssessments = GradingUtils.getDefaultAssessmentTypes(template);
-      await supabase.from('school_settings').update({
+      await DbProxy.instance.from('school_settings').eq('school_id', _schoolId).update({
         'exam_template': template,
         'grading_system': defaultGrading,
         'assessment_types': defaultAssessments,
-      }).eq('school_id', _schoolId);
+      });
       _examTemplate = template;
       _gradingSystem = defaultGrading;
       _assessmentTypes = defaultAssessments;
@@ -809,11 +823,11 @@ abstract class BaseProvider extends ChangeNotifier {
       if (timezone != null) u['timezone'] = timezone;
       if (principalName != null) u['principal_name'] = principalName;
       if (motto != null) {
-        await supabase.from('schools').update({'motto': motto}).eq('id', _schoolId);
+        await DbProxy.instance.from('schools').eq('id', _schoolId).update({'motto': motto});
         _schoolMotto = motto;
       }
       if (u.isNotEmpty) {
-        await supabase.from('school_settings').update(u).eq('school_id', _schoolId);
+        await DbProxy.instance.from('school_settings').eq('school_id', _schoolId).update(u);
         await logAudit(action: 'update', tableName: 'school_settings', newData: u);
       }
       if (showPosition != null) _showPosition = showPosition;
@@ -832,7 +846,7 @@ abstract class BaseProvider extends ChangeNotifier {
   Future<bool> updateResultSettings(Map<String, dynamic> updates) async {
     try {
       if (updates.isNotEmpty) {
-        await supabase.from('school_settings').update(updates).eq('school_id', _schoolId);
+        await DbProxy.instance.from('school_settings').eq('school_id', _schoolId).update(updates);
         await logAudit(action: 'update', tableName: 'school_settings', newData: updates);
         if (updates.containsKey('result_orientation')) _resultOrientation = updates['result_orientation'] as String? ?? _resultOrientation;
         if (updates.containsKey('result_paper_size')) _resultPaperSize = updates['result_paper_size'] as String? ?? _resultPaperSize;

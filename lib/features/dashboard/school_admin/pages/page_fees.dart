@@ -31,6 +31,10 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
   final _rpReceiptCtrl = TextEditingController();
   final _rpRefCtrl = TextEditingController();
   final _rpRemarkCtrl = TextEditingController();
+  final _rpStudentSearchCtrl = TextEditingController();
+  String _rpStudentSearch = '';
+  final _histStudentSearchCtrl = TextEditingController();
+  String _histStudentSearch = '';
 
   @override
   void initState() {
@@ -47,6 +51,8 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     _rpReceiptCtrl.dispose();
     _rpRefCtrl.dispose();
     _rpRemarkCtrl.dispose();
+    _rpStudentSearchCtrl.dispose();
+    _histStudentSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -88,8 +94,16 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
   }
 
   List<Map<String, dynamic>> get _rpFilteredStudents {
-    if (_rpClassId == null) return _students;
-    return _students.where((s) => s['class_id'] == _rpClassId).toList();
+    var list = _rpClassId == null ? _students : _students.where((s) => s['class_id'] == _rpClassId).toList();
+    if (_rpStudentSearch.isNotEmpty) {
+      final q = _rpStudentSearch.toLowerCase();
+      list = list.where((s) {
+        final name = '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.toLowerCase();
+        final adm = (s['admission_no'] ?? '').toString().toLowerCase();
+        return name.contains(q) || adm.contains(q);
+      }).toList();
+    }
+    return list;
   }
 
   List<Map<String, dynamic>> get _filteredPayments {
@@ -108,8 +122,16 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
   }
 
   List<Map<String, dynamic>> get _historyFilteredStudents {
-    if (_filterClassId == null) return _students;
-    return _students.where((s) => s['class_id'] == _filterClassId).toList();
+    var list = _filterClassId == null ? _students : _students.where((s) => s['class_id'] == _filterClassId).toList();
+    if (_histStudentSearch.isNotEmpty) {
+      final q = _histStudentSearch.toLowerCase();
+      list = list.where((s) {
+        final name = '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.toLowerCase();
+        final adm = (s['admission_no'] ?? '').toString().toLowerCase();
+        return name.contains(q) || adm.contains(q);
+      }).toList();
+    }
+    return list;
   }
 
   void _onFeeTypeSelected(String? feeTypeId) {
@@ -557,6 +579,12 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
               onChanged: (v) { setState(() { _rpClassId = v; _rpStudentId = null; }); },
             ),
             const SizedBox(height: 16),
+            TextField(
+              controller: _rpStudentSearchCtrl,
+              decoration: const InputDecoration(labelText: 'Search Student', hintText: 'Name or admission no...', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))), filled: true, fillColor: Color(0xFFFAFBFC), prefixIcon: Icon(Icons.search, color: Color(0xFF1A237E), size: 20), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14)),
+              onChanged: (v) => setState(() => _rpStudentSearch = v.trim()),
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _rpStudentId,
               decoration: const InputDecoration(labelText: 'Select Student', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))), filled: true, fillColor: Color(0xFFFAFBFC), prefixIcon: Icon(Icons.person_outline, color: Color(0xFF1A237E), size: 20)),
@@ -618,6 +646,14 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                   decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))), filled: true, fillColor: Color(0xFFFAFBFC), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
                   items: [const DropdownMenuItem<String>(value: null, child: Text('All Classes', style: TextStyle(fontSize: 12))), for (final c in _classes) DropdownMenuItem<String>(value: c['id'] as String?, child: Text('${c['name']}${(c['section'] ?? '').toString().isNotEmpty ? ' - ${c['section']}' : ''}', style: const TextStyle(fontSize: 12)))],
                   onChanged: (v) => setState(() { _filterClassId = v; _filterStudentId = null; }),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _histStudentSearchCtrl,
+                  decoration: const InputDecoration(labelText: 'Search', hintText: 'Name...', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))), filled: true, fillColor: Color(0xFFFAFBFC), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+                  onChanged: (v) => setState(() => _histStudentSearch = v.trim()),
                 ),
               ),
               const SizedBox(width: 10),

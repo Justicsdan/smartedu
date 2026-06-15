@@ -1,8 +1,5 @@
-// ==========================================
-// File: lib/core/providers/teacher/teacher_attendance_mixin.dart
-// ==========================================
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'teacher_base.dart';
+import '../../services/db_proxy.dart';
 
 mixin TeacherAttendanceMixin on TeacherBase {
 
@@ -39,7 +36,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
         'remark': r['remark'],
         'recorded_by': teacherId,
       }).toList();
-      await Supabase.instance.client
+      await DbProxy.instance
           .from('attendance')
           .upsert(rows, onConflict: 'student_id,class_id,session_id,term_id,date');
       return true;
@@ -56,16 +53,15 @@ mixin TeacherAttendanceMixin on TeacherBase {
     if (currentSession == null || currentTerm == null) return [];
     if (!_canAccessClass(classId)) return [];
     try {
-      return List<Map<String, dynamic>>.from(
-        await Supabase.instance.client
-            .from('attendance')
-            .select('*, students(id, first_name, last_name, admission_no)')
-            .eq('school_id', schoolId)
-            .eq('class_id', classId)
-            .eq('session_id', currentSession!['id'])
-            .eq('term_id', currentTerm!['id'])
-            .eq('date', date),
-      );
+      return await DbProxy.instance
+          .from('attendance')
+          .select('*, students(id, first_name, last_name, admission_no)')
+          .eq('school_id', schoolId)
+          .eq('class_id', classId)
+          .eq('session_id', currentSession!['id'])
+          .eq('term_id', currentTerm!['id'])
+          .eq('date', date)
+          .get();
     } catch (e) {
       print('Error fetching attendance: $e');
       return [];
@@ -78,13 +74,14 @@ mixin TeacherAttendanceMixin on TeacherBase {
     if (currentSession == null || currentTerm == null) return [];
     if (!_canAccessClass(classId)) return [];
     try {
-      final r = await Supabase.instance.client
+      final r = await DbProxy.instance
           .from('attendance')
           .select('student_id, status, students(first_name, last_name, admission_no)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])
-          .eq('term_id', currentTerm!['id']);
+          .eq('term_id', currentTerm!['id'])
+          .get();
 
       final m = <String, Map<String, dynamic>>{};
       for (final x in r) {

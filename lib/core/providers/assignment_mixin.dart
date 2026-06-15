@@ -3,6 +3,7 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/db_proxy.dart';
 import 'base_provider.dart';
 
 mixin AssignmentMixin on BaseProvider {

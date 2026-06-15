@@ -3,6 +3,7 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/db_proxy.dart';
 import 'base_provider.dart';
 
 mixin TeacherMixin on BaseProvider {
@@ -137,7 +138,7 @@ mixin TeacherMixin on BaseProvider {
 
   Future<bool> deleteTeacherFromDb(String id) async {
     try {
-      await supabase.from('teachers').delete().eq('id', id).eq('school_id', schoolId);
+      await DbProxy.instance.from('teachers').eq('id', id).eq('school_id', schoolId).update({'is_active': false});
       _teachers.removeWhere((t) => t['id']?.toString() == id);
       logAudit(action: 'delete', tableName: 'teachers', recordId: id);
       notifyListeners();
@@ -150,7 +151,7 @@ mixin TeacherMixin on BaseProvider {
 
   Future<bool> deactivateTeacher(String id) async {
     try {
-      await supabase.from('teachers').update({'is_active': false}).eq('id', id).eq('school_id', schoolId);
+      await DbProxy.instance.from('teachers').eq('id', id).eq('school_id', schoolId).update({'is_active': false});
       _teachers.removeWhere((t) => t['id']?.toString() == id);
       logAudit(action: 'deactivate', tableName: 'teachers', recordId: id);
       notifyListeners();
@@ -322,7 +323,7 @@ mixin TeacherMixin on BaseProvider {
       final now = DateTime.now();
       final password = 'Tchr@${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}!';
 
-      await supabase.from('teachers').update({'username': username, 'password': password}).eq('id', teacherId).eq('school_id', schoolId);
+      await DbProxy.instance.from('teachers').eq('id', teacherId).eq('school_id', schoolId).update({'username': username, 'password': password});
 
       final idx = _teachers.indexWhere((t) => t['id']?.toString() == teacherId);
       if (idx != -1) {

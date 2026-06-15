@@ -1,5 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'teacher_base.dart';
+import '../../services/db_proxy.dart';
 
 mixin TeacherClassesMixin on TeacherBase {
   List<Map<String, dynamic>> _myClasses = [];
@@ -43,11 +43,12 @@ mixin TeacherClassesMixin on TeacherBase {
 
   Future<void> _detectRoles() async {
     try {
-      final formR = await Supabase.instance.client
+      final formR = await DbProxy.instance
           .from('classes')
           .select('id, name, section, student_count, class_level, tier')
           .eq('school_id', schoolId)
-          .eq('class_teacher_id', teacherId);
+          .eq('class_teacher_id', teacherId)
+          .get();
 
       if (formR.isNotEmpty) {
         _isFormMaster = true;
@@ -60,11 +61,12 @@ mixin TeacherClassesMixin on TeacherBase {
         _formTeacherClassId = null;
       }
 
-      final subR = await Supabase.instance.client
+      final subR = await DbProxy.instance
           .from('class_subjects')
           .select('id, class_id, subject_id, is_compulsory, subjects(name, code), classes(name, section, class_level, tier)')
           .eq('school_id', schoolId)
-          .eq('teacher_id', teacherId);
+          .eq('teacher_id', teacherId)
+          .get();
 
       _mySubjectAssignments = List<Map<String, dynamic>>.from(subR);
       _isSubjectTeacher = _mySubjectAssignments.isNotEmpty;
@@ -114,14 +116,15 @@ mixin TeacherClassesMixin on TeacherBase {
         _studentsInMyClasses = [];
         return;
       }
-      final r = await Supabase.instance.client
+      final r = await DbProxy.instance
           .from('students')
           .select('*, classes(name, section)')
           .eq('school_id', schoolId)
           .eq('is_active', true)
           .inFilter('class_id', classIds)
-          .order('first_name');
-      _studentsInMyClasses = List<Map<String, dynamic>>.from(r);
+          .order('first_name')
+          .get();
+      _studentsInMyClasses = r;
     } catch (e) {
       print('Error loading my students: $e');
       _studentsInMyClasses = [];

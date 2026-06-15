@@ -1,5 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'teacher_base.dart';
+import '../../services/db_proxy.dart';
 
 mixin TeacherScoresMixin on TeacherBase {
   List<Map<String, dynamic>> _myScores = [];
@@ -27,16 +27,17 @@ mixin TeacherScoresMixin on TeacherBase {
         if (sid.isNotEmpty) subjectIds.add(sid);
       }
 
-      final r = await Supabase.instance.client
+      final r = await DbProxy.instance
           .from('scores')
           .select('*, students(id, first_name, last_name, admission_no), subjects(name, code)')
           .eq('school_id', schoolId)
           .eq('session_id', currentSession!['id'])
           .eq('term_id', currentTerm!['id'])
           .inFilter('class_id', classIds.toList())
-          .inFilter('subject_id', subjectIds.toList());
+          .inFilter('subject_id', subjectIds.toList())
+          .get();
 
-      _myScores = List<Map<String, dynamic>>.from(r);
+      _myScores = r;
       notifyListeners();
     } catch (e) {
       print('Error loading scores: $e');
@@ -49,7 +50,7 @@ mixin TeacherScoresMixin on TeacherBase {
       final row = Map<String, dynamic>.from(data);
       row['school_id'] = schoolId;
       row['recorded_by'] = teacherId;
-      await Supabase.instance.client.from('scores').upsert(row);
+      await DbProxy.instance.from('scores').upsert(row);
       await loadMyScores();
       return true;
     } catch (e) {

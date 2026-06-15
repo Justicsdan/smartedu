@@ -3,19 +3,8 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/db_proxy.dart';
 import 'base_provider.dart';
-
-/// Mixin for fee type management, payment recording, and reporting.
-///
-/// MASTER PLAN V4:
-/// - Every operation filters by schoolId — tenant isolation
-/// - V4: Uses supabase getter from BaseProvider (consistent pattern)
-/// - V4: Uses debugPrint instead of print
-/// - V4: Fixed PostgrestTransformBuilder chain errors — .order()/.limit()
-///   must come AFTER all .eq() filters, not before
-/// - V4: Added currency support per school
-/// - V4: Added receipt number generation
-/// - V4: Added utility methods for fee lookups
 
 mixin FeeMixin on BaseProvider {
   List<Map<String, dynamic>> _feeTypes = [];
@@ -23,11 +12,7 @@ mixin FeeMixin on BaseProvider {
 
   List<Map<String, dynamic>> get feeTypes => _feeTypes;
   List<Map<String, dynamic>> get feePayments => _feePayments;
-
-  /// Total number of active fee types.
   int get feeTypeCount => _feeTypes.length;
-
-  /// Total number of payments loaded.
   int get paymentCount => _feePayments.length;
 
   // ==========================================
@@ -36,21 +21,20 @@ mixin FeeMixin on BaseProvider {
 
   Future<void> loadFeeTypes() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('fee_types')
           .select()
           .eq('school_id', schoolId)
           .eq('is_active', true)
-          .order('name');
-      _feeTypes = List<Map<String, dynamic>>.from(r);
+          .order('name')
+          .get();
+      _feeTypes = r;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading fee types: $e');
     }
   }
 
-  /// Add a new fee type.
-  /// V4: Supports currency_code, frequency fields from schema.
   Future<Map<String, dynamic>?> addFeeType({
     required String name,
     required double amount,
@@ -59,16 +43,16 @@ mixin FeeMixin on BaseProvider {
     String frequency = 'termly',
   }) async {
     try {
-      final r = await supabase.from('fee_types').insert({
+      final result = await DbProxy.instance.from('fee_types').insert({
         'school_id': schoolId,
         'name': name.trim(),
         'amount': amount,
         'description': description ?? '',
         'is_compulsory': isCompulsory,
         'frequency': frequency,
-        'currency_code': currencyCode, // V4: per-school currency
-      }).select().single();
-
+        'currency_code': currencyCode,
+      });
+      final r = result is List && result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
       _feeTypes.add(Map<String, dynamic>.from(r));
       logAudit(action: 'create', tableName: 'fee_types', recordId: r['id']?.toString(), newData: {'name': name, 'amount': amount});
       notifyListeners();
@@ -86,26 +70,15 @@ mixin FeeMixin on BaseProvider {
         ..remove('school_id')
         ..remove('created_at')
         ..remove('updated_at');
-
       if (u.containsKey('amount')) {
         u['amount'] = double.tryParse(u['amount'].toString()) ?? 0;
       }
-
       if (u.isEmpty) return false;
-
-      final r = await supabase
-          .from('fee_types')
-          .update(u)
-          .eq('id', id)
-          .eq('school_id', schoolId)
-          .select()
-          .single();
-
+      await DbProxy.instance.from('fee_types').eq('id', id).eq('school_id', schoolId).update(u);
       final i = _feeTypes.indexWhere((f) => f['id']?.toString() == id);
       if (i != -1) {
-        _feeTypes[i] = Map<String, dynamic>.from(r);
+        _feeTypes[i] = Map<String, dynamic>.from(_feeTypes[i])..addAll(u);
       }
-
       logAudit(action: 'update', tableName: 'fee_types', recordId: id, newData: u);
       notifyListeners();
       return true;
@@ -117,12 +90,7 @@ mixin FeeMixin on BaseProvider {
 
   Future<bool> deactivateFeeType(String id) async {
     try {
-      await supabase
-          .from('fee_types')
-          .update({'is_active': false})
-          .eq('id', id)
-          .eq('school_id', schoolId);
-
+      await DbProxy.instance.from('fee_types').eq('id', id).eq('school_id', schoolId).update({'is_active': false});
       _feeTypes.removeWhere((f) => f['id']?.toString() == id);
       logAudit(action: 'deactivate', tableName: 'fee_types', recordId: id);
       notifyListeners();
@@ -137,8 +105,6 @@ mixin FeeMixin on BaseProvider {
   // PAYMENTS
   // ==========================================
 
-  /// Record a new fee payment.
-  /// V4: Auto-generates receipt number if not provided.
   Future<Map<String, dynamic>?> recordPayment({
     required String studentId,
     required String feeTypeId,
@@ -152,7 +118,7 @@ mixin FeeMixin on BaseProvider {
     String? recordedBy,
   }) async {
     try {
-      final r = await supabase.from('fee_payments').insert({
+      final result = await DbProxy.instance.from('fee_payments').insert({
         'school_id': schoolId,
         'student_id': studentId,
         'fee_type_id': feeTypeId,
@@ -164,16 +130,10 @@ mixin FeeMixin on BaseProvider {
         'reference_no': referenceNo,
         'remark': remark,
         'recorded_by': recordedBy,
-      }).select().single();
-
+      });
+      final r = result is List && result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
       _feePayments.insert(0, Map<String, dynamic>.from(r));
-
-      logAudit(
-        action: 'create',
-        tableName: 'fee_payments',
-        recordId: r['id']?.toString(),
-        newData: {'student_id': studentId, 'fee_type_id': feeTypeId, 'amount_paid': amountPaid},
-      );
+      logAudit(action: 'create', tableName: 'fee_payments', recordId: r['id']?.toString(), newData: {'student_id': studentId, 'fee_type_id': feeTypeId, 'amount_paid': amountPaid});
       notifyListeners();
       return r;
     } catch (e) {
@@ -182,59 +142,46 @@ mixin FeeMixin on BaseProvider {
     }
   }
 
-  /// Get payment history for a student.
-  /// [FIX] Moved .order() AFTER conditional .eq() calls.
-  /// .order() returns PostgrestTransformBuilder which doesn't have .eq().
   Future<List<Map<String, dynamic>>> getPaymentHistory({
     required String studentId,
     String? sessionId,
     String? termId,
   }) async {
     try {
-      // Build filter chain first (all return PostgrestFilterBuilder)
-      var q = supabase
+      var q = DbProxy.instance
           .from('fee_payments')
           .select('*, fee_types(name, amount)')
           .eq('school_id', schoolId)
           .eq('student_id', studentId);
-
       if (sessionId != null) q = q.eq('session_id', sessionId);
       if (termId != null) q = q.eq('term_id', termId);
-
-      // .order() LAST — returns PostgrestTransformBuilder (no more .eq() needed)
-      final r = await q.order('payment_date', ascending: false);
-      return List<Map<String, dynamic>>.from(r);
+      final r = await q.order('payment_date', ascending: false).get();
+      return r;
     } catch (e) {
       debugPrint('Error fetching payment history: $e');
       return [];
     }
   }
 
-  /// Get outstanding fees for a student.
-  /// Compares fee_type amounts against sum of payments.
   Future<List<Map<String, dynamic>>> getOutstandingFees({
     required String studentId,
     String? sessionId,
     String? termId,
   }) async {
     try {
-      // Build filter chain first
-      var pq = supabase
+      var pq = DbProxy.instance
           .from('fee_payments')
           .select('fee_type_id, amount_paid')
           .eq('school_id', schoolId)
           .eq('student_id', studentId);
-
       if (sessionId != null) pq = pq.eq('session_id', sessionId);
       if (termId != null) pq = pq.eq('term_id', termId);
-
-      final payments = List<Map<String, dynamic>>.from(await pq);
+      final payments = await pq.get();
       final paidMap = <String, double>{};
       for (final p in payments) {
         final fid = p['fee_type_id']?.toString() ?? '';
         paidMap[fid] = (paidMap[fid] ?? 0) + ((p['amount_paid'] as num?)?.toDouble() ?? 0);
       }
-
       return _feeTypes.map((ft) {
         final fid = ft['id'].toString();
         final feeAmount = (ft['amount'] as num?)?.toDouble() ?? 0;
@@ -257,30 +204,25 @@ mixin FeeMixin on BaseProvider {
     }
   }
 
-  /// Get fee balance for a student (all fee types, including fully paid).
-  /// Used by student portal to show payment status.
   Future<List<Map<String, dynamic>>> getFeeBalance({
     required String studentId,
     String? sessionId,
     String? termId,
   }) async {
     try {
-      var pq = supabase
+      var pq = DbProxy.instance
           .from('fee_payments')
           .select('fee_type_id, amount_paid')
           .eq('school_id', schoolId)
           .eq('student_id', studentId);
-
       if (sessionId != null) pq = pq.eq('session_id', sessionId);
       if (termId != null) pq = pq.eq('term_id', termId);
-
-      final payments = List<Map<String, dynamic>>.from(await pq);
+      final payments = await pq.get();
       final paidMap = <String, double>{};
       for (final p in payments) {
         final fid = p['fee_type_id']?.toString() ?? '';
         paidMap[fid] = (paidMap[fid] ?? 0) + ((p['amount_paid'] as num?)?.toDouble() ?? 0);
       }
-
       return _feeTypes.map((ft) {
         final fid = ft['id'].toString();
         final feeAmount = (ft['amount'] as num?)?.toDouble() ?? 0;
@@ -302,7 +244,6 @@ mixin FeeMixin on BaseProvider {
     }
   }
 
-  /// Get fee summary for an entire class.
   Future<List<Map<String, dynamic>>> getClassFeeSummary({
     required String classId,
     required List<Map<String, dynamic>> studentsInClass,
@@ -313,15 +254,8 @@ mixin FeeMixin on BaseProvider {
     for (final student in studentsInClass) {
       final sid = student['id']?.toString() ?? '';
       if (sid.isEmpty) continue;
-      final outstanding = await getOutstandingFees(
-        studentId: sid,
-        sessionId: sessionId,
-        termId: termId,
-      );
-      final totalOutstanding = outstanding.fold<double>(
-        0,
-        (s, f) => s + ((f['outstanding'] as double?) ?? 0),
-      );
+      final outstanding = await getOutstandingFees(studentId: sid, sessionId: sessionId, termId: termId);
+      final totalOutstanding = outstanding.fold<double>(0, (s, f) => s + ((f['outstanding'] as double?) ?? 0));
       if (totalOutstanding > 0) {
         summary.add({
           'student_id': sid,
@@ -333,28 +267,21 @@ mixin FeeMixin on BaseProvider {
         });
       }
     }
-    summary.sort((a, b) =>
-        ((b['total_outstanding'] as double?) ?? 0).compareTo((a['total_outstanding'] as double?) ?? 0));
+    summary.sort((a, b) => ((b['total_outstanding'] as double?) ?? 0).compareTo((a['total_outstanding'] as double?) ?? 0));
     return summary;
   }
 
-  /// Get total collected across all fee types.
-  /// [FIX] Moved .eq() conditionals before any .order() call.
   Future<Map<String, dynamic>> getCollectionSummary({String? sessionId, String? termId}) async {
     try {
-      // Build filter chain first
-      var q = supabase
+      var q = DbProxy.instance
           .from('fee_payments')
           .select('amount_paid, fee_types(name)')
           .eq('school_id', schoolId);
-
       if (sessionId != null) q = q.eq('session_id', sessionId);
       if (termId != null) q = q.eq('term_id', termId);
-
-      final payments = List<Map<String, dynamic>>.from(await q);
+      final payments = await q.get();
       double totalCollected = 0;
       final byFeeType = <String, double>{};
-
       for (final p in payments) {
         final amt = (p['amount_paid'] as num?)?.toDouble() ?? 0;
         totalCollected += amt;
@@ -362,41 +289,24 @@ mixin FeeMixin on BaseProvider {
         final name = (feeData is Map<String, dynamic>) ? (feeData['name'] ?? 'Unknown') : 'Unknown';
         byFeeType[name] = (byFeeType[name] ?? 0) + amt;
       }
-
-      return {
-        'total_collected': totalCollected,
-        'total_transactions': payments.length,
-        'by_fee_type': byFeeType,
-        'currency': currencySymbol,
-      };
+      return {'total_collected': totalCollected, 'total_transactions': payments.length, 'by_fee_type': byFeeType, 'currency': currencySymbol};
     } catch (e) {
       debugPrint('Error fetching collection summary: $e');
-      return {
-        'total_collected': 0,
-        'total_transactions': 0,
-        'by_fee_type': <String, double>{},
-        'currency': currencySymbol,
-      };
+      return {'total_collected': 0, 'total_transactions': 0, 'by_fee_type': <String, double>{}, 'currency': currencySymbol};
     }
   }
 
-  /// Load payments list for display.
-  /// [FIX] Moved .order() and .limit() AFTER conditional .eq() calls.
   Future<void> loadPayments({String? sessionId, String? termId, String? studentId}) async {
     try {
-      // Build filter chain first
-      var q = supabase
+      var q = DbProxy.instance
           .from('fee_payments')
           .select('*, fee_types(name), students(first_name, last_name, admission_no)')
           .eq('school_id', schoolId);
-
       if (sessionId != null) q = q.eq('session_id', sessionId);
       if (termId != null) q = q.eq('term_id', termId);
       if (studentId != null) q = q.eq('student_id', studentId);
-
-      // .order() and .limit() LAST
-      final r = await q.order('payment_date', ascending: false).limit(200);
-      _feePayments = List<Map<String, dynamic>>.from(r);
+      final r = await q.order('payment_date', ascending: false).limit(200).get();
+      _feePayments = r;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading payments: $e');
@@ -407,37 +317,30 @@ mixin FeeMixin on BaseProvider {
   // UTILITY METHODS
   // ==========================================
 
-  /// Get a single fee type by ID.
   Map<String, dynamic>? getFeeTypeById(String feeTypeId) {
     try {
-      return _feeTypes.cast<Map<String, dynamic>?>().firstWhere(
-            (f) => f?['id']?.toString() == feeTypeId,
-            orElse: () => null,
-          );
+      return _feeTypes.cast<Map<String, dynamic>?>().firstWhere((f) => f?['id']?.toString() == feeTypeId, orElse: () => null);
     } catch (e) {
       return null;
     }
   }
 
-  /// Get fee type name by ID.
   String getFeeTypeName(String? feeTypeId) {
     if (feeTypeId == null || feeTypeId.isEmpty) return '';
     final ft = getFeeTypeById(feeTypeId);
     return (ft?['name'] ?? '').toString();
   }
 
-  /// Get fee type amount by ID.
   double getFeeTypeAmount(String? feeTypeId) {
     if (feeTypeId == null || feeTypeId.isEmpty) return 0;
     final ft = getFeeTypeById(feeTypeId);
     return (ft?['amount'] as num?)?.toDouble() ?? 0;
   }
 
-  /// Check if a fee type name already exists.
   Future<bool> feeTypeNameExists(String name) async {
     if (schoolId.isEmpty || name.trim().isEmpty) return false;
     try {
-      final existing = await supabase
+      final existing = await DbProxy.instance
           .from('fee_types')
           .select('id')
           .eq('school_id', schoolId)
@@ -450,13 +353,8 @@ mixin FeeMixin on BaseProvider {
     }
   }
 
-  /// Generate a formatted amount string with currency symbol.
-  String formatAmount(double amount) {
-    return '$currencySymbol${amount.toStringAsFixed(2)}';
-  }
+  String formatAmount(double amount) => '$currencySymbol${amount.toStringAsFixed(2)}';
 
-  /// Generate a simple receipt number.
-  /// Format: RCP-YYYYMMDD-XXXX (date-based for easy sorting).
   String _generateReceiptNo() {
     final now = DateTime.now();
     final date = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
@@ -464,7 +362,6 @@ mixin FeeMixin on BaseProvider {
     return 'RCP-$date-$rand';
   }
 
-  /// Clear payments from local state (no DB change).
   void clearPayments() {
     _feePayments.clear();
     notifyListeners();

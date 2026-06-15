@@ -37,6 +37,19 @@ class DbProxy {
     return Map<String, dynamic>.from(data['user'] as Map);
   }
 
+  Future<void> loginVerified(String role, String userId, {String? schoolId}) async {
+    final response = await http.post(
+      Uri.parse(_authUrl),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $_anonKey'},
+      body: jsonEncode({'verified_id': userId, 'verified_role': role, 'verified_school_id': schoolId}),
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode != 200) {
+      throw DbProxyException(data['error'] ?? 'Verified login failed');
+    }
+    _token = data['token'] as String;
+  }
+
   Future<Map<String, dynamic>> _post(Map<String, dynamic> body) async {
     if (_token == null) throw DbProxyException('No authentication token. Please log in again.');
     final response = await http.post(

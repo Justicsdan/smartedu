@@ -39,7 +39,8 @@ interface ProxyRequest {
 
 // ─── Sensitive columns stripped from ALL responses ───
 
-const SENSITIVE_COLUMNS = ['pin', 'password', 'admin_password'];
+const ALWAYS_STRIP = ['pin', 'password'];
+const ADMIN_ONLY_STRIP = ['admin_password'];
 
 // ─── Tables with school_id column ───
 
@@ -76,11 +77,13 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     student_behavioural_ratings: ['select', 'insert', 'update'],
     academic_sessions: ['select', 'insert', 'update', 'delete'],
     terms: ['select', 'insert', 'update', 'delete'],
-    school_settings: ['select', 'update'],
-    audit_logs: ['select'],
+    school_settings: ['select', 'insert', 'update'],
+    audit_logs: ['select', 'insert'],
+    fee_types: ['select', 'insert', 'update'],
+    fee_payments: ['select', 'insert', 'update'],
   },
   school_admin: {
-    schools: ['select'],
+    schools: ['select', 'update'],
     students: ['select', 'insert', 'update'],
     teachers: ['select', 'insert', 'update'],
     classes: ['select', 'insert', 'update'],
@@ -94,15 +97,17 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     student_behavioural_ratings: ['select', 'insert', 'update'],
     academic_sessions: ['select', 'insert', 'update'],
     terms: ['select', 'insert', 'update'],
-    school_settings: ['select', 'update'],
-    audit_logs: ['select'],
+    school_settings: ['select', 'insert', 'update'],
+    audit_logs: ['select', 'insert'],
+    fee_types: ['select', 'insert', 'update'],
+    fee_payments: ['select', 'insert', 'update'],
   },
   teacher: {
     students: ['select'],
     classes: ['select'],
     subjects: ['select'],
     class_subjects: ['select'],
-    schools: ['select'],
+    schools: ['select', 'update'],
     scores: ['select', 'insert', 'update'],
     assignments: ['select', 'insert', 'update', 'delete'],
     attendance: ['select', 'insert', 'update'],
@@ -122,7 +127,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     classes: ['select'],
     subjects: ['select'],
     class_subjects: ['select'],
-    schools: ['select'],
+    schools: ['select', 'update'],
     scores: ['select'],
     assignments: ['select'],
     attendance: ['select'],
@@ -249,20 +254,20 @@ function applyFilters(query: any, filters: Filter[]): any {
 
 // ─── Execute query and handle single/maybe ───
 
-async function executeQuery(query: any, single?: boolean | 'maybe'): Promise<{ data: unknown }> {
+async function executeQuery(query: any, single?: boolean | 'maybe', role?: string): Promise<{ data: unknown }> {
   if (single === true) {
     const { data, error } = await query.single();
     if (error) throw error;
-    return { data: stripSensitive(data) };
+    return { data: stripSensitive(data, role) };
   }
   if (single === 'maybe') {
     const { data, error } = await query.maybeSingle();
     if (error) throw error;
-    return { data: stripSensitive(data) };
+    return { data: stripSensitive(data, role) };
   }
   const { data, error } = await query;
   if (error) throw error;
-  return { data: stripSensitive(data) };
+  return { data: stripSensitive(data, role) };
 }
 
 // ─── Main handler ───
@@ -319,7 +324,7 @@ Deno.serve(async (req: Request) => {
       }
       const { data, error } = await db.rpc(rpcName!, body.rpcParams ?? {});
       if (error) throw error;
-      return new Response(JSON.stringify({ data: stripSensitive(data) }), {
+      return new Response(JSON.stringify({ data: stripSensitive(data, role) }), {
         status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
@@ -360,7 +365,7 @@ Deno.serve(async (req: Request) => {
         if (body.order) query = query.order(body.order.column, { ascending: body.order.ascending ?? true });
         if (body.limit != null) query = query.limit(body.limit);
         if (body.range) query = query.range(body.range[0], body.range[1]);
-        const result = await executeQuery(query, single);
+        const result = await executeQuery(query, single, role);
         return new Response(JSON.stringify(result), {
           status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         });
@@ -369,7 +374,7 @@ Deno.serve(async (req: Request) => {
       case 'insert': {
         query = query.insert(body.data);
         if (select) query = query.select(select);
-        const result = await executeQuery(query, single);
+        const result = await executeQuery(query, single, role);
         return new Response(JSON.stringify(result), {
           status: 201, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         });
@@ -379,7 +384,7 @@ Deno.serve(async (req: Request) => {
         query = query.update(body.data);
         query = applyFilters(query, allFilters);
         if (select) query = query.select(select);
-        const result = await executeQuery(query, single);
+        const result = await executeQuery(query, single, role);
         return new Response(JSON.stringify(result), {
           status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         });
@@ -388,7 +393,7 @@ Deno.serve(async (req: Request) => {
       case 'upsert': {
         query = query.upsert(body.data, { onConflict: body.onConflict });
         if (select) query = query.select(select);
-        const result = await executeQuery(query, single);
+        const result = await executeQuery(query, single, role);
         return new Response(JSON.stringify(result), {
           status: 201, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         });
@@ -398,7 +403,7 @@ Deno.serve(async (req: Request) => {
         query = query.delete();
         query = applyFilters(query, allFilters);
         if (select) query = query.select(select);
-        const result = await executeQuery(query, single);
+        const result = await executeQuery(query, single, role);
         return new Response(JSON.stringify(result), {
           status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         });

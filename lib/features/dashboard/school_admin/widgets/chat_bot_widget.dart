@@ -44,7 +44,7 @@ class _ChatBotWidgetState extends State<ChatBotWidget> {
     try {
       final response = await http.post(
         Uri.parse('https://tcjsmkhmfjigutfhjtem.supabase.co/functions/v1/chat-ai'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg'},
         body: jsonEncode({'messages': messages}),
       );
       if (response.statusCode == 200) {

@@ -160,6 +160,9 @@ class _LoginPageState extends State<LoginPage> {
     if (r == null) throw Exception('Invalid credentials');
 
     final schoolId = r['id'].toString();
+    // Bridge: get JWT for migrated providers (pre-verified, skip re-check)
+    try { await DbProxy.instance.loginVerified('school_admin', schoolId, schoolId: schoolId); } catch (_) {}
+
     if (mounted) {
       context.go('/dashboard/schooladmin', extra: {
         'id': schoolId,
@@ -181,6 +184,8 @@ class _LoginPageState extends State<LoginPage> {
       'p_password': password,
     });
     if (r == null) throw Exception('Invalid credentials');
+    // Bridge: get JWT for migrated providers
+    try { await DbProxy.instance.loginVerified('teacher', r['id'].toString(), schoolId: r['school_id'].toString()); } catch (_) {}
 
     if (mounted) {
       context.go('/dashboard/teacher', extra: {
@@ -204,6 +209,7 @@ class _LoginPageState extends State<LoginPage> {
       'p_password': password,
     });
     if (r == null) throw Exception('Invalid credentials');
+    try { await DbProxy.instance.login('super_admin', username, password); } catch (_) {}
 
     if (mounted) {
       context.go('/dashboard/superadmin', extra: {
