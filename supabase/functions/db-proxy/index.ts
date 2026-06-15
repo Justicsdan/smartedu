@@ -192,20 +192,24 @@ async function verifyJWT(token: string, secret: string): Promise<JwtPayload | nu
 
 // ─── Strip sensitive columns from response ───
 
-function stripSensitive(data: unknown): unknown {
-  if (Array.isArray(data)) return data.map(stripSensitive);
+function stripSensitive(data: unknown, role?: string): unknown {
+  if (Array.isArray(data)) return data.map(item => stripSensitive(item, role));
   if (data && typeof data === 'object') {
     const obj = { ...(data as Record<string, unknown>) };
-    for (const col of SENSITIVE_COLUMNS) delete obj[col];
+    for (const col of ALWAYS_STRIP) delete obj[col];
+    if (role !== 'super_admin') {
+      for (const col of ADMIN_ONLY_STRIP) delete obj[col];
+    }
     for (const key of Object.keys(obj)) {
       if (obj[key] && typeof obj[key] === 'object') {
-        obj[key] = stripSensitive(obj[key]);
+        obj[key] = stripSensitive(obj[key], role);
       }
     }
     return obj;
   }
   return data;
 }
+
 
 // ─── Build auto-filters based on role ───
 
