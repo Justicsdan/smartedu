@@ -3,7 +3,7 @@
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
 
 class StudentAssignmentsPage extends StatefulWidget {
@@ -31,37 +31,32 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
       final provider = context.read<StudentProvider>();
 
       // Get student's class_id
-      final student = await Supabase.instance.client
-          .from('students')
-          .select('class_id')
-          .eq('id', provider.studentId)
-          .single();
-      final classId = student['class_id']?.toString() ?? '';
+      final classId = provider.classId;
       if (classId.isEmpty) {
         if (mounted) setState(() { _loading = false; });
         return;
       }
 
       // Fetch published assignments for this class
-      final assignR = await Supabase.instance.client
+      final assignR = await DbProxy.instance
           .from('assignments')
           .select('*, subjects(name, code), classes(name, section)')
-          .eq('school_id', provider.schoolId)
           .eq('class_id', classId)
           .eq('is_published', true)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .get();
 
       final assigns = List<Map<String, dynamic>>.from(assignR);
 
       // Fetch this student's submissions for these assignments
       if (assigns.isNotEmpty) {
         final assignIds = assigns.map((a) => a['id'].toString()).toList();
-        final subR = await Supabase.instance.client
+        final subR = await DbProxy.instance
             .from('assignment_submissions')
             .select()
-            .eq('school_id', provider.schoolId)
             .eq('student_id', provider.studentId)
-            .inFilter('assignment_id', assignIds);
+            .inFilter('assignment_id', assignIds)
+            .get();
 
         final subs = List<Map<String, dynamic>>.from(subR);
         final subMap = <String, Map<String, dynamic>>{};
@@ -174,7 +169,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                     }
                     try {
                       final provider = context.read<StudentProvider>();
-                      await Supabase.instance.client.from('assignment_submissions').insert({
+                      await DbProxy.instance.from('assignment_submissions').insert({
                         'school_id': provider.schoolId,
                         'assignment_id': assignment['id'],
                         'student_id': provider.studentId,

@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 // ==========================================
 // File: lib/features/dashboard/school_admin/pages/page_academic.dart
 // ==========================================
@@ -134,11 +135,7 @@ class _PageAcademicState extends State<PageAcademic> {
     setState(() => _loadingSessions = true);
     try {
       final provider = context.read<SchoolAdminProvider>();
-      final res = await Supabase.instance.client
-          .from('academic_sessions')
-          .select()
-          .eq('school_id', provider.schoolId)
-          .order('created_at');
+      final res = await DbProxy.instance.from('academic_sessions').select().eq('school_id', provider.schoolId).order('created_at').get();
       if (mounted) {
         setState(() {
           _sessions = List<Map<String, dynamic>>.from(res);
@@ -158,13 +155,11 @@ class _PageAcademicState extends State<PageAcademic> {
     setState(() => _loadingSessions = true);
     try {
       final provider = context.read<SchoolAdminProvider>();
-      final res = await Supabase.instance.client
-          .from('academic_sessions')
-          .insert({
+      final res = await DbProxy.instance.from('academic_sessions').insert({
         'school_id': provider.schoolId,
         'name': name.trim(),
         'is_current': _sessions.isEmpty,
-      }).select();
+      });
       if (mounted) {
         setState(() {
           _sessions.add(res.first);
@@ -223,10 +218,7 @@ class _PageAcademicState extends State<PageAcademic> {
 
     setState(() => _loadingSessions = true);
     try {
-      await Supabase.instance.client
-          .from('academic_sessions')
-          .delete()
-          .eq('id', id);
+      await DbProxy.instance.from('academic_sessions').eq('id', id).delete();
       if (mounted) {
         setState(() {
           _sessions.removeWhere((s) => s['id'] == id);
@@ -248,14 +240,8 @@ class _PageAcademicState extends State<PageAcademic> {
     setState(() => _loadingSessions = true);
     try {
       final provider = context.read<SchoolAdminProvider>();
-      await Supabase.instance.client
-          .from('academic_sessions')
-          .update({'is_current': false})
-          .eq('school_id', provider.schoolId);
-      await Supabase.instance.client
-          .from('academic_sessions')
-          .update({'is_current': true})
-          .eq('id', id);
+      await DbProxy.instance.from('academic_sessions').eq('school_id', provider.schoolId).update({'is_current': false});
+      await DbProxy.instance.from('academic_sessions').eq('id', id).update({'is_current': true});
       if (mounted) {
         setState(() {
           for (final s in _sessions) {
@@ -281,11 +267,7 @@ class _PageAcademicState extends State<PageAcademic> {
     setState(() => _loadingTerms = true);
     try {
       final provider = context.read<SchoolAdminProvider>();
-      final res = await Supabase.instance.client
-          .from('terms')
-          .select()
-          .eq('school_id', provider.schoolId)
-          .order('created_at');
+      final res = await DbProxy.instance.from('terms').select().eq('school_id', provider.schoolId).order('created_at').get();
       if (mounted) {
         setState(() => _terms = List<Map<String, dynamic>>.from(res));
       }
@@ -300,12 +282,12 @@ class _PageAcademicState extends State<PageAcademic> {
   Future<void> _addTerm(String name, String sessionId) async {
     try {
       final provider = context.read<SchoolAdminProvider>();
-      final res = await Supabase.instance.client.from('terms').insert({
+      final res = await DbProxy.instance.from('terms').insert({
         'school_id': provider.schoolId,
         'session_id': sessionId,
         'name': name.trim(),
         'is_current': _terms.isEmpty,
-      }).select();
+      });
       if (mounted) {
         setState(() => _terms.add(res.first));
         _showSuccess('Term added successfully');
@@ -356,7 +338,7 @@ class _PageAcademicState extends State<PageAcademic> {
     if (confirm != true) return;
 
     try {
-      await Supabase.instance.client.from('terms').delete().eq('id', id);
+      await DbProxy.instance.from('terms').eq('id', id).delete();
       if (mounted) {
         setState(() => _terms.removeWhere((t) => t['id'] == id));
         _showSuccess('Term deleted');
@@ -370,14 +352,8 @@ class _PageAcademicState extends State<PageAcademic> {
   Future<void> _setCurrentTerm(String id) async {
     try {
       final provider = context.read<SchoolAdminProvider>();
-      await Supabase.instance.client
-          .from('terms')
-          .update({'is_current': false})
-          .eq('school_id', provider.schoolId);
-      await Supabase.instance.client
-          .from('terms')
-          .update({'is_current': true})
-          .eq('id', id);
+      await DbProxy.instance.from('terms').eq('school_id', provider.schoolId).update({'is_current': false});
+      await DbProxy.instance.from('terms').eq('id', id).update({'is_current': true});
       if (mounted) {
         setState(() {
           for (final t in _terms) {

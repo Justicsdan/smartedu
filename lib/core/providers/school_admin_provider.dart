@@ -152,10 +152,10 @@ class SchoolAdminProvider extends BaseProvider
   Future<bool> updateGradingStandard(String standard) async {
     if (schoolId.isEmpty) return false;
     try {
-      await supabase.from('school_settings').update({
+      await DbProxy.instance.from('school_settings').eq('school_id', schoolId).update({
         'grading_standard': standard,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('school_id', schoolId);
+      });
       logAudit(action: 'update', tableName: 'school_settings', newData: {'grading_standard': standard});
       if (schoolSettings != null) {
         schoolSettings!['grading_standard'] = standard;
@@ -280,10 +280,10 @@ class SchoolAdminProvider extends BaseProvider
       }
       // If all empty, store null to clear custom labels
       final value = cleaned.isEmpty ? null : cleaned;
-      await supabase.from('school_settings').update({
+      await DbProxy.instance.from('school_settings').eq('school_id', schoolId).update({
         'behavioral_labels': value,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('school_id', schoolId);
+      });
       // Update local state immediately
       if (schoolSettings != null) {
         schoolSettings!['behavioral_labels'] = value;

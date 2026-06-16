@@ -3,7 +3,7 @@
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 
 class PageAnnouncements extends StatefulWidget {
@@ -26,12 +26,12 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
   Future<void> _loadAnnouncements() async {
     try {
       final provider = context.read<SchoolAdminProvider>();
-      final r = await Supabase.instance.client
+      final r = await DbProxy.instance
           .from('announcements')
           .select()
-          .eq('school_id', provider.schoolId)
           .order('is_pinned', ascending: false)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .get();
       if (mounted) setState(() { _announcements = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('Load announcements error: $e');
@@ -216,7 +216,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                           'is_published': publishNow,
                           'published_at': publishNow ? DateTime.now().toUtc().toIso8601String() : null,
                         };
-                        await Supabase.instance.client.from('announcements').insert(insertRow);
+                        await DbProxy.instance.from('announcements').insert(insertRow);
                         if (mounted) {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -265,7 +265,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
             onPressed: () async {
               try {
                 final provider = context.read<SchoolAdminProvider>();
-                await Supabase.instance.client.from('announcements').delete().eq('id', a['id']).eq('school_id', provider.schoolId);
+                await DbProxy.instance.from('announcements').eq('id', a['id']).delete();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Deleted'), backgroundColor: Color(0xFFD32F2F)),
@@ -290,10 +290,10 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
     try {
       final provider = context.read<SchoolAdminProvider>();
       final newVal = !(a['is_published'] == true);
-      await Supabase.instance.client.from('announcements').update({
+      await DbProxy.instance.from('announcements').eq('id', a['id']).update({
         'is_published': newVal,
         'published_at': newVal ? DateTime.now().toUtc().toIso8601String() : null,
-      }).eq('id', a['id']).eq('school_id', provider.schoolId);
+      });
       _loadAnnouncements();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -306,7 +306,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
     try {
       final provider = context.read<SchoolAdminProvider>();
       final newVal = !(a['is_pinned'] == true);
-      await Supabase.instance.client.from('announcements').update({'is_pinned': newVal}).eq('id', a['id']).eq('school_id', provider.schoolId);
+      await DbProxy.instance.from('announcements').eq('id', a['id']).update({'is_pinned': newVal});
       _loadAnnouncements();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

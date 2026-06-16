@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 // ==========================================
 // File: lib/features/dashboard/teacher/pages/teacher_enter_scores.dart
 // ==========================================
@@ -158,15 +159,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     final term = provider.currentTerm;
     if (session == null || term == null) return;
     try {
-      final res = await Supabase.instance.client
-          .from('score_locks')
-          .select('is_locked')
-          .eq('school_id', provider.schoolId)
-          .eq('class_id', _selectedClassId!)
-          .eq('session_id', session['id'].toString())
-          .eq('term_id', term['id'].toString())
-          .eq('is_locked', true)
-          .maybeSingle();
+      final res = await DbProxy.instance.from('score_locks').select('is_locked').eq('school_id', provider.schoolId).eq('class_id', _selectedClassId!).eq('session_id', session['id'].toString()).eq('term_id', term['id'].toString()).eq('is_locked', true).maybeSingle();
       if (mounted) setState(() => _isLocked = res != null);
     } catch (_) {
       if (mounted) setState(() => _isLocked = false);
@@ -197,14 +190,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     setState(() => _isPrefilling = true);
 
     try {
-      final rows = await Supabase.instance.client
-          .from('scores')
-          .select()
-          .eq('school_id', schoolId)
-          .eq('class_id', classId)
-          .eq('subject_id', subjectId)
-          .eq('session_id', sid)
-          .eq('term_id', tid);
+      final rows = await DbProxy.instance.from('scores').select().eq('school_id', schoolId).eq('class_id', classId).eq('subject_id', subjectId).eq('session_id', sid).eq('term_id', tid).get();
 
       final Map<String, Map<String, dynamic>> scoreMap = {};
       for (final r in rows) {
@@ -277,12 +263,9 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         };
 
         if (existing != null) {
-          await Supabase.instance.client
-              .from('scores')
-              .update(scoreData)
-              .eq('id', existing['id']);
+          await DbProxy.instance.from('scores').eq('id', existing['id']).update(scoreData);
         } else {
-          await Supabase.instance.client.from('scores').insert(scoreData);
+          await DbProxy.instance.from('scores').insert(scoreData);
         }
       }
       if (mounted) {

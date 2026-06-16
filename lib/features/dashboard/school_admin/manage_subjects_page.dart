@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 // ==========================================
 // File: lib/features/dashboard/school_admin/manage_subjects_page.dart
 // ==========================================
@@ -165,17 +166,12 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     final name = _subjectController.text.trim();
     if (name.isEmpty) return;
     try {
-      final exists = await Supabase.instance.client
-          .from('subjects')
-          .select('id')
-          .eq('school_id', _schoolId)
-          .eq('name', name)
-          .maybeSingle();
+      final exists = await DbProxy.instance.from('subjects').select('id').eq('school_id', _schoolId).eq('name', name).maybeSingle();
       if (exists != null) {
         _snack('Subject already exists!', success: false);
         return;
       }
-      await Supabase.instance.client.from('subjects').insert({
+      await DbProxy.instance.from('subjects').insert({
         'name': name,
         'school_id': _schoolId,
       });
@@ -276,16 +272,8 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     );
     if (confirmed != true) return;
     try {
-      await Supabase.instance.client
-          .from('class_subjects')
-          .delete()
-          .eq('subject_id', id)
-          .eq('school_id', _schoolId);
-      await Supabase.instance.client
-          .from('subjects')
-          .delete()
-          .eq('id', id)
-          .eq('school_id', _schoolId);
+      await DbProxy.instance.from('class_subjects').eq('subject_id', id).eq('school_id', _schoolId).delete();
+      await DbProxy.instance.from('subjects').eq('id', id).eq('school_id', _schoolId).delete();
       _fetchAll();
       _snack('Subject deleted successfully!');
     } catch (e) {

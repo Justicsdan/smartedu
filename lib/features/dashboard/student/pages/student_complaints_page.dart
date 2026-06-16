@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,9 +27,7 @@ class _StudentComplaintsPageState extends State<StudentComplaintsPage> {
   Future<void> _loadComplaints() async {
     try {
       final provider = context.read<StudentProvider>();
-      final r = await Supabase.instance.client.from('complaints').select()
-          .eq('school_id', provider.schoolId).eq('student_id', provider.studentId)
-          .order('created_at', ascending: false);
+      final r = await DbProxy.instance.from('complaints').select().eq('school_id', provider.schoolId).eq('student_id', provider.studentId).order('created_at', ascending: false).get();
       if (mounted) setState(() { _complaints = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('Load complaints error: $e');
@@ -45,7 +44,7 @@ class _StudentComplaintsPageState extends State<StudentComplaintsPage> {
     setState(() => _submitting = true);
     try {
       final provider = context.read<StudentProvider>();
-      await Supabase.instance.client.from('complaints').insert({
+      await DbProxy.instance.from('complaints').insert({
         'school_id': provider.schoolId, 'student_id': provider.studentId,
         'subject': _titleCtrl.text.trim(), 'category': _selectedCategory,
         'description': _descCtrl.text.trim(), 'status': 'open', 'priority': 'normal',

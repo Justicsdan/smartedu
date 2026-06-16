@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -54,10 +55,7 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
   Future<void> _fetchSubjects() async {
     setState(() => _isLoading = true);
     try {
-      final response = await Supabase.instance.client
-          .from('subjects')
-          .select()
-          .eq('school_id', widget.schoolId.toString());
+      final response = await DbProxy.instance.from('subjects').select().eq('school_id', widget.schoolId.toString()).get();
       setState(() {
         _subjects =
             List<Map<String, dynamic>>.from(response);
@@ -73,19 +71,14 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final exists = await Supabase.instance.client
-          .from('subjects')
-          .select()
-          .eq('school_id', widget.schoolId.toString())
-          .eq('name', _subjectController.text.trim())
-          .maybeSingle();
+      final exists = await DbProxy.instance.from('subjects').select().eq('school_id', widget.schoolId.toString()).eq('name', _subjectController.text.trim()).maybeSingle();
 
       if (exists != null) {
         _snack('Subject already exists!', success: false);
         return;
       }
 
-      await Supabase.instance.client.from('subjects').insert({
+      await DbProxy.instance.from('subjects').insert({
         'name': _subjectController.text.trim(),
         'school_id': widget.schoolId,
       });
@@ -182,10 +175,7 @@ class _ManageSubjectsPageState extends State<ManageSubjectsPage> {
     if (confirmed != true) return;
 
     try {
-      await Supabase.instance.client
-          .from('subjects')
-          .delete()
-          .eq('id', id);
+      await DbProxy.instance.from('subjects').eq('id', id).delete();
       _fetchSubjects();
       _snack('Subject deleted successfully!');
     } catch (e) {

@@ -7,12 +7,7 @@ mixin CbtQuestionMixin on BaseProvider {
 
   Future<List<Map<String, dynamic>>> loadCbtQuestions(String examId) async {
     try {
-      final r = await Supabase.instance.client
-          .from('cbt_questions')
-          .select()
-          .eq('school_id', schoolId)
-          .eq('exam_id', examId)
-          .order('created_at');
+      final r = await DbProxy.instance.from('cbt_questions').select().eq('school_id', schoolId).eq('exam_id', examId).order('created_at').get();
       _cbtQuestions = List<Map<String, dynamic>>.from(r);
       notifyListeners();
       return _cbtQuestions;
@@ -39,7 +34,7 @@ mixin CbtQuestionMixin on BaseProvider {
         throw Exception('correct_option must be a, b, c, or d');
       }
 
-      final r = await Supabase.instance.client.from('cbt_questions').insert({
+      final r = await DbProxy.instance.from('cbt_questions').insert({
         'school_id': schoolId,
         'exam_id': examId,
         'question_text': questionText,
@@ -72,12 +67,8 @@ mixin CbtQuestionMixin on BaseProvider {
       }
       if (u.isEmpty) return false;
 
-      final r = await Supabase.instance.client
-          .from('cbt_questions')
-          .update(u)
-          .eq('id', questionId)
-          .eq('school_id', schoolId)
-          .select().single();
+      await DbProxy.instance.from('cbt_questions').eq('id', questionId).eq('school_id', schoolId).update(u);
+      final r = await DbProxy.instance.from('cbt_questions').select().eq('id', questionId).eq('school_id', schoolId).single();
 
       final i = _cbtQuestions.indexWhere((q) => q['id'].toString() == questionId);
       if (i != -1) _cbtQuestions[i] = r;
@@ -93,11 +84,7 @@ mixin CbtQuestionMixin on BaseProvider {
 
   Future<bool> deleteCbtQuestion(String questionId) async {
     try {
-      await Supabase.instance.client
-          .from('cbt_questions')
-          .delete()
-          .eq('id', questionId)
-          .eq('school_id', schoolId);
+      await DbProxy.instance.from('cbt_questions').eq('id', questionId).eq('school_id', schoolId).delete();
 
       _cbtQuestions.removeWhere((q) => q['id'].toString() == questionId);
       logAudit(action: 'delete', tableName: 'cbt_questions', recordId: questionId);
@@ -111,11 +98,7 @@ mixin CbtQuestionMixin on BaseProvider {
 
   Future<bool> deleteAllCbtQuestions(String examId) async {
     try {
-      await Supabase.instance.client
-          .from('cbt_questions')
-          .delete()
-          .eq('exam_id', examId)
-          .eq('school_id', schoolId);
+      await DbProxy.instance.from('cbt_questions').eq('exam_id', examId).eq('school_id', schoolId).delete();
 
       _cbtQuestions.removeWhere((q) => q['exam_id'].toString() == examId);
       notifyListeners();
@@ -143,7 +126,7 @@ mixin CbtQuestionMixin on BaseProvider {
 
       for (int i = 0; i < rows.length; i += 50) {
         final chunk = rows.sublist(i, i + 50 > rows.length ? rows.length : i + 50);
-        await Supabase.instance.client.from('cbt_questions').insert(chunk);
+        await DbProxy.instance.from('cbt_questions').insert(chunk);
       }
 
       await loadCbtQuestions(examId);

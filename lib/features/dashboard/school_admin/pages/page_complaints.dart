@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,10 +29,7 @@ class _PageComplaintsState extends State<PageComplaints> {
       final schoolId = Supabase.instance.client.auth.currentUser?.id;
       // We need school_id from context — but this page doesn't have provider access
       // Fetch all and filter, or accept schoolId as param
-      final r = await Supabase.instance.client
-          .from('complaints')
-          .select('*, students(first_name, last_name, admission_no, class_id), classes(name)')
-          .order('created_at', ascending: false);
+      final r = await DbProxy.instance.from('complaints').select('*, students(first_name, last_name, admission_no, class_id), classes(name)').order('created_at', ascending: false).get();
       if (mounted) setState(() { _complaints = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('Load complaints error: $e');
@@ -109,10 +107,7 @@ class _PageComplaintsState extends State<PageComplaints> {
 
   Future<void> _updateStatus(String id, String newStatus) async {
     try {
-      await Supabase.instance.client
-          .from('complaints')
-          .update({'status': newStatus})
-          .eq('id', id);
+      await DbProxy.instance.from('complaints').eq('id', id).update({'status': newStatus});
       _loadComplaints();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -175,7 +170,7 @@ class _PageComplaintsState extends State<PageComplaints> {
                 if (status == 'resolved' || status == 'dismissed') {
                   updates['resolved_by'] = Supabase.instance.client.auth.currentUser?.id;
                 }
-                await Supabase.instance.client.from('complaints').update(updates).eq('id', complaint['id']);
+                await DbProxy.instance.from('complaints').eq('id', complaint['id']).update(updates);
                 _loadComplaints();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 // ==========================================
 // File: lib/features/dashboard/school_admin/pages/page_students.dart
 // ==========================================
@@ -523,7 +524,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
   Future<void> _loadClasses() async {
     try {
       final p = context.read<SchoolAdminProvider>();
-      final r = await Supabase.instance.client.from('classes').select('id, name, section, student_count, tier').eq('school_id', p.schoolId).order('name');
+      final r = await DbProxy.instance.from('classes').select('id, name, section, student_count, tier').eq('school_id', p.schoolId).order('name').get();
       if (mounted) setState(() { _classes = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('ERR: $e');
@@ -558,7 +559,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
     final toId = _toId!;
     setState(() => _promoting = true);
     try {
-      await Supabase.instance.client.from('students').update({'class_id': toId}).eq('class_id', fromId);
+      await DbProxy.instance.from('students').eq('class_id', fromId).update({'class_id': toId});
       if (mounted) {
         Navigator.pop(context);
         widget.onComplete();

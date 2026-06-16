@@ -1,6 +1,7 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import '../../../../core/providers/school_admin_provider.dart';
 
 class PageFees extends StatefulWidget {
@@ -60,10 +61,10 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     final p = context.read<SchoolAdminProvider>();
     final sid = p.schoolId;
     final results = await Future.wait([
-      Supabase.instance.client.from('fee_types').select().eq('school_id', sid).order('name'),
-      Supabase.instance.client.from('fee_payments').select().eq('school_id', sid).order('payment_date', ascending: false),
-      Supabase.instance.client.from('classes').select().eq('school_id', sid).order('name'),
-      Supabase.instance.client.from('students').select('id, first_name, last_name, class_id, admission_no').eq('school_id', sid).order('first_name'),
+      DbProxy.instance.from('fee_types').select().eq('school_id', sid).order('name').get(),
+      DbProxy.instance.from('fee_payments').select().eq('school_id', sid).order('payment_date', ascending: false).get(),
+      DbProxy.instance.from('classes').select().eq('school_id', sid).order('name').get(),
+      DbProxy.instance.from('students').select('id, first_name, last_name, class_id, admission_no').eq('school_id', sid).order('first_name').get(),
     ]);
     if (!mounted) return;
     setState(() {
@@ -159,7 +160,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     setState(() => _saving = true);
     final p = context.read<SchoolAdminProvider>();
     try {
-      await Supabase.instance.client.from('fee_payments').insert({
+      await DbProxy.instance.from('fee_payments').insert({
         'school_id': p.schoolId,
         'student_id': _rpStudentId,
         'fee_type_id': _rpFeeTypeId,
@@ -259,7 +260,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                   return;
                 }
                 final p = context.read<SchoolAdminProvider>();
-                await Supabase.instance.client.from('fee_types').insert({
+                await DbProxy.instance.from('fee_types').insert({
                   'school_id': p.schoolId,
                   'name': nameCtrl.text.trim(),
                   'amount': double.tryParse(amountCtrl.text.trim()) ?? 0,
@@ -342,13 +343,13 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Fee name is required'), backgroundColor: Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
                   return;
                 }
-                await Supabase.instance.client.from('fee_types').update({
+                await DbProxy.instance.from('fee_types').eq('id', ft['id']).update({
                   'name': nameCtrl.text.trim(),
                   'amount': double.tryParse(amountCtrl.text.trim()) ?? 0,
                   'description': descCtrl.text.trim(),
                   'is_compulsory': compulsory,
                   'frequency': frequency,
-                }).eq('id', ft['id']);
+                });
                 Navigator.pop(ctx, true);
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: const StadiumBorder()),
@@ -371,7 +372,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
 
   Future<void> _toggleFeeType(Map<String, dynamic> ft) async {
     final newVal = ft['is_active'] != true;
-    await Supabase.instance.client.from('fee_types').update({'is_active': newVal}).eq('id', ft['id']);
+    await DbProxy.instance.from('fee_types').eq('id', ft['id']).update({'is_active': newVal});
     _loadData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(newVal ? 'Fee type activated' : 'Fee type deactivated'), backgroundColor: Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
@@ -398,7 +399,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
       ),
     );
     if (confirm == true) {
-      await Supabase.instance.client.from('fee_types').delete().eq('id', ft['id']);
+      await DbProxy.instance.from('fee_types').eq('id', ft['id']).delete();
       _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fee type deleted'), backgroundColor: Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));

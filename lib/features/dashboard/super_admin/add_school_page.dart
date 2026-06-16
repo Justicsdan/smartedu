@@ -1,3 +1,4 @@
+import 'package:smartedu/core/services/db_proxy.dart';
 // ==========================================
 // File: lib/features/dashboard/super_admin/add_school_page.dart
 // ==========================================
@@ -109,11 +110,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   }
 
   Future<bool> _adminUsernameExists(String username) async {
-    final res = await Supabase.instance.client
-        .from('schools')
-        .select('id')
-        .eq('admin_username', username.toLowerCase())
-        .limit(1);
+    final res = await DbProxy.instance.from('schools').select('id').eq('admin_username', username.toLowerCase()).limit(1).get();
     return res.isNotEmpty;
   }
 
@@ -274,11 +271,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
         insertData['official_email'] = _emailController.text.trim();
       }
 
-      final schoolResponse = await Supabase.instance.client
-          .from('schools')
-          .insert(insertData)
-          .select()
-          .single();
+      final schoolResponse = await DbProxy.instance.from('schools').select().single().insert(insertData);
 
       final schoolId = schoolResponse['id'] as String;
 
@@ -290,7 +283,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
       final logoUrl = results[0] as String?;
 
       if (logoUrl != null) {
-        await Supabase.instance.client.from('schools').update({'logo_url': logoUrl}).eq('id', schoolId);
+        await DbProxy.instance.from('schools').eq('id', schoolId).update({'logo_url': logoUrl});
       }
 
       if (mounted) _showSuccessDialog(schoolId);
@@ -318,7 +311,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   }
 
   Future<void> _createSchoolSettings(String schoolId, String defaultGrading) async {
-    await Supabase.instance.client.from('school_settings').insert({
+    await DbProxy.instance.from('school_settings').insert({
       'school_id': schoolId,
       'exam_template': defaultGrading,
       'current_session': '',
