@@ -157,7 +157,7 @@ mixin AssignmentMixin on BaseProvider {
 
   Future<bool> deleteHomeworkFromDb(String id) async {
     try {
-      await supabase.from('assignments').delete().eq('id', id).eq('school_id', schoolId);
+      await DbProxy.instance.from('assignments').eq('id', id).eq('school_id', schoolId).delete();
       _assignments.removeWhere((a) => a['id']?.toString() == id);
       logAudit(action: 'delete', tableName: 'assignments', recordId: id);
       notifyListeners();

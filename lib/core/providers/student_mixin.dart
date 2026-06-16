@@ -481,7 +481,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
     if (studentId.isEmpty || schoolId.isEmpty || newPin.trim().length < 4) return false;
 
     try {
-      await supabase.from('students').update({'pin': newPin.trim()}).eq('id', studentId).eq('school_id', schoolId);
+      await DbProxy.instance.from('students').eq('id', studentId).eq('school_id', schoolId).update({'pin': newPin.trim()});
       final index = _students.indexWhere((s) => s['id']?.toString() == studentId);
       if (index != -1) {
         _students[index] = {..._students[index], 'pin': '[RESET]'};
@@ -624,9 +624,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
     try {
       final from = (page - 1) * pageSize;
       final to = from + pageSize;
-      final r = await supabase.from('students').select('*, classes(name, section, class_level)')
-          .eq('school_id', schoolId).eq('is_active', true).neq('graduation_status', 'graduated')
-          .order('last_name,first_name', ascending: true).range(from, to);
+      final r = await DbProxy.instance.from('students').select('*, classes(name, section, class_level)').eq('school_id', schoolId).eq('is_active', true).neq('graduation_status', 'graduated').order('last_name,first_name', ascending: true).range(from, to).get();
 
       if (page == 1) { _students = List<Map<String, dynamic>>.from(r); }
       else { _students.addAll(List<Map<String, dynamic>>.from(r)); }

@@ -331,7 +331,7 @@ abstract class BaseProvider extends ChangeNotifier {
   }) async {
     if (_schoolId.isEmpty) return;
     try {
-      await supabase.from('audit_logs').insert({
+      await DbProxy.instance.from('audit_logs').insert({
         'school_id': _schoolId,
         'user_id': _currentUserId.isNotEmpty ? _currentUserId : null,
         'user_type': _currentUserRole.isNotEmpty ? _currentUserRole : 'unknown',

@@ -222,32 +222,31 @@ class _PageResultsState extends State<PageResults> {
     final classId = _selectedClassId!;
     final subjectId = _selectedSubjectId!;
     final schoolId = context.read<SchoolAdminProvider>().schoolId;
-    for (final student in _studentsInClass) {
-      final studentId = student['id'].toString();
-      try {
-        final r = await Supabase.instance.client
-            .from('scores')
-            .select()
-            .eq('school_id', schoolId)
-            .eq('student_id', studentId)
-            .eq('class_id', classId)
-            .eq('subject_id', subjectId)
-            .eq('session_id', sid)
-            .eq('term_id', tid)
-            .maybeSingle();
-        if (r != null) {
-          final sj =
-              r['scores_json'] as Map<String, dynamic>? ?? {};
-          for (final at in _assessmentTypes) {
-            final key = (at['id'] ?? '').toString().toLowerCase();
-            final val = sj[key] ?? sj[at['name']] ?? 0;
-            _getController(studentId, key).text =
-                (val is num ? val : 0).toString();
-          }
-        }
-      } catch (e) {
-        debugPrint('Prefill error: $e');
+    try {
+      final allScores = await Supabase.instance.client
+          .from('scores')
+          .select('student_id, scores_json')
+          .eq('school_id', schoolId)
+          .eq('class_id', classId)
+          .eq('subject_id', subjectId)
+          .eq('session_id', sid)
+          .eq('term_id', tid);
+      final Map<String, Map<String, dynamic>> scoreMap = {};
+      for (final row in allScores) {
+        final sid2 = row['student_id'].toString();
+        scoreMap[sid2] = row['scores_json'] as Map<String, dynamic>? ?? {};
       }
+      for (final student in _studentsInClass) {
+        final studentId = student['id'].toString();
+        final sj = scoreMap[studentId] ?? {};
+        for (final at in _assessmentTypes) {
+          final key = (at['id'] ?? '').toString().toLowerCase();
+          final val = sj[key] ?? sj[at['name']] ?? 0;
+          _getController(studentId, key).text = (val is num ? val : 0).toString();
+        }
+      }
+    } catch (e) {
+      debugPrint('Prefill error: $e');
     }
   }
 
