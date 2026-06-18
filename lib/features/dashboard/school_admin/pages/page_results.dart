@@ -2,7 +2,7 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
 
@@ -36,6 +36,7 @@ class PageResults extends StatefulWidget {
 
 class _PageResultsState extends State<PageResults> {
   String? _selectedClassId;
+  Future<void>? _prefillFuture;
   String? _selectedSubjectId;
   bool _isSaving = false;
   bool _isExporting = false;
@@ -154,6 +155,10 @@ class _PageResultsState extends State<PageResults> {
     _controllers.clear();
   }
 
+  Listenable _studentListenable(String studentId) {
+    return Listenable.merge(_assessmentTypes.map((at) => _getController(studentId, (at['id'] ?? '').toString())));
+  }
+
   double _getTotal(String studentId) {
     double total = 0;
     for (final at in _assessmentTypes) {
@@ -223,14 +228,7 @@ class _PageResultsState extends State<PageResults> {
     final subjectId = _selectedSubjectId!;
     final schoolId = context.read<SchoolAdminProvider>().schoolId;
     try {
-      final allScores = await Supabase.instance.client
-          .from('scores')
-          .select('student_id, scores_json')
-          .eq('school_id', schoolId)
-          .eq('class_id', classId)
-          .eq('subject_id', subjectId)
-          .eq('session_id', sid)
-          .eq('term_id', tid);
+      final allScores = await DbProxy.instance.from('scores').select('student_id, scores_json').eq('school_id', schoolId).eq('class_id', classId).eq('subject_id', subjectId).eq('session_id', sid).eq('term_id', tid).get();
       final Map<String, Map<String, dynamic>> scoreMap = {};
       for (final row in allScores) {
         final sid2 = row['student_id'].toString();
@@ -241,8 +239,8 @@ class _PageResultsState extends State<PageResults> {
         final sj = scoreMap[studentId] ?? {};
         for (final at in _assessmentTypes) {
           final key = (at['id'] ?? '').toString().toLowerCase();
-          final val = sj[key] ?? sj[at['name']] ?? 0;
-          _getController(studentId, key).text = (val is num ? val : 0).toString();
+          final val = sj[key] ?? sj[at['name']];
+          _getController(studentId, key).text = val != null ? (val is num ? val : 0).toString() : '';
         }
       }
     } catch (e) {
@@ -540,6 +538,7 @@ tr:nth-child(even) td{background:#F9FAFB}
                       setState(() {
                         _selectedClassId = v;
                         _selectedSubjectId = null;
+                        _prefillFuture = null;
                         _clearControllers();
                       });
                     },
@@ -565,6 +564,7 @@ tr:nth-child(even) td{background:#F9FAFB}
                     onChanged: (v) {
                       setState(() {
                         _selectedSubjectId = v;
+                        _prefillFuture = null;
                         _clearControllers();
                       });
                     },
@@ -607,7 +607,7 @@ tr:nth-child(even) td{background:#F9FAFB}
             if (_selectedClassId != null &&
                 _selectedSubjectId != null)
               FutureBuilder(
-                future: _prefill(),
+                future: _prefillFuture ??= _prefill(),
                 builder: (ctx, snapshot) {
                   if (_studentsInClass.isEmpty) {
                     return _buildEmptyState(
@@ -761,9 +761,6 @@ tr:nth-child(even) td{background:#F9FAFB}
               final index = entry.key;
               final student = entry.value;
               final sid = student['id'].toString();
-              final total = _getTotal(sid);
-              final grade = _getGrade(total);
-              final passing = _isPassingGrade(total);
               final bgColor = index % 2 == 0
                   ? Colors.white
                   : const Color(0xFFFAFBFC);
@@ -780,8 +777,15 @@ tr:nth-child(even) td{background:#F9FAFB}
                         return _scoreInputCell(
                             sid, key, 100);
                       }),
-                      _totalCell(total, passing, 80),
-                      _gradeCell(grade, passing, 70),
+                      ListenableBuilder(
+                        listenable: _studentListenable(sid),
+                        builder: (ctx, _) {
+                          final t = _getTotal(sid);
+                          final g = _getGrade(t);
+                          final p = _isPassingGrade(t);
+                          return Row(children: [_totalCell(t, p, 80), _gradeCell(g, p, 70)]);
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -986,7 +990,7 @@ tr:nth-child(even) td{background:#F9FAFB}
             filled: true,
             fillColor: Colors.white,
           ),
-          onChanged: (_) => setState(() {}),
+          // no setState — prevents web TextField rebuild bug
         ),
       ),
     );

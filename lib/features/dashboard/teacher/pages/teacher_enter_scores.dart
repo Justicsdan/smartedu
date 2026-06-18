@@ -5,7 +5,6 @@ import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
 
@@ -54,13 +53,8 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         .toList();
   }
 
-  List<Map<String, dynamic>> get _studentsInClass {
-    if (_selectedClassId == null) return [];
-    final provider = context.read<TeacherProvider>();
-    return provider.students
-        .where((s) => s['class_id']?.toString() == _selectedClassId)
-        .toList();
-  }
+  List<Map<String, dynamic>> _cachedStudents = [];
+  List<Map<String, dynamic>> get _studentsInClass => _cachedStudents;
 
   String _getClassTier() {
     if (_selectedClassId == null) return 'SSS';
@@ -114,6 +108,10 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
       c.dispose();
     }
     _controllers.clear();
+  }
+
+  Listenable _studentListenable(String studentId) {
+    return Listenable.merge(_assessmentTypes.map((at) => _getController(studentId, _assessKey(at))));
   }
 
   double _getTotal(String studentId) {
@@ -198,14 +196,17 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         scoreMap[stId] = r['scores_json'] as Map<String, dynamic>? ?? {};
       }
 
-      for (final student in _studentsInClass) {
+      _cachedStudents = provider.students.where((s) => s['class_id']?.toString() == classId).toList();
+      debugPrint('PREFILL: ${_cachedStudents.length} students, ${_assessmentTypes.length} types, ${scoreMap.length} scores');
+      for (final student in _cachedStudents) {
         final studentId = student['id'].toString();
         final sj = scoreMap[studentId] ?? {};
         for (final at in _assessmentTypes) {
           final key = _assessKey(at);
-          final val = sj[key] ?? sj[at['name']] ?? 0;
-          _getController(studentId, key).text =
-              (val is num ? val : 0).toString();
+          final val = sj[key] ?? sj[at['name']];
+          final txt = val != null ? (val is num ? val : 0).toString() : '';
+          debugPrint('PREFILL: student=$studentId key=$key val=$val txt="$txt"');
+          _getController(studentId, key).text = txt;
         }
       }
     } catch (e) {
@@ -228,7 +229,8 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
     if (sid.isEmpty || tid.isEmpty) return;
     setState(() => _isSaving = true);
     try {
-      for (final student in _studentsInClass) {
+      _cachedStudents = provider.students.where((s) => s['class_id']?.toString() == classId).toList();
+      for (final student in _cachedStudents) {
         final studentId = student['id'].toString();
         final sj = <String, dynamic>{};
         for (final at in _assessmentTypes) {
@@ -238,16 +240,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
         final total = _getTotal(studentId);
         final grade = _getGrade(total);
 
-        final existing = await Supabase.instance.client
-            .from('scores')
-            .select('id')
-            .eq('school_id', provider.schoolId)
-            .eq('student_id', studentId)
-            .eq('class_id', classId)
-            .eq('subject_id', subjectId)
-            .eq('session_id', sid)
-            .eq('term_id', tid)
-            .maybeSingle();
+        final existing = await DbProxy.instance.from('scores').select('id').eq('school_id', provider.schoolId).eq('student_id', studentId).eq('class_id', classId).eq('subject_id', subjectId).eq('session_id', sid).eq('term_id', tid).maybeSingle();
 
         final scoreData = {
           'school_id': provider.schoolId,
@@ -296,7 +289,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<TeacherProvider>();
+    final provider = context.read<TeacherProvider>();
 
     if (!provider.isInitialized) {
       return const Center(child: CircularProgressIndicator());
@@ -404,6 +397,7 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                         _selectedClassId = v;
                         _selectedSubjectId = null;
                         _isLocked = false;
+                        _cachedStudents = [];
                         _clearControllers();
                       });
                       _checkLockStatus();
@@ -609,8 +603,6 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
           final index = entry.key;
           final student = entry.value;
           final sid = student['id'].toString();
-          final total = _getTotal(sid);
-          final grade = _getGrade(total);
           final bgColor =
               index % 2 == 0 ? Colors.white : const Color(0xFFFAFBFC);
           return Container(
@@ -683,54 +675,25 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                                 horizontal: 4, vertical: 8),
                             isDense: true,
                           ),
-                          onChanged: (_) => setState(() {}),
+                          // no setState — prevents web TextField rebuild bug
                         ),
                       ),
                     );
                   }),
-                  SizedBox(
-                    width: 70,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 6),
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: total >= _totalMaxScore * 0.5
-                            ? const Color(0xFFE8F5E9)
-                            : const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(total.toStringAsFixed(0),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: total >= _totalMaxScore * 0.5
-                                  ? const Color(0xFF2E7D32)
-                                  : const Color(0xFFD32F2F))),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 60,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 6),
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: total >= _totalMaxScore * 0.5
-                            ? const Color(0xFFE8F5E9)
-                            : const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(grade,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: total >= _totalMaxScore * 0.5
-                                  ? const Color(0xFF2E7D32)
-                                  : const Color(0xFFD32F2F))),
-                    ),
+                  ListenableBuilder(
+                    listenable: _studentListenable(sid),
+                    builder: (ctx, _) {
+                      final t = _getTotal(sid);
+                      final g = _getGrade(t);
+                      final tColor = t >= _totalMaxScore * 0.5 ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F);
+                      final tBg = t >= _totalMaxScore * 0.5 ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+                      return Row(
+                        children: [
+                          SizedBox(width: 70, child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: tBg, borderRadius: BorderRadius.circular(6)), child: Text(t.toStringAsFixed(0), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: tColor)))),
+                          SizedBox(width: 60, child: Container(margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: tBg, borderRadius: BorderRadius.circular(6)), child: Text(g, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: tColor)))),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
