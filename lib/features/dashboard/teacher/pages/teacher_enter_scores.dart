@@ -197,7 +197,6 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
       }
 
       _cachedStudents = provider.students.where((s) => s['class_id']?.toString() == classId).toList();
-      debugPrint('PREFILL: ${_cachedStudents.length} students, ${_assessmentTypes.length} types, ${scoreMap.length} scores');
       for (final student in _cachedStudents) {
         final studentId = student['id'].toString();
         final sj = scoreMap[studentId] ?? {};
@@ -205,7 +204,6 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
           final key = _assessKey(at);
           final val = sj[key] ?? sj[at['name']];
           final txt = val != null ? (val is num ? val : 0).toString() : '';
-          debugPrint('PREFILL: student=$studentId key=$key val=$val txt="$txt"');
           _getController(studentId, key).text = txt;
         }
       }
