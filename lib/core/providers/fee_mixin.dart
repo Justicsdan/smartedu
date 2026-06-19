@@ -2,9 +2,9 @@
 // File: lib/core/providers/fee_mixin.dart
 // ==========================================
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/db_proxy.dart';
 import 'base_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 mixin FeeMixin on BaseProvider {
   List<Map<String, dynamic>> _feeTypes = [];

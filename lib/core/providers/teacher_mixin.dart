@@ -2,9 +2,9 @@
 // File: lib/core/providers/teacher_mixin.dart
 // ==========================================
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/db_proxy.dart';
 import 'base_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 mixin TeacherMixin on BaseProvider {
   List<Map<String, dynamic>> _teachers = [];

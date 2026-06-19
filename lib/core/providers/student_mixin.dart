@@ -2,11 +2,11 @@
 // File: lib/core/providers/student_mixin.dart
 // ==========================================
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/db_proxy.dart';
 import 'base_provider.dart';
 import 'comment_mixin.dart';
 import 'session_mixin.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Student management mixin for school admin.
 /// Handles CRUD operations for students within a school.

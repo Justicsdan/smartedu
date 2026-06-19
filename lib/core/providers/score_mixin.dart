@@ -2,8 +2,8 @@
 // File: lib/core/providers/score_mixin.dart
 // ==========================================
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'base_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for score CRUD, position calculation, and results visibility.
 ///

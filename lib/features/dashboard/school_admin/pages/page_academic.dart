@@ -1,10 +1,10 @@
 import 'package:smartedu/core/services/db_proxy.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 // ==========================================
 // File: lib/features/dashboard/school_admin/pages/page_academic.dart
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 
 class PageAcademic extends StatefulWidget {

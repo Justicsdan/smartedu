@@ -1,9 +1,9 @@
 // ==========================================
 // File: lib/core/providers/session_mixin.dart
 // ==========================================
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for academic session and term management.
 /// Handles loading, creating, switching, and deleting sessions/terms.

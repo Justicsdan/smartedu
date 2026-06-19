@@ -1,8 +1,8 @@
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentComplaintsPage extends StatefulWidget {
   const StudentComplaintsPage({super.key});
