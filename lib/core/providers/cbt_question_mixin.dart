@@ -1,5 +1,5 @@
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 
 mixin CbtQuestionMixin on BaseProvider {
   List<Map<String, dynamic>> _cbtQuestions = [];
@@ -45,12 +45,11 @@ mixin CbtQuestionMixin on BaseProvider {
         'correct_option': correctOption.toLowerCase(),
         'explanation': explanation,
         'marks': marks,
-      }).select().single();
-
-      _cbtQuestions.add(r);
-      logAudit(action: 'create', tableName: 'cbt_questions', recordId: r['id']?.toString());
+      });
+      await loadCbtQuestions(examId);
+      logAudit(action: 'create', tableName: 'cbt_questions', recordId: '');
       notifyListeners();
-      return r;
+      return null;
     } catch (e) {
       print('Error adding CBT question: $e');
       return null;
@@ -68,10 +67,8 @@ mixin CbtQuestionMixin on BaseProvider {
       if (u.isEmpty) return false;
 
       await DbProxy.instance.from('cbt_questions').eq('id', questionId).eq('school_id', schoolId).update(u);
-      final r = await DbProxy.instance.from('cbt_questions').select().eq('id', questionId).eq('school_id', schoolId).single();
-
-      final i = _cbtQuestions.indexWhere((q) => q['id'].toString() == questionId);
-      if (i != -1) _cbtQuestions[i] = r;
+      final existing = _cbtQuestions.cast<Map<String, dynamic>?>().firstWhere((x) => x?['id'].toString() == questionId, orElse: () => null);
+      if (existing != null) await loadCbtQuestions(existing['exam_id'].toString());
 
       logAudit(action: 'update', tableName: 'cbt_questions', recordId: questionId, newData: u);
       notifyListeners();

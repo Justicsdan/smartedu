@@ -17,6 +17,7 @@ import 'features/auth/school_code_login_page.dart';
 import 'features/dashboard/super_admin/super_admin_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_dashboard.dart';
 import 'features/dashboard/school_admin/pages/page_classes.dart';
+import 'features/dashboard/school_admin/pages/page_cbt.dart';
 import 'features/dashboard/school_admin/pages/page_academic.dart';
 import 'features/dashboard/school_admin/pages/page_results.dart';
 import 'features/dashboard/school_admin/pages/page_publish_results.dart';
@@ -455,6 +456,7 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.layers_rounded, label: 'Classes'),
     _NavItem(icon: Icons.calendar_today_rounded, label: 'Academic'),
     _NavItem(icon: Icons.edit_note_rounded, label: 'Scores'),
+    _NavItem(icon: Icons.quiz_rounded, label: 'CBT'),
     _NavItem(icon: Icons.publish_rounded, label: 'Publish'),
     _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
     _NavItem(icon: Icons.vpn_key_rounded, label: 'Credentials'),
@@ -609,12 +611,14 @@ class _AdminShellState extends State<_AdminShell> {
       case 5:
         return PageResults(classes: p.classes, subjects: p.subjects, classSubjects: p.classSubjects, students: p.students, assignments: p.assignments, scores: p.scores, resultsVisible: true, onSaveScores: (scores) => p.saveScores(scores), onToggleVisibility: (_) {});
       case 6:
-        return const PagePublishResults();
+        return PageCbt(exams: p.cbtExams, classes: p.classes, subjects: p.subjects, onAdd: (data) { context.read<SchoolAdminProvider>().addCbtExamToDb(title: data['title'] ?? '', subjectId: data['subjectId'] ?? '', classId: data['classId'] ?? '', isActive: data['isActive'] == true); }, onToggle: (id) { context.read<SchoolAdminProvider>().toggleCbtInDb(id); }, onDelete: (id) { context.read<SchoolAdminProvider>().deleteCbtExamFromDb(id); });
       case 7:
-        return PageSettings(schoolName: p.schoolName, schoolAddress: '', schoolPhone: '', schoolEmail: '', onUpdate: (name, address, phone, email) {});
+        return const PagePublishResults();
       case 8:
-        return const PageCredentials();
+        return PageSettings(schoolName: p.schoolName, schoolAddress: '', schoolPhone: '', schoolEmail: '', onUpdate: (name, address, phone, email) {});
       case 9:
+        return const PageCredentials();
+      case 10:
         return PageFees();
       default:
         return const SizedBox.shrink();

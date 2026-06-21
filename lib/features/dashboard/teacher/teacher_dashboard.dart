@@ -15,6 +15,7 @@ import 'pages/teacher_assignments.dart';
 import 'pages/teacher_results.dart';
 import 'pages/teacher_attendance.dart';
 import 'pages/teacher_publish_results.dart';
+import 'pages/teacher_cbt_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final Map<String, dynamic>? teacherData;
@@ -68,6 +69,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       items.add(const _NavItem(id: 'my_classes', icon: Icons.class_rounded, label: 'My Classes'));
       items.add(const _NavItem(id: 'enter_scores', icon: Icons.edit_note_rounded, label: 'Enter Scores'));
       items.add(const _NavItem(id: 'assignments', icon: Icons.assignment_rounded, label: 'Assignments'));
+      items.add(const _NavItem(id: 'cbt', icon: Icons.quiz_rounded, label: 'CBT Exams'));
     }
 
     if (isFormMaster || isSubjectTeacher) {
@@ -530,6 +532,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         return const TeacherAssignmentsPage();
       case 'publish_results':
         return const TeacherPublishResults();
+      case 'cbt':
+        return const TeacherCbtPage();
       case 'results':
         return const TeacherResultsPage();
       default:

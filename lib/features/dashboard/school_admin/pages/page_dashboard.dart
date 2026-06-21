@@ -414,7 +414,7 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
 
   Widget _buildGettingStarted() {
     final steps = [
-      (icon: Icons.school_rounded, label: 'Set up your school profile', sub: 'Add name, logo & contact details', navIndex: 7),
+      (icon: Icons.school_rounded, label: 'Set up your school profile', sub: 'Add name, logo & contact details', navIndex: 8),
       (icon: Icons.add_circle_outline_rounded, label: 'Create your first class', sub: 'Add classes like JSS 1, SSS 2, etc.', navIndex: 3),
       (icon: Icons.menu_book_rounded, label: 'Add subjects', sub: 'Link subjects to each class', navIndex: 3),
       (icon: Icons.person_add_rounded, label: 'Register students', sub: 'Add students with admission numbers', navIndex: 1),
@@ -538,7 +538,7 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
           const SizedBox(width: 10),
           _quickAction(Icons.add_circle_outline_rounded, 'New Class', const Color(0xFF7B1FA2), 3),
           const SizedBox(width: 10),
-          _quickAction(Icons.quiz_rounded, 'Create CBT', const Color(0xFFC62828), 5),
+          _quickAction(Icons.quiz_rounded, 'Create CBT', const Color(0xFFC62828), 6),
         ],
       ),
     );

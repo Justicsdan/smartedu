@@ -17,6 +17,7 @@ import 'score_mixin.dart';
 import 'cbt_mixin.dart';
 import 'attendance_mixin.dart';
 import 'fee_mixin.dart';
+import 'cbt_question_mixin.dart';
 
 class SchoolAdminProvider extends BaseProvider
     with
@@ -30,7 +31,8 @@ class SchoolAdminProvider extends BaseProvider
         ScoreMixin,
         CbtMixin,
         AttendanceMixin,
-        FeeMixin {
+        FeeMixin,
+        CbtQuestionMixin {
 
   // ==========================================
   // TIER-AWARE GRADING & ASSESSMENT

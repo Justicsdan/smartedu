@@ -3,7 +3,7 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
 
 /// Mixin for CBT exam management.
 /// Handles loading, creating, updating, toggling, and deleting exams.
@@ -37,11 +37,11 @@ mixin CbtMixin on BaseProvider {
   @override
   Future<void> loadCbtExams() async {
     try {
-      final r = await supabase
+      final r = await DbProxy.instance
           .from('cbt_exams')
           .select('*, subjects(name, code), classes(name, section)')
-          .eq('school_id', schoolId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .get();
       _cbtExams = List<Map<String, dynamic>>.from(r);
     } catch (e) {
       debugPrint('Error loading CBT exams: $e');
@@ -90,22 +90,16 @@ mixin CbtMixin on BaseProvider {
       if (startTime != null) insertData['start_time'] = startTime.toUtc().toIso8601String();
       if (endTime != null) insertData['end_time'] = endTime.toUtc().toIso8601String();
 
-      final r = await supabase
-          .from('cbt_exams')
-          .insert(insertData)
-          .select('*, subjects(name, code), classes(name, section)')
-          .single();
-
-      _cbtExams.insert(0, Map<String, dynamic>.from(r));
+      await DbProxy.instance.from('cbt_exams').insert(insertData);
+      await loadCbtExams();
 
       logAudit(
         action: 'create',
         tableName: 'cbt_exams',
-        recordId: r['id']?.toString(),
+        recordId: '',
         newData: {'title': title, 'subject_id': subjectId, 'class_id': classId},
       );
       notifyListeners();
-      return r;
     } catch (e) {
       debugPrint('Error adding CBT exam: $e');
       return null;
@@ -123,18 +117,8 @@ mixin CbtMixin on BaseProvider {
 
       if (u.isEmpty) return false;
 
-      final r = await supabase
-          .from('cbt_exams')
-          .update(u)
-          .eq('id', id)
-          .eq('school_id', schoolId)
-          .select('*, subjects(name, code), classes(name, section)')
-          .single();
-
-      final i = _cbtExams.indexWhere((e) => e['id']?.toString() == id);
-      if (i != -1) {
-        _cbtExams[i] = Map<String, dynamic>.from(r);
-      }
+      await DbProxy.instance.from('cbt_exams').eq('id', id).update(u);
+      await loadCbtExams();
 
       logAudit(action: 'update', tableName: 'cbt_exams', recordId: id, newData: u);
       notifyListeners();
@@ -156,17 +140,8 @@ mixin CbtMixin on BaseProvider {
 
       final newState = !(e['is_active'] as bool? ?? false);
 
-      await supabase
-          .from('cbt_exams')
-          .update({'is_active': newState})
-          .eq('id', id)
-          .eq('school_id', schoolId);
-
-      final i = _cbtExams.indexWhere((e) => e['id']?.toString() == id);
-      if (i != -1) {
-        _cbtExams[i] = Map<String, dynamic>.from(_cbtExams[i]);
-        _cbtExams[i]['is_active'] = newState;
-      }
+      await DbProxy.instance.from('cbt_exams').eq('id', id).update({'is_active': newState});
+      await loadCbtExams();
 
       logAudit(
         action: 'toggle_active',
@@ -186,13 +161,8 @@ mixin CbtMixin on BaseProvider {
   /// V4: Questions and attempts cascade via ON DELETE CASCADE.
   Future<bool> deleteCbtExamFromDb(String id) async {
     try {
-      await supabase
-          .from('cbt_exams')
-          .delete()
-          .eq('id', id)
-          .eq('school_id', schoolId);
-
-      _cbtExams.removeWhere((e) => e['id']?.toString() == id);
+      await DbProxy.instance.from('cbt_exams').eq('id', id).delete();
+      await loadCbtExams();
 
       logAudit(action: 'delete', tableName: 'cbt_exams', recordId: id);
       notifyListeners();
