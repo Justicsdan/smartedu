@@ -3,14 +3,13 @@ import "package:provider/provider.dart";
 import "package:smartedu/core/providers/school_admin_provider.dart";
 
 class PageCbt extends StatefulWidget {
-  final List<Map<String, dynamic>> exams, classes, subjects;
+  final List<Map<String, dynamic>> classes, subjects;
   final void Function(Map<String, dynamic>) onAdd;
   final void Function(String) onToggle;
   final void Function(String) onDelete;
 
   const PageCbt({
     super.key,
-    required this.exams,
     required this.classes,
     required this.subjects,
     required this.onAdd,
@@ -183,78 +182,60 @@ class _PageCbtState extends State<PageCbt> {
 
   static List<Map<String, dynamic>> _parsePastedQuestions(String text) {
     final results = <Map<String, dynamic>>[];
-    String clean = "";
-    for (int i = 0; i < text.length; i++) {
-      final c = text.codeUnitAt(i);
-      if (c == 10 || c == 13 || c == 9 || (c >= 32 && c <= 126)) {
-        clean += text[i];
-      }
-    }
-    final blocks = clean.split("\n\n");
-    for (final block in blocks) {
-      final lines = block.split("\n").where((l) => l.trim().isNotEmpty).toList();
-      if (lines.isEmpty) continue;
-      String? questionText;
-      String? optA, optB, optC, optD;
-      String correctOption = "a";
-      int marks = 1;
-      for (final line in lines) {
-        final trimmed = line.trim();
-        String? foundLetter;
-        int letterIndex = -1;
-        for (int i = 0; i < trimmed.length && i < 5; i++) {
-          final ch = trimmed[i].toUpperCase();
-          if (ch == "A" || ch == "B" || ch == "C" || ch == "D") {
-            foundLetter = ch;
-            letterIndex = i;
-            break;
-          }
-        }
-        if (foundLetter != null && letterIndex >= 0) {
-          String rest = trimmed
-              .substring(letterIndex + 1)
-              .replaceFirst(RegExp(r"[^a-zA-Z0-9]+"), "")
-              .trim();
-          if (foundLetter == "A") optA = rest;
-          else if (foundLetter == "B") optB = rest;
-          else if (foundLetter == "C") optC = rest;
-          else if (foundLetter == "D") optD = rest;
-          continue;
-        }
-        final upper = trimmed.toUpperCase();
-        if (upper.contains("ANS")) {
-          for (int i = 0; i < trimmed.length; i++) {
-            final ch = trimmed[i].toUpperCase();
-            if (ch == "A" || ch == "B" || ch == "C" || ch == "D") {
-              correctOption = ch.toLowerCase();
-              break;
-            }
-          }
-          continue;
-        }
-        if (upper.contains("MARK")) {
-          final nums = trimmed.replaceAll(RegExp(r"[^0-9]"), "");
-          if (nums.isNotEmpty) marks = int.tryParse(nums) ?? 1;
-          continue;
-        }
-        String qPart = trimmed.replaceFirst(RegExp(r"^\d+[\.\)\s]+"), "");
-        if (questionText == null) {
-          questionText = qPart;
-        } else {
-          questionText = "$questionText $qPart";
-        }
-      }
-      if (questionText != null && questionText.isNotEmpty) {
+    final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final lines = normalized.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    String? questionText;
+    String? optA, optB, optC, optD;
+    String correctOption = 'a';
+    int marks = 1;
+    void saveCurrent() {
+      if (questionText != null && questionText!.isNotEmpty) {
         results.add({
-          "question_text": questionText,
-          "option_a": optA ?? "",
-          "option_b": optB ?? "",
-          "option_c": optC ?? "",
-          "option_d": optD ?? "",
-          "correct_option": correctOption,
-          "marks": marks,
+          'question_text': questionText,
+          'option_a': optA ?? '',
+          'option_b': optB ?? '',
+          'option_c': optC ?? '',
+          'option_d': optD ?? '',
+          'correct_option': correctOption,
+          'marks': marks,
         });
       }
+      questionText = null;
+      optA = optB = optC = optD = null;
+      correctOption = 'a';
+      marks = 1;
+    }
+    for (final line in lines) {
+      final trimmed = line.trim();
+      final upper = trimmed.toUpperCase();
+      if (upper.startsWith('A.') || upper.startsWith('A)')) { optA = trimmed.substring(2).trim(); continue; }
+      if (upper.startsWith('B.') || upper.startsWith('B)')) { optB = trimmed.substring(2).trim(); continue; }
+      if (upper.startsWith('C.') || upper.startsWith('C)')) { optC = trimmed.substring(2).trim(); continue; }
+      if (upper.startsWith('D.') || upper.startsWith('D)')) { optD = trimmed.substring(2).trim(); continue; }
+      if (upper.startsWith('ANS')) {
+        for (int i = 0; i < trimmed.length; i++) {
+          final ch = trimmed[i].toUpperCase();
+          if (ch == 'A' || ch == 'B' || ch == 'C' || ch == 'D') { correctOption = ch.toLowerCase(); break; }
+        }
+        saveCurrent();
+        continue;
+      }
+      if (upper.startsWith('MARK')) {
+        final nums = trimmed.replaceAll(RegExp('[^0-9]'), '');
+        if (nums.isNotEmpty) marks = int.tryParse(nums) ?? 1;
+        continue;
+      }
+      String qPart = trimmed;
+      if (qPart.isNotEmpty && qPart.codeUnitAt(0) >= 48 && qPart.codeUnitAt(0) <= 57) {
+        qPart = qPart.replaceFirst(RegExp(r'^\d+[.)\s]+'), '');
+      }
+      if (questionText == null) { questionText = qPart; } else { questionText = questionText! + ' ' + qPart; }
+    }
+    saveCurrent();
+    debugPrint('PARSED ' + results.length.toString() + ' questions');
+    for (int i = 0; i < results.length && i < 3; i++) {
+      final q = results[i];
+      debugPrint('Q' + (i+1).toString() + ': A=' + (q['option_a'] ?? '') + ' B=' + (q['option_b'] ?? '') + ' C=' + (q['option_c'] ?? '') + ' D=' + (q['option_d'] ?? ''));
     }
     return results;
   }
@@ -484,7 +465,8 @@ class _PageCbtState extends State<PageCbt> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.exams.isEmpty) {
+    final exams = context.watch<SchoolAdminProvider>().cbtExams;
+    if (exams.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -509,9 +491,9 @@ class _PageCbtState extends State<PageCbt> {
       children: [
         ListView.builder(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
-          itemCount: widget.exams.length,
+          itemCount: exams.length,
           itemBuilder: (context, index) {
-            final e = widget.exams[index];
+            final e = exams[index];
             final examId = e["id"]?.toString() ?? "";
             final isActive = e["is_active"] == true;
             final isExpanded = _expandedExamIds.contains(examId);
@@ -854,6 +836,7 @@ class _PageCbtState extends State<PageCbt> {
   void _showAddExamDialog() {
     final titleCtrl = TextEditingController();
     String? classId, subjectId;
+    final durCtrl = TextEditingController(text: '60');
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -901,6 +884,15 @@ class _PageCbtState extends State<PageCbt> {
                 }).toList(),
                 onChanged: (v) => setSt(() => subjectId = v),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: durCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Duration (minutes)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -914,10 +906,10 @@ class _PageCbtState extends State<PageCbt> {
                     classId != null &&
                     subjectId != null) {
                   widget.onAdd({
-                    "id": DateTime.now().millisecondsSinceEpoch.toString(),
                     "title": titleCtrl.text.trim(),
                     "classId": classId,
                     "subjectId": subjectId,
+                    "duration": int.tryParse(durCtrl.text.trim()) ?? 60,
                     "isActive": false,
                   });
                   Navigator.pop(ctx);

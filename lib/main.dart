@@ -611,7 +611,7 @@ class _AdminShellState extends State<_AdminShell> {
       case 5:
         return PageResults(classes: p.classes, subjects: p.subjects, classSubjects: p.classSubjects, students: p.students, assignments: p.assignments, scores: p.scores, resultsVisible: true, onSaveScores: (scores) => p.saveScores(scores), onToggleVisibility: (_) {});
       case 6:
-        return PageCbt(exams: p.cbtExams, classes: p.classes, subjects: p.subjects, onAdd: (data) { context.read<SchoolAdminProvider>().addCbtExamToDb(title: data['title'] ?? '', subjectId: data['subjectId'] ?? '', classId: data['classId'] ?? '', isActive: data['isActive'] == true); }, onToggle: (id) { context.read<SchoolAdminProvider>().toggleCbtInDb(id); }, onDelete: (id) { context.read<SchoolAdminProvider>().deleteCbtExamFromDb(id); });
+        return PageCbt(classes: p.classes, subjects: p.subjects, onAdd: (data) { context.read<SchoolAdminProvider>().addCbtExamToDb(title: data['title'] ?? '', subjectId: data['subjectId'] ?? '', classId: data['classId'] ?? '', durationMinutes: data['duration'] ?? 60, isActive: data['isActive'] == true); }, onToggle: (id) { context.read<SchoolAdminProvider>().toggleCbtInDb(id); }, onDelete: (id) { context.read<SchoolAdminProvider>().deleteCbtExamFromDb(id); });
       case 7:
         return const PagePublishResults();
       case 8:

@@ -5,6 +5,38 @@ import 'student_base.dart';
 
 mixin StudentCbtMixin on StudentBase {
 
+  List<Map<String, dynamic>> _cbtExams = [];
+  List<Map<String, dynamic>> get cbtExams => _cbtExams;
+
+  @override
+  Future<void> loadStudentData() async {
+    await super.loadStudentData();
+    await _loadCbtExams();
+  }
+
+  Future<void> _loadCbtExams() async {
+    try {
+      final raw = await getAvailableCbtExams();
+      _cbtExams = raw.map((e) {
+        final subjects = e['subjects'] as Map<String, dynamic>? ?? {};
+        return {
+          'id': e['id'],
+          'title': e['title'],
+          'isActive': e['is_active'] == true,
+          'duration': e['duration_minutes'],
+          'className': className,
+          'subjectName': subjects['name']?.toString() ?? '',
+          'totalQuestions': e['total_questions'],
+          'passMark': e['pass_mark'],
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Error loading CBT exams: \$e');
+      _cbtExams = [];
+    }
+  }
+
+
   Future<Map<String, dynamic>> checkExamAvailability(String examId) async {
     if (examId.isEmpty) return {'available': false, 'reason': 'Invalid exam ID'};
 
@@ -121,8 +153,8 @@ mixin StudentCbtMixin on StudentBase {
 
       return questions;
     } catch (e) {
-      debugPrint('Error loading CBT questions via RPC: $e');
-      return [];
+      debugPrint('Error loading CBT questions via RPC, falling back to direct: $e');
+      return await _loadQuestionsDirect(examId);
     }
   }
 
@@ -167,38 +199,52 @@ mixin StudentCbtMixin on StudentBase {
         return {'error': 'exam_inactive', 'message': 'This exam is no longer active.'};
       }
 
-      if (exam['end_time'] != null) {
-        if (DateTime.now().isAfter(DateTime.parse(exam['end_time']))) {
-          return {'error': 'time_expired', 'message': 'Time is up! Your answers have been auto-submitted.'};
+      final questions = await _loadQuestionsDirect(examId);
+      int score = 0;
+      int totalMarks = 0;
+      for (final q in questions) {
+        final qId = q['id'].toString();
+        final correct = (q['correct_option'] as String?) ?? '';
+        final marks = (q['marks'] as num?)?.toInt() ?? 1;
+        totalMarks += marks;
+        final submitted = answers[qId] ?? '';
+        if (submitted.toLowerCase() == correct.toLowerCase()) {
+          score += marks;
         }
       }
 
-      final response = await DbProxy.instance.rpc('score_cbt_attempt', params: {
-        'p_exam_id': examId,
-        'p_student_id': studentId,
-        'p_answers': answers,
-        'p_time_started': timeStarted?.toIso8601String(),
-        'p_ip_address': '',
+      final now = DateTime.now().toUtc().toIso8601String();
+      final startStr = timeStarted?.toUtc().toIso8601String() ?? now;
+
+      await DbProxy.instance.from('cbt_attempts').insert({
+        'school_id': schoolId,
+        'exam_id': examId,
+        'student_id': studentId,
+        'attempt_number': 1,
+        'answers': answers,
+        'score': score,
+        'total_marks': totalMarks,
+        'time_started': startStr,
+        'time_submitted': now,
+        'is_submitted': true,
+        'ip_address': '',
       });
 
-      if (response == null) return null;
-
-      Map<String, dynamic> result = {};
-      if (response is Map) {
-        final data = response['data'] ?? response;
-        if (data is Map) {
-          result = Map<String, dynamic>.from(data);
-        }
-      } else if (response is List && response.isNotEmpty) {
-        result = Map<String, dynamic>.from(response.first as Map);
-      }
-
-      return result.isEmpty ? null : result;
+      return {
+        'score': score,
+        'total_marks': totalMarks,
+        'total_questions': questions.length,
+        'correct': answers.entries.where((e) {
+          final q = questions.firstWhere((q) => q['id'].toString() == e.key, orElse: () => {});
+          return (e.value.toLowerCase() == ((q['correct_option'] as String?) ?? '').toLowerCase());
+        }).length,
+      };
     } catch (e) {
       debugPrint('Error submitting CBT: $e');
       return null;
     }
   }
+
 
   Future<bool> hasAttemptedExam(String examId) async {
     if (examId.isEmpty) return false;

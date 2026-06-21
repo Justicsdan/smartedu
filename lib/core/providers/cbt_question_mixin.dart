@@ -121,10 +121,17 @@ mixin CbtQuestionMixin on BaseProvider {
         'marks': q['marks'] ?? 1,
       }).toList();
 
-      for (int i = 0; i < rows.length; i += 50) {
-        final chunk = rows.sublist(i, i + 50 > rows.length ? rows.length : i + 50);
-        await DbProxy.instance.from('cbt_questions').insert(chunk);
+      int inserted = 0;
+      for (int i = 0; i < rows.length; i++) {
+        try {
+          rows[i]['question_order'] = i + 1;
+          await DbProxy.instance.from('cbt_questions').insert(rows[i]);
+          inserted++;
+        } catch (e) {
+          print('Bulk insert failed at row ' + i.toString() + ': ' + e.toString());
+        }
       }
+      print('Bulk import: ' + inserted.toString() + '/' + rows.length.toString() + ' inserted');
 
       await loadCbtQuestions(examId);
       logAudit(action: 'bulk_import', tableName: 'cbt_questions', newData: {'exam_id': examId, 'count': data.length});
