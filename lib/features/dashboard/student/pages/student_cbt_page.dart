@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
+import 'student_cbt_exam_page.dart';
 
 class StudentCbtPage extends StatelessWidget {
   const StudentCbtPage({super.key});
@@ -24,7 +25,14 @@ class StudentCbtPage extends StatelessWidget {
               children: [
                 Icon(Icons.quiz_rounded, color: Color(0xFF2E7D32), size: 28),
                 SizedBox(width: 16),
-                Text("CBT Exams", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                Text(
+                  "CBT Exams",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
               ],
             ),
           ),
@@ -35,11 +43,27 @@ class StudentCbtPage extends StatelessWidget {
                 padding: const EdgeInsets.all(60),
                 child: Column(
                   children: [
-                    Icon(Icons.quiz_outlined, size: 80, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.quiz_outlined,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 16),
-                    Text("No CBT exams available", style: TextStyle(fontSize: 18, color: Colors.grey.shade500)),
+                    Text(
+                      "No CBT exams available",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text("Your exams will appear here when teachers create them", style: TextStyle(fontSize: 14, color: Colors.grey.shade400)),
+                    Text(
+                      "Your exams will appear here when teachers create them",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -54,7 +78,9 @@ class StudentCbtPage extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isActive ? Colors.green.shade200 : Colors.grey.shade100,
+                    color: isActive
+                        ? Colors.green.shade200
+                        : Colors.grey.shade100,
                     width: isActive ? 2 : 1,
                   ),
                 ),
@@ -63,11 +89,15 @@ class StudentCbtPage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.green.shade50 : Colors.grey.shade100,
+                        color: isActive
+                            ? Colors.green.shade50
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        isActive ? Icons.play_circle_rounded : Icons.lock_clock_rounded,
+                        isActive
+                            ? Icons.play_circle_rounded
+                            : Icons.lock_clock_rounded,
                         color: isActive ? Colors.green : Colors.grey,
                         size: 32,
                       ),
@@ -79,18 +109,28 @@ class StudentCbtPage extends StatelessWidget {
                         children: [
                           Text(
                             exam['title'] ?? 'CBT Exam',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A)),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B2A4A),
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "${exam['className'] ?? ''} • ${exam['subjectName'] ?? ''}",
-                            style: const TextStyle(fontSize: 13, color: Colors.grey),
+                            "${exam['className'] ?? ''} \u2022 ${exam['subjectName'] ?? ''}",
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
                           ),
                           if (exam['duration'] != null) ...[
                             const SizedBox(height: 4),
                             Text(
                               "Duration: ${exam['duration']} minutes",
-                              style: const TextStyle(fontSize: 12, color: Colors.orange),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange,
+                              ),
                             ),
                           ],
                         ],
@@ -98,7 +138,14 @@ class StudentCbtPage extends StatelessWidget {
                     ),
                     if (isActive)
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StudentCbtExamPage(exam: exam),
+                            ),
+                          );
+                        },
                         icon: const Icon(Icons.play_arrow),
                         label: const Text("Start"),
                         style: ElevatedButton.styleFrom(
@@ -108,14 +155,20 @@ class StudentCbtPage extends StatelessWidget {
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
                           "Not Available",
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                   ],
