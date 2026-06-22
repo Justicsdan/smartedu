@@ -187,7 +187,6 @@ class _PageCbtState extends State<PageCbt> {
     String? questionText;
     String? optA, optB, optC, optD;
     String correctOption = 'a';
-    int marks = 1;
     void saveCurrent() {
       if (questionText != null && questionText!.isNotEmpty) {
         results.add({
@@ -197,13 +196,12 @@ class _PageCbtState extends State<PageCbt> {
           'option_c': optC ?? '',
           'option_d': optD ?? '',
           'correct_option': correctOption,
-          'marks': marks,
+          'marks': 0,
         });
       }
       questionText = null;
       optA = optB = optC = optD = null;
       correctOption = 'a';
-      marks = 1;
     }
     for (final line in lines) {
       final trimmed = line.trim();
@@ -220,11 +218,6 @@ class _PageCbtState extends State<PageCbt> {
         saveCurrent();
         continue;
       }
-      if (upper.startsWith('MARK')) {
-        final nums = trimmed.replaceAll(RegExp('[^0-9]'), '');
-        if (nums.isNotEmpty) marks = int.tryParse(nums) ?? 1;
-        continue;
-      }
       String qPart = trimmed;
       if (qPart.isNotEmpty && qPart.codeUnitAt(0) >= 48 && qPart.codeUnitAt(0) <= 57) {
         qPart = qPart.replaceFirst(RegExp(r'^\d+[.)\s]+'), '');
@@ -232,17 +225,13 @@ class _PageCbtState extends State<PageCbt> {
       if (questionText == null) { questionText = qPart; } else { questionText = questionText! + ' ' + qPart; }
     }
     saveCurrent();
-    debugPrint('PARSED ' + results.length.toString() + ' questions');
-    for (int i = 0; i < results.length && i < 3; i++) {
-      final q = results[i];
-      debugPrint('Q' + (i+1).toString() + ': A=' + (q['option_a'] ?? '') + ' B=' + (q['option_b'] ?? '') + ' C=' + (q['option_c'] ?? '') + ' D=' + (q['option_d'] ?? ''));
-    }
     return results;
   }
 
   void _showBulkImportDialog(String examId) {
     int step = 0;
     final textCtrl = TextEditingController();
+    final marksCtrl = TextEditingController(text: '2');
     List<Map<String, dynamic>> parsed = [];
 
     showDialog(
@@ -263,10 +252,31 @@ class _PageCbtState extends State<PageCbt> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Paste questions below. Separate each question with a blank line:",
+                          "Paste questions below. Separate each question with a blank line.",
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: TextField(
+                                controller: marksCtrl,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: "Marks per question *",
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
@@ -274,7 +284,7 @@ class _PageCbtState extends State<PageCbt> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
-                            "What is 2+2?\nA. 3\nB. 4\nC. 5\nD. 6\nAns: B\nMarks: 2\n\nCapital of Nigeria?\nA. Lagos\nB. Abuja\nC. Kano\nD. Ibadan\nAns: B",
+                            "What is 2+2?\nA. 3\nB. 4\nC. 5\nD. 6\nAns: B\n\nCapital of Nigeria?\nA. Lagos\nB. Abuja\nC. Kano\nD. Ibadan\nAns: B",
                             style: TextStyle(
                               fontSize: 11,
                               fontFamily: "monospace",
@@ -285,7 +295,7 @@ class _PageCbtState extends State<PageCbt> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: textCtrl,
-                          maxLines: 14,
+                          maxLines: 12,
                           decoration: const InputDecoration(
                             labelText: "Paste questions here",
                             border: OutlineInputBorder(),
@@ -300,7 +310,10 @@ class _PageCbtState extends State<PageCbt> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        parsed.length.toString() + " questions parsed.",
+                        parsed.length.toString() +
+                            " questions parsed. Each worth " +
+                            marksCtrl.text.trim() +
+                            " marks.",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF2E7D32),
@@ -320,7 +333,9 @@ class _PageCbtState extends State<PageCbt> {
                             final dText = "D. " + (q["option_d"] ?? "-");
                             final ansText =
                                 "Answer: " +
-                                (q["correct_option"] ?? "").toString().toUpperCase();
+                                (q["correct_option"] ?? "")
+                                    .toString()
+                                    .toUpperCase();
                             final marksText =
                                 "  |  Marks: " + (q["marks"] ?? 1).toString();
                             return Padding(
@@ -330,13 +345,17 @@ class _PageCbtState extends State<PageCbt> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.grey.shade200),
+                                  border: Border.all(
+                                      color: Colors.grey.shade200),
                                 ),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      (i + 1).toString() + ". " + (q["question_text"] ?? ""),
+                                      (i + 1).toString() +
+                                          ". " +
+                                          (q["question_text"] ?? ""),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -388,6 +407,9 @@ class _PageCbtState extends State<PageCbt> {
             if (step == 0)
               ElevatedButton(
                 onPressed: () {
+                  final marksVal =
+                      int.tryParse(marksCtrl.text.trim()) ?? 1;
+                  if (marksVal < 1) return;
                   final raw = textCtrl.text;
                   final p = _parsePastedQuestions(raw);
                   if (p.isEmpty) {
@@ -398,6 +420,9 @@ class _PageCbtState extends State<PageCbt> {
                     ));
                     return;
                   }
+                  for (final q in p) {
+                    q['marks'] = marksVal;
+                  }
                   setSt(() {
                     parsed = p;
                     step = 1;
@@ -407,7 +432,7 @@ class _PageCbtState extends State<PageCbt> {
                   backgroundColor: const Color(0xFF1A237E),
                   foregroundColor: Colors.white,
                 ),
-                child: const Text("Parse v10"),
+                child: const Text("Parse"),
               )
             else
               ElevatedButton(
@@ -466,8 +491,10 @@ class _PageCbtState extends State<PageCbt> {
   @override
   Widget build(BuildContext context) {
     final exams = context.watch<SchoolAdminProvider>().cbtExams;
+
+    final Widget body;
     if (exams.isEmpty) {
-      return Center(
+      body = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -485,74 +512,84 @@ class _PageCbtState extends State<PageCbt> {
           ],
         ),
       );
+    } else {
+      body = ListView.builder(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+        itemCount: exams.length,
+        itemBuilder: (context, index) {
+          final e = exams[index];
+          final examId = e["id"]?.toString() ?? "";
+          final isActive = e["is_active"] == true;
+          final isExpanded = _expandedExamIds.contains(examId);
+          final questions = _questions[examId] ?? [];
+          final subjMap = e["subjects"] is Map<String, dynamic>
+              ? e["subjects"] as Map<String, dynamic>
+              : {};
+          final clsMap = e["classes"] is Map<String, dynamic>
+              ? e["classes"] as Map<String, dynamic>
+              : {};
+          final subjectName = subjMap["name"]?.toString() ?? "Unknown";
+          final className = clsMap["name"]?.toString() ?? "";
+          final classSection = clsMap["section"]?.toString() ?? "";
+          final sec = classSection.isNotEmpty ? " $classSection" : "";
+          final classLabel = className + sec;
+          final durText = (e["duration_minutes"] ?? "").toString();
+          final durShow =
+              durText.isNotEmpty ? durText + "min" : null;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildExamCard(e, examId, isActive, isExpanded,
+                  questions, subjectName, classLabel, durShow),
+              if (isExpanded) ...[
+                _buildQuestionsHeader(examId, questions),
+                if (questions.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.help_outline,
+                              size: 48, color: Colors.grey),
+                          SizedBox(height: 12),
+                          Text(
+                            "No questions yet",
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Use Bulk Import to paste many questions at once",
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ...questions.asMap().entries.map((entry) {
+                    final qi = entry.key;
+                    final q = entry.value;
+                    final qId = q["id"]?.toString() ?? "";
+                    final correctOpt =
+                        q["correct_option"]?.toString() ?? "";
+                    final marks =
+                        (q["marks"] as num?)?.toInt() ?? 1;
+                    return _buildQuestionCard(
+                        qi, q, qId, correctOpt, marks, examId);
+                  }),
+              ],
+            ],
+          );
+        },
+      );
     }
 
     return Stack(
       children: [
-        ListView.builder(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
-          itemCount: exams.length,
-          itemBuilder: (context, index) {
-            final e = exams[index];
-            final examId = e["id"]?.toString() ?? "";
-            final isActive = e["is_active"] == true;
-            final isExpanded = _expandedExamIds.contains(examId);
-            final questions = _questions[examId] ?? [];
-            final subjMap = e["subjects"] is Map<String, dynamic>
-                ? e["subjects"] as Map<String, dynamic>
-                : {};
-            final clsMap = e["classes"] is Map<String, dynamic>
-                ? e["classes"] as Map<String, dynamic>
-                : {};
-            final subjectName = subjMap["name"]?.toString() ?? "Unknown";
-            final className = clsMap["name"]?.toString() ?? "";
-            final classSection = clsMap["section"]?.toString() ?? "";
-            final sec = classSection.isNotEmpty ? " $classSection" : "";
-            final classLabel = className + sec;
-            final durText = (e["duration_minutes"] ?? "").toString();
-            final durShow = durText.isNotEmpty ? durText + "min" : null;
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildExamCard(e, examId, isActive, isExpanded, questions, subjectName, classLabel, durShow),
-                if (isExpanded) ...[
-                  _buildQuestionsHeader(examId, questions),
-                  if (questions.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.help_outline, size: 48, color: Colors.grey),
-                            SizedBox(height: 12),
-                            Text(
-                              "No questions yet",
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              "Use Bulk Import to paste many questions at once",
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    ...questions.asMap().entries.map((entry) {
-                      final qi = entry.key;
-                      final q = entry.value;
-                      final qId = q["id"]?.toString() ?? "";
-                      final correctOpt = q["correct_option"]?.toString() ?? "";
-                      final marks = (q["marks"] as num?)?.toInt() ?? 1;
-                      return _buildQuestionCard(qi, q, qId, correctOpt, marks, examId);
-                    }),
-                ],
-              ],
-            );
-          },
-        ),
+        body,
         Positioned(
           bottom: 30,
           right: 30,
@@ -590,7 +627,9 @@ class _PageCbtState extends State<PageCbt> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? const Color(0xFF4CAF50) : Colors.grey.shade200,
+          color: isActive
+              ? const Color(0xFF4CAF50)
+              : Colors.grey.shade200,
           width: isActive ? 2 : 1,
         ),
       ),
@@ -601,10 +640,13 @@ class _PageCbtState extends State<PageCbt> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isActive ? Colors.green.shade50 : Colors.grey.shade100,
+                color: isActive
+                    ? Colors.green.shade50
+                    : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.quiz, color: isActive ? Colors.green : Colors.grey),
+              child: Icon(Icons.quiz,
+                  color: isActive ? Colors.green : Colors.grey),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -622,12 +664,14 @@ class _PageCbtState extends State<PageCbt> {
                   const SizedBox(height: 2),
                   Text(
                     "$classLabel \u2022 $subjectName",
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.grey),
                   ),
                   if (durShow != null)
                     Text(
                       durShow,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.grey.shade500),
                     ),
                 ],
               ),
@@ -635,9 +679,12 @@ class _PageCbtState extends State<PageCbt> {
             GestureDetector(
               onTap: () => widget.onToggle(examId),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.green : Colors.red.shade100,
+                  color: isActive
+                      ? Colors.green
+                      : Colors.red.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -669,8 +716,10 @@ class _PageCbtState extends State<PageCbt> {
             ),
             const SizedBox(width: 12),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-              onPressed: () => _showDeleteConfirm(examId, e["title"]),
+              icon: const Icon(Icons.delete_outline,
+                  size: 20, color: Colors.red),
+              onPressed: () =>
+                  _showDeleteConfirm(examId, e["title"]),
             ),
           ],
         ),
@@ -678,7 +727,8 @@ class _PageCbtState extends State<PageCbt> {
     );
   }
 
-  Widget _buildQuestionsHeader(String examId, List<Map<String, dynamic>> questions) {
+  Widget _buildQuestionsHeader(
+      String examId, List<Map<String, dynamic>> questions) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
       child: Row(
@@ -764,19 +814,22 @@ class _PageCbtState extends State<PageCbt> {
               Expanded(
                 child: Text(
                   q["question_text"] ?? "",
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF1B2A4A)),
+                  style: const TextStyle(
+                      fontSize: 13, color: Color(0xFF1B2A4A)),
                   maxLines: 3,
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                icon: const Icon(Icons.delete_outline,
+                    size: 18, color: Colors.red),
                 onPressed: () => _showDeleteQuestionConfirm(
                   qId,
                   examId,
                   q["question_text"],
                 ),
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(
+                    minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
             ],
@@ -796,7 +849,8 @@ class _PageCbtState extends State<PageCbt> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0F4FF),
                   borderRadius: BorderRadius.circular(6),
@@ -812,7 +866,8 @@ class _PageCbtState extends State<PageCbt> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(6),
@@ -909,7 +964,8 @@ class _PageCbtState extends State<PageCbt> {
                     "title": titleCtrl.text.trim(),
                     "classId": classId,
                     "subjectId": subjectId,
-                    "duration": int.tryParse(durCtrl.text.trim()) ?? 60,
+                    "duration":
+                        int.tryParse(durCtrl.text.trim()) ?? 60,
                     "isActive": false,
                   });
                   Navigator.pop(ctx);
@@ -931,7 +987,8 @@ class _PageCbtState extends State<PageCbt> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.delete_outline, color: Colors.red, size: 24),
@@ -940,7 +997,9 @@ class _PageCbtState extends State<PageCbt> {
           ],
         ),
         content: Text(
-          'Delete "' + (title ?? "this exam") + '"? This will also delete all its questions.',
+          'Delete "' +
+              (title ?? "this exam") +
+              '"? This will also delete all its questions.',
         ),
         actions: [
           TextButton(
@@ -974,7 +1033,8 @@ class _PageCbtState extends State<PageCbt> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.delete_outline, color: Colors.red, size: 24),
@@ -991,7 +1051,8 @@ class _PageCbtState extends State<PageCbt> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _p.deleteCbtQuestion(qId).then((_) => _loadQuestions(examId));
+              _p.deleteCbtQuestion(qId)
+                  .then((_) => _loadQuestions(examId));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
