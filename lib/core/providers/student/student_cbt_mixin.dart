@@ -206,8 +206,10 @@ mixin StudentCbtMixin on StudentBase {
         final qId = q['id'].toString();
         final correct = (q['correct_option'] as String?) ?? '';
         final marks = (q['marks'] as num?)?.toInt() ?? 1;
+        if (correct.isEmpty) continue;
         totalMarks += marks;
         final submitted = answers[qId] ?? '';
+        if (submitted.isEmpty) continue;
         if (submitted.toLowerCase() == correct.toLowerCase()) {
           score += marks;
         }

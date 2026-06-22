@@ -43,6 +43,7 @@ mixin CbtMixin on BaseProvider {
           .order('created_at', ascending: false)
           .get();
       _cbtExams = List<Map<String, dynamic>>.from(r);
+      debugPrint('CBT EXAMS LOADED: ' + _cbtExams.length.toString());
     } catch (e) {
       debugPrint('Error loading CBT exams: $e');
     }

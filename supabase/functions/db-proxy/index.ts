@@ -55,7 +55,7 @@ const SCHOOL_SCOPED_TABLES = [
 
 const STUDENT_OWNED_TABLES = [
   'scores', 'student_term_summaries', 'term_comments',
-  'student_behavioural_ratings', 'attendance',
+  'student_behavioural_ratings', 'attendance', 'cbt_attempts',
 ];
 
 // ─── Whitelist: role → table → allowed actions ───
@@ -72,7 +72,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     scores: ['select', 'insert', 'update', 'delete'],
     assignments: ['select', 'insert', 'update', 'delete'],
     attendance: ['select', 'insert', 'update', 'delete'],
-    student_term_summaries: ['select', 'insert', 'update'],
+    student_term_summaries: ['select', 'insert', 'update', 'delete'],
     term_comments: ['select', 'insert', 'update'],
     student_behavioural_ratings: ['select', 'insert', 'update'],
     academic_sessions: ['select', 'insert', 'update', 'delete'],
@@ -94,7 +94,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     scores: ['select', 'insert', 'update', 'delete'],
     assignments: ['select', 'insert', 'update', 'delete'],
     attendance: ['select', 'insert', 'update'],
-    student_term_summaries: ['select', 'insert', 'update'],
+    student_term_summaries: ['select', 'insert', 'update', 'delete'],
     term_comments: ['select', 'insert', 'update'],
     student_behavioural_ratings: ['select', 'insert', 'update'],
     academic_sessions: ['select', 'insert', 'update'],
@@ -118,15 +118,15 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     scores: ['select', 'insert', 'update'],
     assignments: ['select', 'insert', 'update', 'delete'],
     attendance: ['select', 'insert', 'update'],
-    student_term_summaries: ['select', 'insert', 'update'],
-    term_comments: ['select'],
+    student_term_summaries: ['select', 'insert', 'update', 'delete'],
+    term_comments: ['select', 'insert', 'update'],
     student_behavioural_ratings: ['select', 'insert'],
     academic_sessions: ['select'],
     terms: ['select'],
     school_settings: ['select'],
     cbt_exams: ['select', 'insert', 'update', 'delete'],
     cbt_questions: ['select', 'insert', 'update', 'delete'],
-    cbt_attempts: ['select'],
+    cbt_attempts: ['select', 'insert'],
     score_locks: ['select'],
     fee_payments: ['select'],
     fee_types: ['select'],
@@ -141,15 +141,15 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     scores: ['select'],
     assignments: ['select'],
     attendance: ['select'],
-    student_term_summaries: ['select', 'insert', 'update'],
-    term_comments: ['select'],
+    student_term_summaries: ['select', 'insert', 'update', 'delete'],
+    term_comments: ['select', 'insert', 'update'],
     student_behavioural_ratings: ['select', 'insert'],
     academic_sessions: ['select'],
     terms: ['select'],
     school_settings: ['select'],
     cbt_exams: ['select', 'insert', 'update', 'delete'],
     cbt_questions: ['select', 'insert', 'update', 'delete'],
-    cbt_attempts: ['select'],
+    cbt_attempts: ['select', 'insert'],
     score_locks: ['select'],
     fee_payments: ['select'],
     fee_types: ['select'],
@@ -164,7 +164,7 @@ const RPC_WHITELIST: Record<string, string[]> = {
   super_admin: ['compute_term_summaries'],
   school_admin: ['compute_term_summaries'],
   teacher: [],
-  student: ['get_cbt_questions', 'score_c_attempt'],
+  student: ['get_cbt_questions', 'score_cbt_attempt'],
 };
 
 // ─── JWT helpers ───

@@ -662,11 +662,12 @@ abstract class BaseProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadCbtExams() async {}
+
   Future<void> _loadDeferredData() async {
     try {
       await Future.wait([
         loadClassSubjects(),
-        loadScores(),
         loadAssignments(),
         loadCbtExams(),
       ]);
@@ -695,7 +696,6 @@ abstract class BaseProvider extends ChangeNotifier {
   Future<void> loadClassSubjects() async {}
   Future<void> loadAssignments() async {}
   Future<void> loadScores() async {}
-  Future<void> loadCbtExams() async {}
   Future<void> loadAcademicSessions() async {}
 
   Future<bool> updateSchoolSettingsInDb({

@@ -133,7 +133,49 @@ mixin TeacherCbtMixin on TeacherBase {
     }
   }
 
-  Future<bool> deleteQuestion(String qId) async {
+  
+  Future<bool> updateQuestion({
+    required String questionId,
+    required String questionText,
+    required String correctOption,
+    String? optionA,
+    String? optionB,
+    String? optionC,
+    String? optionD,
+    String? explanation,
+    int marks = 1,
+  }) async {
+    try {
+      await DbProxy.instance.from('cbt_questions').eq('id', questionId).update({
+            'question_text': questionText,
+            'option_a': optionA,
+            'option_b': optionB,
+            'option_c': optionC,
+            'option_d': optionD,
+            'correct_option': correctOption.toLowerCase(),
+            'explanation': explanation,
+            'marks': marks,
+          });
+      final i = _myCbtQuestions.indexWhere((q) => q['id'].toString() == questionId);
+      if (i != -1) {
+        _myCbtQuestions[i] = Map<String, dynamic>.from(_myCbtQuestions[i]);
+        _myCbtQuestions[i]['question_text'] = questionText;
+        _myCbtQuestions[i]['option_a'] = optionA;
+        _myCbtQuestions[i]['option_b'] = optionB;
+        _myCbtQuestions[i]['option_c'] = optionC;
+        _myCbtQuestions[i]['option_d'] = optionD;
+        _myCbtQuestions[i]['correct_option'] = correctOption.toLowerCase();
+        _myCbtQuestions[i]['explanation'] = explanation;
+        _myCbtQuestions[i]['marks'] = marks;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error updating question: $e');
+      return false;
+    }
+  }
+Future<bool> deleteQuestion(String qId) async {
     try {
       await DbProxy.instance.from('cbt_questions').eq('id', qId).delete();
       _myCbtQuestions.removeWhere((q) => q['id'].toString() == qId);
