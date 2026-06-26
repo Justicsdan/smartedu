@@ -12,7 +12,6 @@ import 'pages/teacher_my_classes.dart';
 import 'pages/teacher_enter_scores.dart';
 import 'pages/teacher_my_students.dart';
 import 'pages/teacher_assignments.dart';
-import 'pages/teacher_results.dart';
 import 'pages/teacher_attendance.dart';
 import 'pages/teacher_publish_results.dart';
 import 'pages/teacher_cbt_page.dart';
@@ -73,7 +72,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     }
 
     if (isFormMaster || isSubjectTeacher) {
-      items.add(const _NavItem(id: 'results', icon: Icons.bar_chart_rounded, label: 'Results'));
     }
 
     return items;
@@ -534,8 +532,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         return const TeacherPublishResults();
       case 'cbt':
         return const TeacherCbtPage();
-      case 'results':
-        return const TeacherResultsPage();
       default:
         return const _TeacherHomePage();
     }
