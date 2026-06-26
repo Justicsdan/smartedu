@@ -581,9 +581,9 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
       (icon: Icons.layers_rounded, title: 'Classes', desc: 'Manage classes & subjects', color: const Color(0xFF7B1FA2), bg: const Color(0xFFF3E5F5), index: 3, count: widget.classCount),
       (icon: Icons.calendar_month_rounded, title: 'Academic', desc: 'Sessions, terms & population', color: const Color(0xFF00838F), bg: const Color(0xFFE0F7FA), index: 4, count: null),
       (icon: Icons.edit_note_rounded, title: 'Score Entry', desc: 'Enter scores by class & subject', color: const Color(0xFF2E7D32), bg: const Color(0xFFE8F5E9), index: 5, count: null),
-      (icon: Icons.publish_rounded, title: 'Publish Results', desc: 'Compute summaries & publish', color: const Color(0xFFC62828), bg: const Color(0xFFFFEBEE), index: 6, count: null),
-      (icon: Icons.settings_rounded, title: 'Settings', desc: 'Profile, branding & grading', color: const Color(0xFF4527A0), bg: const Color(0xFFEDE7F6), index: 7, count: null),
-      (icon: Icons.badge_rounded, title: 'Credentials', desc: 'Generate & print login cards', color: const Color(0xFFF57F17), bg: const Color(0xFFFFF8E1), index: 8, count: null),
+      (icon: Icons.publish_rounded, title: 'Publish Results', desc: 'Compute summaries & publish', color: const Color(0xFFC62828), bg: const Color(0xFFFFEBEE), index: 7, count: null),
+      (icon: Icons.settings_rounded, title: 'Settings', desc: 'Profile, branding & grading', color: const Color(0xFF4527A0), bg: const Color(0xFFEDE7F6), index: 8, count: null),
+      (icon: Icons.badge_rounded, title: 'Credentials', desc: 'Generate & print login cards', color: const Color(0xFFF57F17), bg: const Color(0xFFFFF8E1), index: 9, count: null),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
