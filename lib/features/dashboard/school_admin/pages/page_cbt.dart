@@ -25,6 +25,27 @@ class _PageCbtState extends State<PageCbt> {
   final Set<String> _expandedExamIds = {};
   Map<String, List<Map<String, dynamic>>> _questions = {};
 
+  static const List<MapEntry<int, String>> _timeOptions = [
+    MapEntry(0, "Not set"),
+    MapEntry(15, "15 seconds"),
+    MapEntry(30, "30 seconds"),
+    MapEntry(45, "45 seconds"),
+    MapEntry(60, "1 minute"),
+    MapEntry(90, "1 min 30 sec"),
+    MapEntry(120, "2 minutes"),
+    MapEntry(180, "3 minutes"),
+    MapEntry(300, "5 minutes"),
+  ];
+
+  String _formatTimeAllocation(int? seconds) {
+    if (seconds == null || seconds == 0) return "";
+    if (seconds < 60) return "${seconds}s";
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    if (secs == 0) return "${mins}min";
+    return "${mins}m ${secs}s";
+  }
+
   SchoolAdminProvider get _p => context.read<SchoolAdminProvider>();
 
   Future<void> _loadQuestions(String examId) async {
@@ -56,6 +77,7 @@ class _PageCbtState extends State<PageCbt> {
     final explCtrl = TextEditingController();
     final marksCtrl = TextEditingController();
     String correctOpt = "a";
+    int selectedTime = 0;
 
     showDialog(
       context: context,
@@ -123,13 +145,36 @@ class _PageCbtState extends State<PageCbt> {
                   onChanged: (v) => setSt(() => correctOpt = v!),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: marksCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Marks *",
-                    border: OutlineInputBorder(),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: marksCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: "Marks *",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: selectedTime,
+                        decoration: const InputDecoration(
+                          labelText: "Time Limit",
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _timeOptions
+                            .map((e) => DropdownMenuItem(
+                                  value: e.key,
+                                  child: Text(e.value, style: const TextStyle(fontSize: 13)),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setSt(() => selectedTime = v ?? 0),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -163,6 +208,7 @@ class _PageCbtState extends State<PageCbt> {
                   correctOption: correctOpt,
                   explanation: explCtrl.text.trim(),
                   marks: marks,
+                  timeAllocation: selectedTime,
                 ).then((_) {
                   Navigator.pop(ctx);
                   _loadQuestions(examId);
@@ -197,6 +243,7 @@ class _PageCbtState extends State<PageCbt> {
           'option_d': optD ?? '',
           'correct_option': correctOption,
           'marks': 0,
+          'time_allocation': 0,
         });
       }
       questionText = null;
@@ -232,6 +279,7 @@ class _PageCbtState extends State<PageCbt> {
     int step = 0;
     final textCtrl = TextEditingController();
     final marksCtrl = TextEditingController(text: '2');
+    int selectedTime = 0;
     List<Map<String, dynamic>> parsed = [];
 
     showDialog(
@@ -259,7 +307,6 @@ class _PageCbtState extends State<PageCbt> {
                         Row(
                           children: [
                             Expanded(
-                              flex: 2,
                               child: TextField(
                                 controller: marksCtrl,
                                 keyboardType: TextInputType.number,
@@ -272,6 +319,28 @@ class _PageCbtState extends State<PageCbt> {
                                     vertical: 10,
                                   ),
                                 ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                value: selectedTime,
+                                decoration: const InputDecoration(
+                                  labelText: "Time per question",
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                ),
+                                items: _timeOptions
+                                    .map((e) => DropdownMenuItem(
+                                          value: e.key,
+                                          child: Text(e.value, style: const TextStyle(fontSize: 13)),
+                                        ))
+                                    .toList(),
+                                onChanged: (v) => setSt(() => selectedTime = v ?? 0),
                               ),
                             ),
                           ],
@@ -313,7 +382,11 @@ class _PageCbtState extends State<PageCbt> {
                         parsed.length.toString() +
                             " questions parsed. Each worth " +
                             marksCtrl.text.trim() +
-                            " marks.",
+                            " marks" +
+                            (selectedTime > 0
+                                ? ", " + _formatTimeAllocation(selectedTime) + " each"
+                                : "") +
+                            ".",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF2E7D32),
@@ -338,6 +411,10 @@ class _PageCbtState extends State<PageCbt> {
                                     .toUpperCase();
                             final marksText =
                                 "  |  Marks: " + (q["marks"] ?? 1).toString();
+                            final timeText = (q["time_allocation"] as int?) != null &&
+                                    (q["time_allocation"] as int?)! > 0
+                                ? "  |  " + _formatTimeAllocation(q["time_allocation"] as int?)
+                                : "";
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Container(
@@ -377,7 +454,7 @@ class _PageCbtState extends State<PageCbt> {
                                       ),
                                     ),
                                     Text(
-                                      ansText + marksText,
+                                      ansText + marksText + timeText,
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Color(0xFF1A237E),
@@ -422,6 +499,7 @@ class _PageCbtState extends State<PageCbt> {
                   }
                   for (final q in p) {
                     q['marks'] = marksVal;
+                    q['time_allocation'] = selectedTime;
                   }
                   setSt(() {
                     parsed = p;
@@ -577,8 +655,10 @@ class _PageCbtState extends State<PageCbt> {
                         q["correct_option"]?.toString() ?? "";
                     final marks =
                         (q["marks"] as num?)?.toInt() ?? 1;
+                    final timeAlloc =
+                        (q["time_allocation"] as num?)?.toInt() ?? 0;
                     return _buildQuestionCard(
-                        qi, q, qId, correctOpt, marks, examId);
+                        qi, q, qId, correctOpt, marks, timeAlloc, examId);
                   }),
               ],
             ],
@@ -777,8 +857,10 @@ class _PageCbtState extends State<PageCbt> {
     String qId,
     String correctOpt,
     int marks,
+    int timeAlloc,
     String examId,
   ) {
+    final timeLabel = _formatTimeAllocation(timeAlloc);
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 8),
       padding: const EdgeInsets.all(14),
@@ -881,6 +963,33 @@ class _PageCbtState extends State<PageCbt> {
                   ),
                 ),
               ),
+              if (timeLabel.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.timer_outlined,
+                          size: 14, color: Color(0xFFE65100)),
+                      const SizedBox(width: 4),
+                      Text(
+                        timeLabel,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE65100),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ],

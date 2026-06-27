@@ -14,6 +14,27 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
   final Set<String> _loadingExamIds = {};
   Map<String, List<Map<String, dynamic>>> _questions = {};
 
+  static const List<MapEntry<int, String>> _timeOptions = [
+    MapEntry(0, "Not set"),
+    MapEntry(15, "15 seconds"),
+    MapEntry(30, "30 seconds"),
+    MapEntry(45, "45 seconds"),
+    MapEntry(60, "1 minute"),
+    MapEntry(90, "1 min 30 sec"),
+    MapEntry(120, "2 minutes"),
+    MapEntry(180, "3 minutes"),
+    MapEntry(300, "5 minutes"),
+  ];
+
+  String _formatTimeAllocation(int? seconds) {
+    if (seconds == null || seconds == 0) return "";
+    if (seconds < 60) return "${seconds}s";
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    if (secs == 0) return "${mins}min";
+    return "${mins}m ${secs}s";
+  }
+
   TeacherProvider get _p => context.read<TeacherProvider>();
 
   Future<void> _loadQuestions(String examId) async {
@@ -48,6 +69,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
     final explCtrl = TextEditingController();
     final marksCtrl = TextEditingController();
     String correctOpt = 'a';
+    int selectedTime = 0;
 
     showDialog(
       context: context,
@@ -70,7 +92,22 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(value: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
                 const SizedBox(height: 12),
-                TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks *', border: OutlineInputBorder())),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks *', border: OutlineInputBorder())),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: selectedTime,
+                        decoration: const InputDecoration(labelText: 'Time Limit', border: OutlineInputBorder()),
+                        items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (v) => setSt(() => selectedTime = v ?? 0),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 TextField(controller: explCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Explanation (optional)', border: OutlineInputBorder(), alignLabelWithHint: true)),
               ],
@@ -81,7 +118,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
             ElevatedButton(onPressed: () {
               if (qCtrl.text.trim().isEmpty) return;
               final marks = int.tryParse(marksCtrl.text.trim()) ?? 1;
-              _p.addQuestion(examId: examId, questionText: qCtrl.text.trim(), optionA: optA.text.trim(), optionB: optB.text.trim(), optionC: optC.text.trim(), optionD: optD.text.trim(), correctOption: correctOpt, explanation: explCtrl.text.trim(), marks: marks).then((ok) { if (ok) { Navigator.pop(ctx); _loadQuestions(examId); } });
+              _p.addQuestion(examId: examId, questionText: qCtrl.text.trim(), optionA: optA.text.trim(), optionB: optB.text.trim(), optionC: optC.text.trim(), optionD: optD.text.trim(), correctOption: correctOpt, explanation: explCtrl.text.trim(), marks: marks, timeAllocation: selectedTime).then((ok) { if (ok) { Navigator.pop(ctx); _loadQuestions(examId); } });
             }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white), child: const Text('Add Question')),
           ],
         ),
@@ -98,6 +135,8 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
     final explCtrl = TextEditingController(text: question['explanation']?.toString() ?? '');
     final marksCtrl = TextEditingController(text: (question['marks'] ?? 1).toString());
     String correctOpt = (question['correct_option']?.toString() ?? 'a').toLowerCase();
+    int selectedTime = (question['time_allocation'] as num?)?.toInt() ?? 0;
+    if (!_timeOptions.any((e) => e.key == selectedTime)) selectedTime = 0;
 
     showDialog(
       context: context,
@@ -120,7 +159,22 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(value: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
                 const SizedBox(height: 12),
-                TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks *', border: OutlineInputBorder())),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks *', border: OutlineInputBorder())),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        value: selectedTime,
+                        decoration: const InputDecoration(labelText: 'Time Limit', border: OutlineInputBorder()),
+                        items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (v) => setSt(() => selectedTime = v ?? 0),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 TextField(controller: explCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Explanation (optional)', border: OutlineInputBorder(), alignLabelWithHint: true)),
               ],
@@ -132,7 +186,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
               if (qCtrl.text.trim().isEmpty) return;
               final marks = int.tryParse(marksCtrl.text.trim()) ?? 1;
               final qId = question['id']?.toString() ?? '';
-              _p.updateQuestion(questionId: qId, questionText: qCtrl.text.trim(), optionA: optA.text.trim(), optionB: optB.text.trim(), optionC: optC.text.trim(), optionD: optD.text.trim(), correctOption: correctOpt, explanation: explCtrl.text.trim(), marks: marks).then((ok) { if (ok) { Navigator.pop(ctx); _loadQuestions(examId); } });
+              _p.updateQuestion(questionId: qId, questionText: qCtrl.text.trim(), optionA: optA.text.trim(), optionB: optB.text.trim(), optionC: optC.text.trim(), optionD: optD.text.trim(), correctOption: correctOpt, explanation: explCtrl.text.trim(), marks: marks, timeAllocation: selectedTime).then((ok) { if (ok) { Navigator.pop(ctx); _loadQuestions(examId); } });
             }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white), child: const Text('Save Changes')),
           ],
         ),
@@ -170,7 +224,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
         if (questionText == null) { questionText = trimmed.replaceFirst(RegExp(r'^\d+[\.\)\s]+'), ''); } else { questionText = '$questionText $trimmed'; }
       }
       if (questionText != null && questionText.isNotEmpty) {
-        results.add({'question_text': questionText, 'option_a': optA ?? '', 'option_b': optB ?? '', 'option_c': optC ?? '', 'option_d': optD ?? '', 'correct_option': correctOption, 'marks': 0});
+        results.add({'question_text': questionText, 'option_a': optA ?? '', 'option_b': optB ?? '', 'option_c': optC ?? '', 'option_d': optD ?? '', 'correct_option': correctOption, 'marks': 0, 'time_allocation': 0});
       }
     }
     return results;
@@ -180,6 +234,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
     int step = 0;
     final textCtrl = TextEditingController();
     final marksCtrl = TextEditingController(text: '2');
+    int selectedTime = 0;
     List<Map<String, dynamic>> parsed = [];
 
     showDialog(
@@ -194,7 +249,9 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     const Text('Paste questions below. Separate each question with a blank line.', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 12),
                     Row(children: [
-                      Expanded(flex: 2, child: TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks per question *', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)))),
+                      Expanded(child: TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks per question *', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)))),
+                      const SizedBox(width: 12),
+                      Expanded(child: DropdownButtonFormField<int>(value: selectedTime, decoration: const InputDecoration(labelText: 'Time per question', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(), onChanged: (v) => setSt(() => selectedTime = v ?? 0))),
                     ]),
                     const SizedBox(height: 12),
                     Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)), child: const Text('What is 2+2?\nA. 3\nB. 4\nC. 5\nD. 6\nAns: B\n\nCapital of Nigeria?\nA. Lagos\nB. Abuja\nC. Kano\nD. Ibadan\nAns: B', style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.grey))),
@@ -202,16 +259,17 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     TextField(controller: textCtrl, maxLines: 12, decoration: const InputDecoration(labelText: 'Paste questions here', border: OutlineInputBorder(), alignLabelWithHint: true)),
                   ]))
                 : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('${parsed.length} questions parsed. Each worth ${marksCtrl.text.trim()} marks.', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+                    Text('${parsed.length} questions parsed. Each worth ${marksCtrl.text.trim()} marks${selectedTime > 0 ? ', ${_formatTimeAllocation(selectedTime)} each' : ''}.', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
                     const SizedBox(height: 12),
                     SizedBox(height: 320, width: 480, child: ListView.builder(itemCount: parsed.length, itemBuilder: (ctx, i) {
                       final q = parsed[i];
+                      final timeText = (q['time_allocation'] as int?) != null && (q['time_allocation'] as int?)! > 0 ? '  |  ${_formatTimeAllocation(q['time_allocation'] as int?)}' : '';
                       return Padding(padding: const EdgeInsets.only(bottom: 8), child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.grey.shade200)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('${i + 1}. ${q['question_text']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
                         Text('A. ${q['option_a'] ?? '-'}   B. ${q['option_b'] ?? '-'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                         Text('C. ${q['option_c'] ?? '-'}   D. ${q['option_d'] ?? '-'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                        Text('Answer: ${q['correct_option'].toString().toUpperCase()}  |  Marks: ${q['marks']}', style: const TextStyle(fontSize: 11, color: Color(0xFF0D47A1), fontWeight: FontWeight.w600)),
+                        Text('Answer: ${q['correct_option'].toString().toUpperCase()}  |  Marks: ${q['marks']}$timeText', style: const TextStyle(fontSize: 11, color: Color(0xFF0D47A1), fontWeight: FontWeight.w600)),
                       ])));
                     })),
                   ]),
@@ -225,7 +283,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                 if (marksVal < 1) return;
                 final p = _parsePastedQuestions(textCtrl.text);
                 if (p.isEmpty) return;
-                for (final q in p) { q['marks'] = marksVal; }
+                for (final q in p) { q['marks'] = marksVal; q['time_allocation'] = selectedTime; }
                 setSt(() { parsed = p; step = 1; });
               }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white), child: const Text('Parse'))
             else
@@ -285,9 +343,14 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
           final className = e['classes'] is Map<String, dynamic> ? (e['classes'] as Map)['name']?.toString() ?? '' : '';
           final classSection = e['classes'] is Map<String, dynamic> ? (e['classes'] as Map)['section']?.toString() ?? '' : '';
           int totalMarks = 0;
-          for (final q in questions) { totalMarks += (q['marks'] as num?)?.toInt() ?? 1; }
+          int totalTime = 0;
+          for (final q in questions) {
+            totalMarks += (q['marks'] as num?)?.toInt() ?? 1;
+            totalTime += (q['time_allocation'] as num?)?.toInt() ?? 0;
+          }
           final durText = (e['duration_minutes'] ?? '').toString();
           final durShow = durText.isNotEmpty ? '$durText min' : null;
+          final totalTimeLabel = _formatTimeAllocation(totalTime);
 
           return Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
@@ -306,6 +369,12 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     if (durShow != null) Text(durShow, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                     if (durShow != null && questions.isNotEmpty) const SizedBox(width: 12),
                     if (questions.isNotEmpty) Text('${questions.length} Qs \u2022 Total: $totalMarks marks', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    if (totalTimeLabel.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.timer_outlined, size: 13, color: Color(0xFFE65100)),
+                      const SizedBox(width: 2),
+                      Text(totalTimeLabel, style: TextStyle(fontSize: 11, color: Color(0xFFE65100), fontWeight: FontWeight.w600)),
+                    ],
                   ]),
                 ])),
                 GestureDetector(onTap: () => _p.toggleCbtExam(examId), child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: isActive ? Colors.green : Colors.red.shade100, borderRadius: BorderRadius.circular(20)), child: Text(isActive ? 'Active' : 'Inactive', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isActive ? Colors.green : Colors.red)))),
@@ -333,6 +402,8 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                   final qId = q['id']?.toString() ?? '';
                   final correctOpt = q['correct_option']?.toString() ?? '';
                   final marks = (q['marks'] as num?)?.toInt() ?? 1;
+                  final timeAlloc = (q['time_allocation'] as num?)?.toInt() ?? 0;
+                  final timeLabel = _formatTimeAllocation(timeAlloc);
                   return Container(margin: const EdgeInsets.fromLTRB(24, 0, 24, 8), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade100)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(width: 28, height: 28, decoration: BoxDecoration(color: const Color(0xFF0D47A1), borderRadius: BorderRadius.circular(6)), alignment: Alignment.center, child: Text('${qi + 1}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
@@ -350,6 +421,14 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                       Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(6)), child: Text('Ans: ${_correctOptionLabel(correctOpt)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1)))),
                       const SizedBox(width: 12),
                       Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(6)), child: Text('$marks marks', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)))),
+                      if (timeLabel.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(6)), child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.timer_outlined, size: 14, color: Color(0xFFE65100)),
+                          const SizedBox(width: 4),
+                          Text(timeLabel, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE65100))),
+                        ])),
+                      ],
                     ]),
                   ]));
                 }),

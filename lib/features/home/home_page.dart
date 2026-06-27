@@ -273,7 +273,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 28),
-        _animatedGradientText('Complete School\nManagement System', w ? 38 : 28, FontWeight.w900, -0.8, 1.15),
+        _animatedGradientText('School\nManagement System', w ? 38 : 28, FontWeight.w900, -0.8, 1.15),
         const SizedBox(height: 16),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: w ? 40 : 20),

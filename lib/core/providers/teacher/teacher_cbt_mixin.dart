@@ -110,6 +110,7 @@ mixin TeacherCbtMixin on TeacherBase {
     String? optionD,
     String? explanation,
     int marks = 1,
+    int timeAllocation = 0,
   }) async {
     try {
       final r = await DbProxy.instance.from('cbt_questions').insert({
@@ -123,6 +124,7 @@ mixin TeacherCbtMixin on TeacherBase {
             'correct_option': correctOption.toLowerCase(),
             'explanation': explanation,
             'marks': marks,
+            'time_allocation': timeAllocation,
           });
       _myCbtQuestions.add(r.first);
       notifyListeners();
@@ -133,7 +135,6 @@ mixin TeacherCbtMixin on TeacherBase {
     }
   }
 
-  
   Future<bool> updateQuestion({
     required String questionId,
     required String questionText,
@@ -144,6 +145,7 @@ mixin TeacherCbtMixin on TeacherBase {
     String? optionD,
     String? explanation,
     int marks = 1,
+    int timeAllocation = 0,
   }) async {
     try {
       await DbProxy.instance.from('cbt_questions').eq('id', questionId).update({
@@ -155,6 +157,7 @@ mixin TeacherCbtMixin on TeacherBase {
             'correct_option': correctOption.toLowerCase(),
             'explanation': explanation,
             'marks': marks,
+            'time_allocation': timeAllocation,
           });
       final i = _myCbtQuestions.indexWhere((q) => q['id'].toString() == questionId);
       if (i != -1) {
@@ -167,6 +170,7 @@ mixin TeacherCbtMixin on TeacherBase {
         _myCbtQuestions[i]['correct_option'] = correctOption.toLowerCase();
         _myCbtQuestions[i]['explanation'] = explanation;
         _myCbtQuestions[i]['marks'] = marks;
+        _myCbtQuestions[i]['time_allocation'] = timeAllocation;
       }
       notifyListeners();
       return true;
@@ -175,7 +179,8 @@ mixin TeacherCbtMixin on TeacherBase {
       return false;
     }
   }
-Future<bool> deleteQuestion(String qId) async {
+
+  Future<bool> deleteQuestion(String qId) async {
     try {
       await DbProxy.instance.from('cbt_questions').eq('id', qId).delete();
       _myCbtQuestions.removeWhere((q) => q['id'].toString() == qId);
@@ -201,10 +206,13 @@ Future<bool> deleteQuestion(String qId) async {
                 (q['correct_option'] ?? 'a').toString().toLowerCase(),
             'explanation': q['explanation'],
             'marks': q['marks'] ?? 1,
+            'time_allocation': q['time_allocation'] ?? 0,
           }).toList();
       for (int i = 0; i < rows.length; i += 50) {
         final end = i + 50 > rows.length ? rows.length : i + 50;
-        await DbProxy.instance.from('cbt_questions').insert(rows.sublist(i, end));
+        await DbProxy.instance
+            .from('cbt_questions')
+            .insert(rows.sublist(i, end));
       }
       await loadQuestions(examId);
       return true;
