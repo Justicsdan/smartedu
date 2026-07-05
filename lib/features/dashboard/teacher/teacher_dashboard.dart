@@ -15,6 +15,7 @@ import 'pages/teacher_assignments.dart';
 import 'pages/teacher_attendance.dart';
 import 'pages/teacher_publish_results.dart';
 import 'pages/teacher_cbt_page.dart';
+import 'pages/teacher_ace_paces.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final Map<String, dynamic>? teacherData;
@@ -702,20 +703,7 @@ class _TeacherPaceScoresPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_stories_rounded, size: 64, color: Color(0xFF9CA3AF)),
-          SizedBox(height: 16),
-          Text('PACE Scores',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
-          SizedBox(height: 8),
-          Text('Select a class to enter PACE scores',
-              style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF))),
-        ],
-      ),
-    );
+    return const TeacherAcePacesPage();
   }
 }
 
