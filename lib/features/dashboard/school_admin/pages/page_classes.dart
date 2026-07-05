@@ -1133,9 +1133,6 @@ class _PageClassesState extends State<PageClasses>
                       dialogError = 'Please fill in the section field');
                   return;
                 }
-                final id = DateTime.now()
-                    .millisecondsSinceEpoch
-                    .toString();
                 if (type == 'Class') {
                   if (_classExists(name, section)) {
                     setDlg(() =>
@@ -1143,7 +1140,6 @@ class _PageClassesState extends State<PageClasses>
                     return;
                   }
                   widget.onAddClass({
-                    'id': id,
                     'name': name,
                     'section': section,
                     'studentCount': 0,
@@ -1160,10 +1156,9 @@ class _PageClassesState extends State<PageClasses>
                         dialogError = 'This subject already exists');
                     return;
                   }
-                  widget.onAddSubject({'id': id, 'name': name});
+                  widget.onAddSubject({'name': name});
                 } else {
                   widget.onAddAssignment({
-                    'id': id,
                     'title': name,
                     'classId': selectedClass,
                     'subjectId': selectedSubject,

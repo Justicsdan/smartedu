@@ -52,7 +52,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
                     pw.Text("STUDENT TERMLY REPORT CARD",
-                        style: const pw.TextStyle(
+                        style: pw.TextStyle(
                             fontSize: 24, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 5),
                     pw.Divider(thickness: 2),
@@ -61,14 +61,14 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
                         pw.Text("Name: $studentName",
-                            style: const pw.TextStyle(fontSize: 14)),
+                            style: pw.TextStyle(fontSize: 14)),
                         pw.Text("Class: $className",
-                            style: const pw.TextStyle(fontSize: 14)),
+                            style: pw.TextStyle(fontSize: 14)),
                       ],
                     ),
                     pw.SizedBox(height: 5),
                     pw.Text("Term: $selectedTerm",
-                        style: const pw.TextStyle(
+                        style: pw.TextStyle(
                             fontSize: 14, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 20),
                     pw.Divider(thickness: 1),
@@ -77,7 +77,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
                 ),
               ),
               pw.TableHelper.fromTextArray(
-                headerStyle: const pw.TextStyle(
+                headerStyle: pw.TextStyle(
                     fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration:
                     const pw.BoxDecoration(color: PdfColors.blue800),
@@ -174,10 +174,10 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
               children: [
                 Expanded(
                     child: Text("Student: $myName",
-                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                        style: TextStyle(fontWeight: FontWeight.w600))),
                 Expanded(
                     child: Text("Class: $myClass",
-                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                        style: TextStyle(fontWeight: FontWeight.w600))),
               ],
             ),
           ),
@@ -235,7 +235,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
                       const Icon(Icons.hourglass_empty, size: 50, color: Colors.grey),
                       const SizedBox(height: 16),
                       Text("No results for $selectedTerm yet.",
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey)),
@@ -270,10 +270,10 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
 
                       return DataRow(
                         cells: [
-                          DataCell(Text(subject, style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Text(subject, style: TextStyle(fontWeight: FontWeight.w500))),
                           DataCell(
                             Center(
-                              child: Text("${data["total"] ?? 0}", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3C72))),
+                              child: Text("${data["total"] ?? 0}", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3C72))),
                             ),
                           ),
                           DataCell(
@@ -343,7 +343,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(assign["title"]!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                          Text(assign["title"]!, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                           const SizedBox(height: 4),
                           Text(assign["subject"]!, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                         ],
@@ -442,7 +442,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
               children: [
                 const SizedBox(width: 90, child: Center(child: Text("TIME", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
                 ...days.asMap().entries.map((entry) => Expanded(
-                      child: Center(child: Text(entry.value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
+                      child: Center(child: Text(entry.value, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
                     )),
               ],
             ),

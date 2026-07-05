@@ -200,7 +200,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSchoolType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
       return;
     }
 
@@ -271,7 +271,8 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
         insertData['official_email'] = _emailController.text.trim();
       }
 
-      final schoolResponse = await DbProxy.instance.from('schools').select().single().insert(insertData);
+      final schoolResult = await DbProxy.instance.from('schools').insert(insertData);
+      final schoolResponse = schoolResult.first;
 
       final schoolId = schoolResponse['id'] as String;
 
@@ -631,7 +632,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
               if (_formKey.currentState!.validate() && _selectedSchoolType != null) {
                 setState(() => _currentStep = 1);
               } else if (_selectedSchoolType == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
@@ -769,7 +770,12 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
           focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E), width: 1.5)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         ),
-        items: items.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 14, color: Color(0xFF111827)))).toList(),
+        items: items.map((String v) {
+          return DropdownMenuItem<String>(
+            value: v,
+            child: Text(v, style: const TextStyle(fontSize: 14, color: Color(0xFF111827))),
+          );
+        }).toList(),
         onChanged: onChanged,
       ),
     );

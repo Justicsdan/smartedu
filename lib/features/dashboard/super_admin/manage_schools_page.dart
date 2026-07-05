@@ -207,11 +207,11 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                     final bytes = Uint8List.fromList((rd.result as ByteBuffer).asUint8List());
                     final ext = _logoFile!.name.split('.').last;
                     final sp = 'schools/${DateTime.now().millisecondsSinceEpoch}.$ext';
-                    await Supabase.instance.client.storage.from('school-logos').upload(sp, bytes, fileOptions: const FileOptions(upsert: true));
+                    await Supabase.instance.client.storage.from('school-logos').uploadBinary(sp, bytes, fileOptions: const FileOptions(upsert: true));
                     logoUrl = Supabase.instance.client.storage.from('school-logos').getPublicUrl(sp);
                   }
                   final provider = context.read<SuperAdminProvider>();
-                  final result = await provider.addSchool(
+                  final result = await provider.addSchoolWithSetup(
                     name: _nameController.text.trim(),
                     location: _locationController.text.trim(),
                     schoolType: _schoolType,

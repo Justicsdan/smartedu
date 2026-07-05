@@ -511,7 +511,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           final bytes = await _pickedXFile!.readAsBytes();
           await Supabase.instance.client.storage
               .from('passports')
-              .upload(path, bytes,
+              .uploadBinary(path, bytes,
                   fileOptions: const FileOptions(upsert: true));
           _data['passport_url'] =
               Supabase.instance.client.storage
@@ -524,7 +524,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
       _data['school_id'] = schoolId;
       _data['is_active'] = true;
-      _data.remove('pin');
+      debugPrint('DATA TO INSERT: $_data');
 
       final result = await Supabase.instance.client
           .from('students')
@@ -679,6 +679,13 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     _field('Admission No', 'admission_no',
                         icon: Icons.fingerprint_rounded,
                         validator: _vAdm),
+                    _field('PIN (4 digits)', 'pin',
+                        icon: Icons.lock_outline,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'PIN is required';
+                          if (v.trim().length < 4) return 'PIN must be at least 4 digits';
+                          return null;
+                        }),
                     Row(
                       children: [
                         Expanded(

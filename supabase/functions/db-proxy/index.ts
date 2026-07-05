@@ -48,14 +48,14 @@ const SCHOOL_SCOPED_TABLES = [
   'students', 'teachers', 'classes', 'subjects', 'class_subjects',
   'scores', 'assignments', 'attendance', 'student_term_summaries',
   'term_comments', 'student_behavioural_ratings', 'academic_sessions',
-  'terms', 'school_settings', 'audit_logs', 'announcements', 'complaints', 'assignment_submissions', 'score_locks', 'fee_types', 'fee_payments', 'cbt_exams', 'cbt_questions',
+  'terms', 'school_settings', 'audit_logs', 'announcements', 'complaints', 'assignment_submissions', 'score_locks', 'fee_types', 'fee_payments', 'cbt_exams', 'cbt_questions', 'ace_pace_scores', 'ace_term_reports',
 ];
 
 // ─── Tables where student can only see their own rows ───
 
 const STUDENT_OWNED_TABLES = [
   'scores', 'student_term_summaries', 'term_comments',
-  'student_behavioural_ratings', 'attendance', 'cbt_attempts',
+  'student_behavioural_ratings', 'attendance', 'cbt_attempts', 'ace_pace_scores', 'ace_term_reports',
 ];
 
 // ─── Whitelist: role → table → allowed actions ───
@@ -81,6 +81,8 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     audit_logs: ['select', 'insert'],
     fee_types: ['select', 'insert', 'update', 'delete'],
     fee_payments: ['select', 'insert', 'update'],
+    ace_pace_scores: ['select', 'insert', 'update', 'delete'],
+    ace_term_reports: ['select', 'insert', 'update', 'delete'],
     announcements: ['select', 'insert', 'update', 'delete'],
     assignment_submissions: ['select', 'insert', 'update', 'delete'],
   },
@@ -107,6 +109,8 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     complaints: ['select', 'insert', 'update'],
     score_locks: ['select', 'insert', 'update'],
     cbt_exams: ['select', 'insert', 'update', 'delete'],
+    ace_pace_scores: ['select', 'insert', 'update', 'delete'],
+    ace_term_reports: ['select', 'insert', 'update', 'delete'],
     cbt_questions: ['select', 'insert', 'update', 'delete'],
   },
   teacher: {
@@ -132,6 +136,8 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     fee_types: ['select'],
     complaints: ['select', 'insert'],
     assignment_submissions: ['select', 'insert'],
+    ace_pace_scores: ['select', 'insert', 'update'],
+    ace_term_reports: ['select', 'insert', 'update'],
   },
   student: {
     classes: ['select'],
@@ -155,14 +161,16 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     fee_types: ['select'],
     complaints: ['select', 'insert'],
     assignment_submissions: ['select', 'insert'],
+    ace_pace_scores: ['select'],
+    ace_term_reports: ['select'],
   },
 };
 
 // ─── RPC whitelist ───
 
 const RPC_WHITELIST: Record<string, string[]> = {
-  super_admin: ['compute_term_summaries'],
   school_admin: ['compute_term_summaries'],
+  super_admin: ['compute_term_summaries'],
   teacher: [],
   student: ['get_cbt_questions', 'score_cbt_attempt'],
 };

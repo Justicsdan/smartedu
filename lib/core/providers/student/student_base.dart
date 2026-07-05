@@ -138,6 +138,7 @@ abstract class StudentBase extends ChangeNotifier {
   bool _showGradeOnly = false;
   String _dateFormat = 'dd/MM/yyyy';
   String _examTemplate = 'WAEC';
+  String _curriculumMode = 'traditional';
 
   bool _showTeacherComment = true;
   bool _showPrincipalComment = true;
@@ -178,6 +179,7 @@ abstract class StudentBase extends ChangeNotifier {
   bool get showGradeOnly => _showGradeOnly;
   String get dateFormat => _dateFormat;
   String get examTemplate => _examTemplate;
+  String get curriculumMode => _curriculumMode;
   bool get showTeacherComment => _showTeacherComment;
   bool get showPrincipalComment => _showPrincipalComment;
   bool get showConduct => _showConduct;
@@ -450,6 +452,7 @@ abstract class StudentBase extends ChangeNotifier {
 
       if (r != null) {
         _examTemplate = r['exam_template'] as String? ?? 'WAEC';
+        _curriculumMode = r['curriculum_mode'] as String? ?? 'traditional';
         _principalName = r['principal_name'] as String? ?? '';
 
         if (_classTier == 'JSS' && r['grading_system_jss'] != null) {

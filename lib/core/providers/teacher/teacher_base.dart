@@ -51,6 +51,7 @@ abstract class TeacherBase extends ChangeNotifier {
 
   Map<String, dynamic>? _schoolSettings;
   Map<String, dynamic>? get schoolSettings => _schoolSettings;
+  String get curriculumMode => _schoolSettings?['curriculum_mode'] ?? 'traditional';
 
   List<Map<String, dynamic>> _myAssignments = [];
   List<Map<String, dynamic>> get assignments => _myAssignments;

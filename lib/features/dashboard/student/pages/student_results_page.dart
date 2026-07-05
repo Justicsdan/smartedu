@@ -135,7 +135,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
   static pw.Widget _pdfHdr(String text) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-      child: pw.Text(text, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.center),
+      child: pw.Text(text, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white), textAlign: pw.TextAlign.center),
     );
   }
 
@@ -152,11 +152,11 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           color: PdfColor(0.91, 0.93, 0.97),
-          child: pw.Text(label, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+          child: pw.Text(label, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
         ),
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: pw.Text(value, style: const pw.TextStyle(fontSize: 8)),
+          child: pw.Text(value, style: pw.TextStyle(fontSize: 8)),
         ),
       ],
     );
@@ -168,7 +168,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
           color: PdfColor(0.91, 0.93, 0.97),
-          child: pw.Text(l1, style: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+          child: pw.Text(l1, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
         ),
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
@@ -177,7 +177,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
           color: PdfColor(0.91, 0.93, 0.97),
-          child: pw.Text(l2, style: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+          child: pw.Text(l2, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
         ),
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
@@ -343,9 +343,9 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
                 child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                  pw.Text("Class Teacher's Comment:", style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                  pw.Text("Class Teacher's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                   pw.SizedBox(height: 2),
-                  pw.Text(tc, style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text(tc, style: pw.TextStyle(fontSize: 8)),
                 ]),
               ),
             ]));
@@ -355,9 +355,9 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               pw.Container(
                 padding: const pw.EdgeInsets.all(6),
                 child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                  pw.Text("Principal's Comment:", style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+                  pw.Text("Principal's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                   pw.SizedBox(height: 2),
-                  pw.Text(pc, style: const pw.TextStyle(fontSize: 8)),
+                  pw.Text(pc, style: pw.TextStyle(fontSize: 8)),
                 ]),
               ),
             ]));
@@ -390,15 +390,15 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                       mainAxisSize: pw.MainAxisSize.min,
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Text(provider.schoolName.toUpperCase(), style: const pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                        pw.Text(provider.schoolName.toUpperCase(), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                         if (provider.schoolAddress.isNotEmpty)
-                          pw.Text(provider.schoolAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                          pw.Text(provider.schoolAddress, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                         if (provider.schoolMotto.isNotEmpty)
-                          pw.Text('"${provider.schoolMotto}"', style: const pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600)),
+                          pw.Text('"${provider.schoolMotto}"', style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600)),
                         if (provider.schoolPhone.isNotEmpty || provider.schoolEmail.isNotEmpty)
                           pw.Text(
                             [if (provider.schoolPhone.isNotEmpty) 'Tel: ${provider.schoolPhone}', if (provider.schoolEmail.isNotEmpty) 'Email: ${provider.schoolEmail}'].join('  |  '),
-                            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
                           ),
                       ],
                     ),
@@ -416,7 +416,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             pageWidgets.add(pw.SizedBox(height: 6));
 
             // ── 2. RESULT TITLE ──
-            pageWidgets.add(pw.Center(child: pw.Text('STUDENT RESULT SHEET', style: const pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, letterSpacing: 2, color: PdfColors.blue800))));
+            pageWidgets.add(pw.Center(child: pw.Text('STUDENT RESULT SHEET', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, letterSpacing: 2, color: PdfColors.blue800))));
 
             pageWidgets.add(pw.SizedBox(height: 4));
             pageWidgets.add(pw.Container(height: 0.5, color: PdfColors.grey400));
@@ -433,7 +433,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey600, width: 1)),
                     child: passportImg != null
                         ? pw.Image(passportImg, fit: pw.BoxFit.cover)
-                        : pw.Center(child: pw.Text('No Photo', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
+                        : pw.Center(child: pw.Text('No Photo', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
                   ),
                   pw.SizedBox(width: 10),
                   pw.Expanded(
@@ -522,10 +522,10 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Column(children: [pw.Text('Class Teacher', style: const pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
+                  pw.Column(children: [pw.Text('Class Teacher', style: pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
                   if (stampImg != null) pw.Container(width: 80, height: 80, child: pw.Image(stampImg, fit: pw.BoxFit.contain)),
                   pw.Column(children: [
-                    pw.Text('Principal', style: const pw.TextStyle(fontSize: 9)),
+                    pw.Text('Principal', style: pw.TextStyle(fontSize: 9)),
                     pw.SizedBox(height: 30),
                     pw.Container(width: 130, height: 1, color: PdfColors.grey600),
                     if (sigImg != null) ...[pw.SizedBox(height: 2), pw.Container(width: 80, height: 30, child: pw.Image(sigImg, fit: pw.BoxFit.contain))],
@@ -535,7 +535,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             );
 
             pageWidgets.add(pw.SizedBox(height: 12));
-            pageWidgets.add(pw.Center(child: pw.Text('Generated on ${DateTime.now().toString().split('.').first}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500))));
+            pageWidgets.add(pw.Center(child: pw.Text('Generated on ${DateTime.now().toString().split('.').first}', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500))));
 
             return pageWidgets;
           },
@@ -589,7 +589,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFF1A237E).withOpacity(0.2))),
-                  child: Text(provider.currentTermName ?? '', style: const TextStyle(fontSize: 13, color: Color(0xFF1A237E), fontWeight: FontWeight.w600)),
+                  child: Text(provider.currentTermName ?? '', style: TextStyle(fontSize: 13, color: Color(0xFF1A237E), fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
@@ -605,7 +605,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                         else
                           const Icon(Icons.download_rounded, color: Colors.white, size: 18),
                         const SizedBox(width: 6),
-                        Text(_isGeneratingPdf ? 'Preparing...' : 'Print Result', style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
+                        Text(_isGeneratingPdf ? 'Preparing...' : 'Print Result', style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -615,7 +615,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           ),
           if (provider.currentSessionName != null) ...[
             const SizedBox(height: 4),
-            Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+            Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
           ],
           const SizedBox(height: 20),
           Row(
@@ -641,9 +641,9 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   const Icon(Icons.emoji_events, color: Color(0xFF1A237E), size: 22),
                   const SizedBox(width: 12),
                   const Text('Position in Class: ', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-                  Text('${_ordinal(provider.termPosition)} out of ${provider.positionOutOf}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+                  Text('${_ordinal(provider.termPosition)} out of ${provider.positionOutOf}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
                   const Spacer(),
-                  Text('Total: $totalScore', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
+                  Text('Total: $totalScore', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                 ],
               ),
             ),
@@ -677,7 +677,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   columns: [
                     const DataColumn(label: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14))),
                     ...assessmentTypes.map((at) => DataColumn(
-                      label: Text('${at['name']}\n(${at['max']})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
+                      label: Text('${at['name']}\n(${at['max']})', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
                       numeric: true,
                     )),
                     const DataColumn(label: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)), numeric: true),
@@ -694,12 +694,12 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     return DataRow(
                       color: WidgetStateProperty.all(scores.indexOf(score).isEven ? Colors.white : const Color(0xFFFAFBFC)),
                       cells: [
-                        DataCell(Text(score['subject_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: 14))),
+                        DataCell(Text(score['subject_name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: 14))),
                         ...assessmentTypes.map((at) {
                           final aid = (at['id'] ?? '').toString().toLowerCase();
                           final val = scoresJson[aid] ?? 0;
                           final display = val is int ? '$val' : val.toString();
-                          return DataCell(Text(display, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF111827), fontSize: 14)));
+                          return DataCell(Text(display, textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF111827), fontSize: 14)));
                         }),
                         DataCell(Text(
                           total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1),
@@ -760,7 +760,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.25))),
                     child: Row(
                       children: [
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))), const SizedBox(height: 3), Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color))])),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))), const SizedBox(height: 3), Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color))])),
                         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                       ],
                     ),
@@ -806,7 +806,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.person_outline, size: 16, color: Color(0xFF1565C0)), SizedBox(width: 6), Text('Class Teacher', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1565C0)))]),
                 const SizedBox(height: 8),
-                Text(tc, style: const TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
+                Text(tc, style: TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
               ]),
             ),
           if (tc.isNotEmpty && pc.isNotEmpty) const SizedBox(height: 12),
@@ -817,7 +817,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.school, size: 16, color: Color(0xFF2E7D32)), SizedBox(width: 6), Text('Principal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32)))]),
                 const SizedBox(height: 8),
-                Text(pc, style: const TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
+                Text(pc, style: TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
               ]),
             ),
         ],
@@ -850,7 +850,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor)),
-                  child: Column(children: [Text(grade, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)), const SizedBox(height: 2), Text('$min-$max', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))), Text(remark, style: TextStyle(fontSize: 10, color: textColor))]),
+                  child: Column(children: [Text(grade, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)), const SizedBox(height: 2), Text('$min-$max', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))), Text(remark, style: TextStyle(fontSize: 10, color: textColor))]),
                 );
               }).toList(),
             ),
@@ -875,7 +875,7 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.15))),
-        child: Column(children: [Icon(icon, color: color, size: 20), const SizedBox(height: 4), Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)), const SizedBox(height: 2), Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)))]),
+        child: Column(children: [Icon(icon, color: color, size: 20), const SizedBox(height: 4), Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)), const SizedBox(height: 2), Text(title, style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)))]),
       ),
     );
   }

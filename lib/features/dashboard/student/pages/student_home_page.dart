@@ -8,6 +8,7 @@ class StudentHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<StudentProvider>();
+    final isAce = p.curriculumMode == 'ace';
     final passport = p.passportUrl;
 
     return SingleChildScrollView(
@@ -17,45 +18,64 @@ class StudentHomePage extends StatelessWidget {
         children: [
           _welcomeBanner(p, passport),
           const SizedBox(height: 20),
-          _sectionTitle('Quick Stats'),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _statCard('Subjects', '${p.scores.length}', Icons.menu_book_rounded, const Color(0xFF1A237E)),
-              const SizedBox(width: 12),
-              _statCard('Average', '${p.getOverallAverage().toStringAsFixed(1)}%', Icons.trending_up_rounded, const Color(0xFF2E7D32)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _sectionTitle('Recent Results'),
-          const SizedBox(height: 14),
-          if (p.scores.isEmpty)
+          if (isAce) ...[
+            _sectionTitle('ACE Progress'),
+            const SizedBox(height: 14),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE8EAED))),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(Icons.grading_outlined, size: 48, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text('No results available yet', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  Container(width: 56, height: 56, decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.auto_stories_rounded, size: 28, color: Color(0xFF1A237E))),
+                  const SizedBox(height: 16),
+                  const Text('View your PACE scores and progress report', style: TextStyle(fontSize: 15, color: Color(0xFF111827), fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 8),
+                  const Text('Go to "My Progress" in the sidebar to see your report card, PACE test scores, HACS and NCE scores.', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
                 ],
               ),
-            )
-          else
-            ...p.scores.take(3).map((score) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
-              child: Row(
-                children: [
-                  Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.assignment_rounded, size: 18, color: Color(0xFF1A237E))),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(score['subjectName'] ?? 'Subject', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF111827)))),
-                  Text('${score['total'] ?? 0}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-                ],
-              ),
-            )),
+            ),
+          ] else ...[
+            _sectionTitle('Quick Stats'),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _statCard('Subjects', '${p.scores.length}', Icons.menu_book_rounded, const Color(0xFF1A237E)),
+                const SizedBox(width: 12),
+                _statCard('Average', '${p.getOverallAverage().toStringAsFixed(1)}%', Icons.trending_up_rounded, const Color(0xFF2E7D32)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _sectionTitle('Recent Results'),
+            const SizedBox(height: 14),
+            if (p.scores.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE8EAED))),
+                child: const Column(
+                  children: [
+                    Icon(Icons.grading_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text('No results available yet', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  ],
+                ),
+              )
+            else
+              ...p.scores.take(3).map((score) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8EAED))),
+                child: Row(
+                  children: [
+                    Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.assignment_rounded, size: 18, color: Color(0xFF1A237E))),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(score['subjectName'] ?? 'Subject', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF111827)))),
+                    Text('${score['total'] ?? 0}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                  ],
+                ),
+              )),
+          ],
         ],
       ),
     );

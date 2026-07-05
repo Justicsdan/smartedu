@@ -364,7 +364,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
               : 'jpg';
       final path = 'teachers/$schoolId/$teacherId.$safeExt';
       final supabase = Supabase.instance.client;
-      await supabase.storage.from('passports').upload(
+      await supabase.storage.from('passports').uploadBinary(
             path,
             _photoBytes!,
             fileOptions: const FileOptions(upsert: true),

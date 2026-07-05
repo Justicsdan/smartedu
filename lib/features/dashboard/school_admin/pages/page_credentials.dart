@@ -23,17 +23,37 @@ class _PageCredentialsState extends State<PageCredentials>
   bool _printing = false;
   final Set<String> _loadingIds = {};
   String? _viewingId;
+  List<Map<String, dynamic>> _teachersWithCreds = [];
+  List<Map<String, dynamic>> _studentsWithCreds = [];
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCreds());
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCreds() async {
+    final p = context.read<SchoolAdminProvider>();
+    try {
+      final sid = p.schoolId;
+      final tRes = await Supabase.instance.client.from('teachers').select().eq('school_id', sid);
+      final sRes = await Supabase.instance.client.from('students').select().eq('school_id', sid);
+      if (mounted) {
+        setState(() {
+          _teachersWithCreds = List<Map<String, dynamic>>.from(tRes);
+          _studentsWithCreds = List<Map<String, dynamic>>.from(sRes);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading creds: $e');
+    }
   }
 
   void _snack(String msg, {bool ok = true}) {
@@ -115,13 +135,25 @@ class _PageCredentialsState extends State<PageCredentials>
         final base = isTeacher
             ? '$fn${ln.isNotEmpty ? '_$ln' : ''}'
             : (adm.isNotEmpty ? adm : '$fn$ln');
-        updates['username'] = '$base${Random().nextInt(9000) + 1000}';
+        updates['username'] = isTeacher ? base : (it['admission_no'] ?? '').toString();
       }
       await Supabase.instance.client
           .from(isTeacher ? 'teachers' : 'students')
           .update(updates)
           .eq('id', it['id']);
-      await p.reloadData();
+      if (isTeacher) {
+        final fresh = await Supabase.instance.client.from('teachers').select().eq('id', it['id']).maybeSingle();
+        if (fresh != null) {
+          final idx = _teachersWithCreds.indexWhere((t) => t['id']?.toString() == id);
+          if (idx >= 0) setState(() => _teachersWithCreds[idx] = fresh);
+        }
+      } else {
+        final fresh = await Supabase.instance.client.from('students').select().eq('id', it['id']).maybeSingle();
+        if (fresh != null) {
+          final idx = _studentsWithCreds.indexWhere((s) => s['id']?.toString() == id);
+          if (idx >= 0) setState(() => _studentsWithCreds[idx] = fresh);
+        }
+      }
       if (mounted) _snack('New ${isTeacher ? 'password' : 'PIN'} generated');
     } catch (e) {
       if (mounted) _snack('Error: $e', ok: false);
@@ -160,7 +192,7 @@ class _PageCredentialsState extends State<PageCredentials>
         final base = isTeacher
             ? '$fn${ln.isNotEmpty ? '_$ln' : ''}'
             : (adm.isNotEmpty ? adm : '$fn$ln');
-        final uname = '$base${Random().nextInt(9000) + 1000}';
+        final uname = isTeacher ? base : (it['admission_no'] ?? '').toString();
         final secret = isTeacher ? _generateStrongPassword() : _generatePin();
         final updates = {'username': uname};
         if (isTeacher) {
@@ -173,7 +205,25 @@ class _PageCredentialsState extends State<PageCredentials>
             .update(updates)
             .eq('id', it['id']);
       }
-      await p.reloadData();
+      if (isTeacher) {
+        final ids = missing.map((e) => e['id']).toList();
+        final fresh = await Supabase.instance.client.from('teachers').select().inFilter('id', ids);
+        if (mounted) setState(() {
+          for (final f in fresh) {
+            final idx = _teachersWithCreds.indexWhere((t) => t['id'] == f['id']);
+            if (idx >= 0) _teachersWithCreds[idx] = f;
+          }
+        });
+      } else {
+        final ids = missing.map((e) => e['id']).toList();
+        final fresh = await Supabase.instance.client.from('students').select().inFilter('id', ids);
+        if (mounted) setState(() {
+          for (final f in fresh) {
+            final idx = _studentsWithCreds.indexWhere((s) => s['id'] == f['id']);
+            if (idx >= 0) _studentsWithCreds[idx] = f;
+          }
+        });
+      }
       if (mounted) {
         _snack(
             'Generated for ${missing.length} ${isTeacher ? 'teacher(s)' : 'student(s)'}');
@@ -236,7 +286,7 @@ class _PageCredentialsState extends State<PageCredentials>
                 pw.Expanded(
                   child: pw.Text(
                     schoolName.toUpperCase(),
-                    style: const pw.TextStyle(
+                    style: pw.TextStyle(
                       fontSize: 7,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.white,
@@ -255,7 +305,7 @@ class _PageCredentialsState extends State<PageCredentials>
               children: [
                 pw.Text(
                   name,
-                  style: const pw.TextStyle(
+                  style: pw.TextStyle(
                     fontSize: 10.5,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColor.fromInt(0xFF111827),
@@ -266,7 +316,7 @@ class _PageCredentialsState extends State<PageCredentials>
                     padding: const pw.EdgeInsets.only(top: 1),
                     child: pw.Text(
                       extra,
-                      style: const pw.TextStyle(
+                      style: pw.TextStyle(
                         fontSize: 6.5,
                         color: PdfColors.grey600,
                       ),
@@ -326,7 +376,7 @@ class _PageCredentialsState extends State<PageCredentials>
         pw.SizedBox(height: 2),
         pw.Text(
           value,
-          style: const pw.TextStyle(
+          style: pw.TextStyle(
             fontSize: 9,
             fontWeight: pw.FontWeight.bold,
             color: PdfColor.fromInt(0xFF111827),
@@ -343,7 +393,7 @@ class _PageCredentialsState extends State<PageCredentials>
     setState(() => _loadingIds.add(id));
     try {
       final nm = _name(it);
-      final un = (it['username'] ?? '').toString();
+      final un = isTeacher ? (it['username'] ?? '').toString() : (it['admission_no'] ?? '').toString();
       final sec = _secret(it, isTeacher);
       final sl = isTeacher ? 'Password' : 'PIN';
       String? ex;
@@ -420,7 +470,7 @@ class _PageCredentialsState extends State<PageCredentials>
                     child: _credCard(
                       sn,
                       _name(it),
-                      (it['username'] ?? '').toString(),
+                      isTeacher ? (it['username'] ?? '').toString() : (it['admission_no'] ?? '').toString(),
                       _secret(it, isTeacher),
                       sl,
                       isTeacher
@@ -449,8 +499,8 @@ class _PageCredentialsState extends State<PageCredentials>
   }
 
   List<dynamic> _filterTeachers(SchoolAdminProvider p) {
-    if (_teacherClassId == null) return p.teachers;
-    return p.teachers
+    if (_teacherClassId == null) return _teachersWithCreds;
+    return _teachersWithCreds
         .where((t) => p.assignments.any((a) =>
             a['teacher_id']?.toString() == t['id']?.toString() &&
             a['class_id']?.toString() == _teacherClassId))
@@ -458,8 +508,8 @@ class _PageCredentialsState extends State<PageCredentials>
   }
 
   List<dynamic> _filterStudents(SchoolAdminProvider p) {
-    if (_studentClassId == null) return p.students;
-    return p.students
+    if (_studentClassId == null) return _studentsWithCreds;
+    return _studentsWithCreds
         .where((s) => s['class_id']?.toString() == _studentClassId)
         .toList();
   }
@@ -485,7 +535,7 @@ class _PageCredentialsState extends State<PageCredentials>
   }
 
   Widget _inlineCreds(Map<String, dynamic> it, bool isTeacher) {
-    final un = (it['username'] ?? '').toString();
+    final un = isTeacher ? (it['username'] ?? '').toString() : (it['admission_no'] ?? '').toString();
     final sec = _secret(it, isTeacher);
     final sl = isTeacher ? 'Password' : 'PIN';
     final bad = _needsRegen(sec, isTeacher);
@@ -507,7 +557,7 @@ class _PageCredentialsState extends State<PageCredentials>
                 child: TextField(
                   controller: TextEditingController(text: un),
                   readOnly: true,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13, color: Color(0xFF111827)),
                   decoration: InputDecoration(
                     labelText: 'Username',
@@ -729,7 +779,7 @@ class _PageCredentialsState extends State<PageCredentials>
         final it = items[i];
         final id = it['id'].toString();
         final nm = _name(it);
-        final un = (it['username'] ?? '').toString();
+        final un = isTeacher ? (it['username'] ?? '').toString() : (it['admission_no'] ?? '').toString();
         final sec = _secret(it, isTeacher);
         final has = un.isNotEmpty;
         final bad = _needsRegen(sec, isTeacher);
@@ -762,7 +812,7 @@ class _PageCredentialsState extends State<PageCredentials>
                       backgroundColor: const Color(0xFFF0F4FF),
                       child: Text(
                         nm.isNotEmpty ? nm[0].toUpperCase() : '?',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1A237E)),
@@ -775,7 +825,7 @@ class _PageCredentialsState extends State<PageCredentials>
                         children: [
                           Text(
                             nm,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111827),
@@ -839,7 +889,7 @@ class _PageCredentialsState extends State<PageCredentials>
                         ),
                         child: Text(
                           sec.startsWith('\$2') ? 'Hashed' : 'Weak',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFFE65100)),
@@ -971,7 +1021,7 @@ class _PageCredentialsState extends State<PageCredentials>
                         value: null,
                         child: Text(
                           'All Classes',
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
                       for (final c in p.classes)
@@ -979,7 +1029,7 @@ class _PageCredentialsState extends State<PageCredentials>
                           value: c['id'].toString(),
                           child: Text(
                             c['name'].toString(),
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                     ],
@@ -1004,7 +1054,7 @@ class _PageCredentialsState extends State<PageCredentials>
                   ),
                   child: Text(
                     '$miss pending',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFE65100)),
@@ -1055,9 +1105,9 @@ class _PageCredentialsState extends State<PageCredentials>
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 2.5,
               labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               unselectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                  TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               tabs: const [
                 Tab(text: 'Teachers'),

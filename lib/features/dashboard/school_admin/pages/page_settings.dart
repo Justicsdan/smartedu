@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
 import '../widgets/change_password_section.dart';
@@ -860,6 +861,55 @@ class _PageSettingsState extends State<PageSettings>
             onTap: _isSaving ? null : _saveProfile,
           ),
               const SizedBox(height: 24),
+          const SizedBox(height: 24),
+          _sectionHeader(
+            icon: Icons.menu_book_rounded,
+            iconBg: const Color(0xFFFFF3E0),
+            iconColor: const Color(0xFFE65100),
+            title: 'Curriculum Mode',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAED)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Select how your school manages academic progress.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _curriculumOption(
+                        label: 'Traditional',
+                        description: 'Class-based with termly scores',
+                        icon: Icons.school_rounded,
+                        isSelected: (provider.schoolSettings?['curriculum_mode'] ?? 'traditional') == 'traditional',
+                        onTap: () => _updateCurriculumMode(provider, 'traditional'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _curriculumOption(
+                        label: 'ACE (PACE)',
+                        description: 'Self-paced PACE workbooks',
+                        icon: Icons.auto_stories_rounded,
+                        isSelected: (provider.schoolSettings?['curriculum_mode'] ?? 'traditional') == 'ace',
+                        onTap: () => _updateCurriculumMode(provider, 'ace'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
               ChangePasswordSection(
                 title: 'Change Admin Password',
                 subtitle: 'Update your login credentials',
@@ -1728,7 +1778,7 @@ class _PageSettingsState extends State<PageSettings>
       final path = '$sid/logo.$ext';
       await Supabase.instance.client.storage
           .from('school-logos')
-          .upload(path, bytes,
+          .uploadBinary(path, bytes,
               fileOptions: FileOptions(
                   upsert: true, contentType: 'image/$ext'));
       await provider.updateSchoolLogo(path);
@@ -2008,6 +2058,69 @@ class _PageSettingsState extends State<PageSettings>
           ),
         );
       },
+    );
+  }
+
+  Future<void> _updateCurriculumMode(SchoolAdminProvider provider, String mode) async {
+    final current = provider.schoolSettings?['curriculum_mode'] ?? 'traditional';
+    if (current == mode) return;
+    if (mode == 'ace') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Switch to ACE Mode?'),
+          content: const Text(
+            'Switching to ACE mode will change how scores and reports work. Traditional score data will not be deleted but will not be accessible in ACE mode.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Switch')),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+    try {
+      await DbProxy.instance.from('school_settings').eq('school_id', provider.schoolId).update({'curriculum_mode': mode});
+      if (provider.schoolSettings != null) {
+        provider.schoolSettings!['curriculum_mode'] = mode;
+      }
+      setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
+      }
+    }
+  }
+
+  Widget _curriculumOption({
+    required String label,
+    required String description,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final color = isSelected ? const Color(0xFF1A237E) : const Color(0xFF9CA3AF);
+    final bg = isSelected ? const Color(0xFFF0F4FF) : const Color(0xFFF9FAFB);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isSelected ? const Color(0xFF1A237E) : const Color(0xFFE8EAED), width: isSelected ? 2 : 1),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: color)),
+            const SizedBox(height: 4),
+            Text(description, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)), textAlign: TextAlign.center),
+          ],
+        ),
+      ),
     );
   }
 }

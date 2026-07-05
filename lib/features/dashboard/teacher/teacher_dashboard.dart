@@ -28,6 +28,9 @@ class TeacherDashboard extends StatefulWidget {
 class _TeacherDashboardState extends State<TeacherDashboard> {
   String _selectedNavId = 'home';
 
+  bool get _isAce =>
+      context.read<TeacherProvider>().curriculumMode == 'ace';
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +48,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     }
   }
 
-  List<_NavItem> _buildNavItems(bool isFormMaster, bool isSubjectTeacher) {
+  List<_NavItem> _buildNavItems(bool isFormMaster, bool isSubjectTeacher, bool isAce) {
     final items = <_NavItem>[];
     items.add(const _NavItem(id: 'home', icon: Icons.home_rounded, label: 'Home'));
 
@@ -57,7 +60,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       items.add(const _NavItem(id: 'form_class', icon: Icons.class_rounded, label: 'My Class'));
       items.add(const _NavItem(id: 'form_students', icon: Icons.people_rounded, label: 'My Students'));
       items.add(const _NavItem(id: 'attendance', icon: Icons.fact_check_rounded, label: 'Attendance'));
-      items.add(const _NavItem(id: 'publish_results', icon: Icons.publish_rounded, label: 'Publish Results'));
+      if (!isAce) {
+        items.add(const _NavItem(id: 'publish_results', icon: Icons.publish_rounded, label: 'Publish Results'));
+      }
     }
 
     if (isFormMaster && isSubjectTeacher) {
@@ -66,12 +71,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     if (isSubjectTeacher) {
       items.add(const _NavItem(id: 'my_classes', icon: Icons.class_rounded, label: 'My Classes'));
-      items.add(const _NavItem(id: 'enter_scores', icon: Icons.edit_note_rounded, label: 'Enter Scores'));
+      if (isAce) {
+        items.add(const _NavItem(id: 'pace_scores', icon: Icons.auto_stories_rounded, label: 'PACE Scores'));
+      } else {
+        items.add(const _NavItem(id: 'enter_scores', icon: Icons.edit_note_rounded, label: 'Enter Scores'));
+      }
       items.add(const _NavItem(id: 'assignments', icon: Icons.assignment_rounded, label: 'Assignments'));
       items.add(const _NavItem(id: 'cbt', icon: Icons.quiz_rounded, label: 'CBT Exams'));
-    }
-
-    if (isFormMaster || isSubjectTeacher) {
     }
 
     return items;
@@ -110,7 +116,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Widget build(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.width < 768;
     final provider = context.watch<TeacherProvider>();
-    final navItems = _buildNavItems(provider.isFormMaster, provider.isSubjectTeacher);
+    final isAce = _isAce;
+    final navItems = _buildNavItems(provider.isFormMaster, provider.isSubjectTeacher, isAce);
 
     if (provider.isInitialized &&
         !navItems.any((i) => i.id == _selectedNavId && !i.isHeader)) {
@@ -526,6 +533,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         return const TeacherMyClassesPage();
       case 'enter_scores':
         return TeacherEnterScoresPage();
+      case 'pace_scores':
+        return const _TeacherPaceScoresPage();
       case 'assignments':
         return const TeacherAssignmentsPage();
       case 'publish_results':
@@ -683,6 +692,28 @@ class _SidebarItem extends StatelessWidget {
                       color: Colors.white, shape: BoxShape.circle)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TeacherPaceScoresPage extends StatelessWidget {
+  const _TeacherPaceScoresPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_stories_rounded, size: 64, color: Color(0xFF9CA3AF)),
+          SizedBox(height: 16),
+          Text('PACE Scores',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+          SizedBox(height: 8),
+          Text('Select a class to enter PACE scores',
+              style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF))),
+        ],
       ),
     );
   }

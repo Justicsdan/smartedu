@@ -8,6 +8,7 @@ import 'core/providers/school_admin_provider.dart';
 import 'core/super_admin_provider.dart';
 import 'core/providers/teacher/teacher_provider.dart';
 import 'core/providers/student/student_provider.dart';
+import 'features/dashboard/student/pages/student_ace_dashboard.dart';
 
 import 'features/home/home_page.dart';
 import 'features/auth/login_page.dart';
@@ -26,6 +27,8 @@ import 'features/dashboard/school_admin/pages/page_credentials.dart';
 import 'features/dashboard/school_admin/pages/page_students.dart';
 import 'features/dashboard/school_admin/pages/page_teachers.dart';
 import 'features/dashboard/school_admin/pages/page_fees.dart';
+import 'features/dashboard/school_admin/pages/page_ace_paces.dart';
+import 'features/dashboard/school_admin/pages/page_ace_reports.dart';
 import 'features/dashboard/teacher/teacher_dashboard.dart';
 import 'features/dashboard/school_admin/widgets/chat_bot_widget.dart';
 import 'features/dashboard/school_admin/add_student_page.dart';
@@ -434,6 +437,7 @@ class _StudentInitializerState extends State<_StudentInitializer> {
         ),
       );
     }
+    final isAce = context.read<StudentProvider>().curriculumMode == 'ace';
     return StudentDashboard(studentData: widget.studentData);
   }
 }
@@ -449,7 +453,7 @@ class _AdminShellState extends State<_AdminShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  static const _navItems = [
+  static const _allNavItems = [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
     _NavItem(icon: Icons.people_rounded, label: 'Students'),
     _NavItem(icon: Icons.person_pin_rounded, label: 'Teachers'),
@@ -461,7 +465,25 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
     _NavItem(icon: Icons.vpn_key_rounded, label: 'Credentials'),
     _NavItem(icon: Icons.payment_rounded, label: 'Fees'),
+    _NavItem(icon: Icons.auto_stories_rounded, label: 'PACE Scores'),
+    _NavItem(icon: Icons.assessment_rounded, label: 'ACE Reports'),
   ];
+
+  List<_NavItem> get _visibleNavItems {
+    final isAce = context.read<SchoolAdminProvider>().schoolSettings?['curriculum_mode'] == 'ace';
+    if (!isAce) {
+      return _allNavItems.where((item) => item.label != 'PACE Scores' && item.label != 'ACE Reports').toList();
+    }
+    return _allNavItems.where((item) => item.label != 'Scores' && item.label != 'Publish').toList();
+  }
+
+  List<int> get _visibleNavRealIndices {
+    final isAce = context.read<SchoolAdminProvider>().schoolSettings?['curriculum_mode'] == 'ace';
+    if (!isAce) {
+      return _allNavItems.asMap().entries.where((e) => e.value.label != 'PACE Scores' && e.value.label != 'ACE Reports').map((e) => e.key).toList();
+    }
+    return _allNavItems.asMap().entries.where((e) => e.value.label != 'Scores' && e.value != null && e.value.label != 'Publish').map((e) => e.key).toList();
+  }
 
   void _openAiChat() {
     final p = context.read<SchoolAdminProvider>();
@@ -502,7 +524,7 @@ class _AdminShellState extends State<_AdminShell> {
                     onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                   const SizedBox(width: 8),
-                  Text(_navItems[_selectedIndex].label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+                  Text(_allNavItems[_selectedIndex].label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF1A237E)),
@@ -525,6 +547,8 @@ class _AdminShellState extends State<_AdminShell> {
   }
 
   Widget _buildDrawer(String schoolName) {
+    final visibleItems = _visibleNavItems;
+    final realIndices = _visibleNavRealIndices;
     return Drawer(
       child: Column(
         children: [
@@ -548,15 +572,16 @@ class _AdminShellState extends State<_AdminShell> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _navItems.length,
+              itemCount: visibleItems.length,
               itemBuilder: (_, i) {
-                final item = _navItems[i];
-                final selected = i == _selectedIndex;
+                final item = visibleItems[i];
+                final realIdx = realIndices[i];
+                final selected = realIdx == _selectedIndex;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
-                    onTap: () { Navigator.pop(context); setState(() => _selectedIndex = i); },
+                    onTap: () { Navigator.pop(context); setState(() => _selectedIndex = realIdx); },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(color: selected ? const Color(0xFFF0F4FF) : Colors.transparent, borderRadius: BorderRadius.circular(10)),
@@ -605,7 +630,7 @@ class _AdminShellState extends State<_AdminShell> {
       case 2:
         return PageTeachers(teachers: p.teachers, onDelete: (id) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete: $id'))); }, onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTeacherPage())).then((_) async { await p.reloadData(); if (mounted) setState(() {}); }));
       case 3:
-        return PageClasses(classes: p.classes, subjects: p.subjects, assignments: p.assignments, teachers: p.teachers, students: p.students, classSubjects: p.classSubjects, onAddClassSubject: (classId, subjectId) => p.addClassSubjectToDb(classId: classId, subjectId: subjectId), onRemoveClassSubject: (csId) => p.removeClassSubjectFromDb(csId), onAddClass: (data) {}, onDeleteClass: (data) {}, onAddSubject: (data) {}, onDeleteSubject: (data) {}, onAddAssignment: (data) {}, onDeleteAssignment: (data) {});
+        return PageClasses(classes: p.classes, subjects: p.subjects, assignments: p.assignments, teachers: p.teachers, students: p.students, classSubjects: p.classSubjects, onAddClassSubject: (classId, subjectId) => p.addClassSubjectToDb(classId: classId, subjectId: subjectId), onRemoveClassSubject: (csId) => p.removeClassSubjectFromDb(csId), onAddClass: (data) => p.addClassToDb(data), onDeleteClass: (data) => p.deleteClass(data), onAddSubject: (data) => p.addSubjectToDb(data), onDeleteSubject: (data) => p.deleteSubject(data), onAddAssignment: (data) => p.addAssignment(data), onDeleteAssignment: (data) => p.deleteAssignment(data));
       case 4:
         return PageAcademic(classes: p.classes, academicYears: p.sessions, onYearsUpdated: (years) {});
       case 5:
@@ -620,6 +645,10 @@ class _AdminShellState extends State<_AdminShell> {
         return const PageCredentials();
       case 10:
         return PageFees();
+      case 11:
+        return const PageAcePaces();
+      case 12:
+        return const PageAceReports();
       default:
         return const SizedBox.shrink();
     }
