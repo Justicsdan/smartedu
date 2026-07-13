@@ -139,8 +139,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                            Icons.school, color: Colors.white, size: 22),
+                        child: provider.schoolLogoUrl.isNotEmpty
+                            ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 36, height: 36, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 22)))
+                            : const Icon(Icons.school, color: Colors.white, size: 22),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -331,17 +332,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () => setState(() => _selectedIndex = 8),
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor:
-                      const Color(0xFF2E7D32).withOpacity(0.1),
-                  child: Text(_getInitials(provider),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E7D32),
-                          fontSize: 14)),
+                child: provider.passportUrl.isNotEmpty
+                    ? ClipOval(child: Image.network(provider.passportUrl, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()))
+                    : CircleAvatar(
+                        radius: 24,
+                        backgroundColor:
+                            const Color(0xFF2E7D32).withOpacity(0.1),
+                        child: Text(_getInitials(provider),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                                fontSize: 14)),
+                      ),
                 ),
-              ),
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () => setState(() => _selectedIndex = 8),
@@ -406,8 +409,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   builder: (context, provider, _) {
                     return Row(
                       children: [
-                        const Icon(
-                            Icons.school, color: Colors.white, size: 24),
+                        provider.schoolLogoUrl.isNotEmpty
+                            ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 36, height: 36, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 24)))
+                            : const Icon(Icons.school, color: Colors.white, size: 24),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(

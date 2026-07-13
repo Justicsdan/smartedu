@@ -790,7 +790,7 @@ class _PageSettingsState extends State<PageSettings>
                           borderRadius: BorderRadius.circular(18),
                           child: Image.network(
                             provider.schoolLogoUrl,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) =>
                                 _logoPlaceholder(),
                           ),
@@ -1710,11 +1710,14 @@ class _PageSettingsState extends State<PageSettings>
   Future<void> _pickAndUploadLogo(SchoolAdminProvider provider) async {
     try {
       final input = html.FileUploadInputElement()..accept = 'image/*';
-      final changeFuture = input.onChange.first;
+      html.document.body!.append(input);
+      final completer = Completer<void>();
+      input.addEventListener('change', (_) => completer.complete());
       input.click();
-      await changeFuture;
-      if (input.files == null || input.files!.isEmpty) return;
+      await completer.future;
+      if (input.files == null || input.files!.isEmpty) { input.remove(); return; }
       final file = input.files!.first;
+      input.remove();
       if (file.size > 2 * 1024 * 1024) {
         _snack('Image too large. Max 2MB allowed.', success: false);
         return;
@@ -1745,6 +1748,7 @@ class _PageSettingsState extends State<PageSettings>
         return;
       }
       await _uploadBytes(provider, bytes, file.name);
+      if (mounted) setState(() {});
     } catch (e) {
       _snack('Error: $e', success: false);
     }
@@ -1755,7 +1759,7 @@ class _PageSettingsState extends State<PageSettings>
     final r = html.FileReader();
     r.onLoadEnd.listen((_) {
       c.complete(r.result != null
-          ? (r.result as ByteBuffer).asUint8List()
+          ? (r.result is Uint8List ? r.result as Uint8List : (r.result as ByteBuffer).asUint8List())
           : null);
     });
     r.onError.listen((_) {

@@ -7,17 +7,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
+import 'teacher_edit_profile_sheet.dart';
 
 class PageTeachers extends StatefulWidget {
   final List<Map<String, dynamic>> teachers;
   final void Function(String id) onDelete;
   final VoidCallback onAdd;
+  final VoidCallback? onRefresh;
 
   const PageTeachers({
     super.key,
     required this.teachers,
     required this.onDelete,
     required this.onAdd,
+    this.onRefresh,
   });
 
   @override
@@ -501,6 +504,16 @@ class _PageTeachersState extends State<PageTeachers> {
     );
   }
 
+  void _showEditSheet(Map<String, dynamic> teacher) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TeacherEditProfileSheet(teacher: teacher),
+    );
+    if (result == true) widget.onRefresh?.call();
+  }
+
   Widget _teacherCard(Map<String, dynamic> t, int index) {
     final name = _getName(t);
     final staffId = _getStaffId(t);
@@ -629,6 +642,8 @@ class _PageTeachersState extends State<PageTeachers> {
                 Row(
                   children: [
                     const Expanded(child: SizedBox()),
+                    _smallButton(icon: Icons.edit_outlined, label: 'Edit', color: const Color(0xFF5C6BC0), onTap: () => _showEditSheet(t)),
+                    const SizedBox(width: 8),
                     _smallButton(icon: Icons.delete_outline, label: 'Delete', color: Colors.red.shade400, onTap: () => widget.onDelete(t['id'])),
                     const SizedBox(width: 8),
                     _smallButton(icon: Icons.assignment_ind_rounded, label: 'Assign', color: const Color(0xFF1A237E), onTap: () => _showManageSheet(context, t['id'].toString())),

@@ -241,8 +241,8 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
                           ],
                         ),
                         Container(
-                          width: 68,
-                          height: 68,
+                          width: 110,
+                          height: 110,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
@@ -250,13 +250,16 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: widget.schoolUrl.isNotEmpty
-                              ? Image.network(
-                                  widget.schoolUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.dashboard_rounded,
-                                    size: 32,
-                                    color: Color(0xFF90CAF9),
+                              ? Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Image.network(
+                                    widget.schoolUrl,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.dashboard_rounded,
+                                      size: 32,
+                                      color: Color(0xFF90CAF9),
+                                    ),
                                   ),
                                 )
                               : const Icon(

@@ -307,6 +307,7 @@ class _TeacherInitializerState extends State<_TeacherInitializer> {
           'email': d['email'] ?? '',
           'phone': d['phone'] ?? '',
           'staff_id': d['staffId'] ?? d['staff_id'] ?? '',
+          'passportUrl': d['passportUrl'] ?? d['passport_url'] ?? '',
         },
         schoolId: schoolId,
         teacherId: teacherId,

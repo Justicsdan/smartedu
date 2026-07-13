@@ -50,7 +50,7 @@ class AcePdfGenerator {
   static pw.Widget _buildHeader(Map<String, dynamic> schoolInfo, pw.ImageProvider? logoImg) {
     final ch = <pw.Widget>[
       if (logoImg != null)
-        pw.Container(width: 50, height: 50, child: pw.Image(logoImg, fit: pw.BoxFit.contain)),
+        pw.Container(width: 72, height: 72, child: pw.Image(logoImg, fit: pw.BoxFit.contain)),
       pw.SizedBox(width: 10),
       pw.Expanded(
         child: pw.Column(
@@ -63,7 +63,7 @@ class AcePdfGenerator {
           ],
         ),
       ),
-      if (logoImg != null) pw.SizedBox(width: 50),
+      if (logoImg != null) pw.SizedBox(width: 72),
     ];
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 6),
@@ -88,8 +88,8 @@ class AcePdfGenerator {
     );
 
     final passportBox = pw.Container(
-      width: 80,
-      height: 80,
+      width: 82,
+      height: 104,
       decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400, width: 1.5)),
       child: passportImg != null
           ? pw.ClipRRect(horizontalRadius: 4, verticalRadius: 4, child: pw.Image(passportImg, fit: pw.BoxFit.cover))

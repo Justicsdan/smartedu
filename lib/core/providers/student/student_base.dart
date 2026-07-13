@@ -301,7 +301,7 @@ abstract class StudentBase extends ChangeNotifier {
       _parentPhone = data['parent_phone']?.toString() ?? '';
       _parentName = data['parent_name']?.toString() ?? '';
       _parentEmail = data['parent_email']?.toString() ?? '';
-      _passportUrl = data['passport_url']?.toString() ?? '';
+      _passportUrl = data['passportUrl']?.toString() ?? data['passport_url']?.toString() ?? '';
 
       if (data['classes'] != null) {
         final cls = data['classes'] as Map<String, dynamic>;

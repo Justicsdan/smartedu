@@ -23,6 +23,7 @@ abstract class TeacherBase extends ChangeNotifier {
   String _email = '';
   String _phone = '';
   String _staffId = '';
+  String _passportUrl = '';
   String _schoolName = '';
   String _schoolLogoUrl = '';
   String get firstName => _firstName;
@@ -31,6 +32,7 @@ abstract class TeacherBase extends ChangeNotifier {
   String get email => _email;
   String get phone => _phone;
   String get staffId => _staffId;
+  String get passportUrl => _passportUrl;
   String get schoolName => _schoolName;
   String get schoolLogoUrl => _schoolLogoUrl;
   String get teacherName => fullName;
@@ -62,6 +64,7 @@ abstract class TeacherBase extends ChangeNotifier {
         'last_name': _lastName,
         'staff_id': _staffId,
         'email': _email,
+        'passport_url': _passportUrl,
       };
 
   // ═══════════════════════════════════════════════════════════
@@ -85,6 +88,7 @@ abstract class TeacherBase extends ChangeNotifier {
       _email = r['email'] ?? '';
       _phone = r['phone'] ?? '';
       _staffId = r['staff_id'] ?? '';
+      _passportUrl = r['passport_url'] ?? '';
       final school = r['schools'] as Map<String, dynamic>? ?? {};
       _schoolName = school['name'] ?? '';
       _schoolLogoUrl = school['logo_url'] ?? '';
@@ -296,6 +300,7 @@ abstract class TeacherBase extends ChangeNotifier {
       _email = loginData['email'] ?? '';
       _phone = loginData['phone'] ?? '';
       _staffId = loginData['staffId'] ?? loginData['staff_id'] ?? '';
+      _passportUrl = loginData['passportUrl'] ?? loginData['passport_url'] ?? '';
 
       debugPrint('Loading school info...');
       try {
@@ -306,6 +311,7 @@ abstract class TeacherBase extends ChangeNotifier {
             .maybeSingle();
         _schoolName = school?['name']?.toString() ?? '';
         _schoolLogoUrl = school?['logo_url']?.toString() ?? '';
+      _schoolLogoUrl = loginData['logoUrl']?.toString() ?? _schoolLogoUrl;
       } catch (e) {
         debugPrint(
             'School query via proxy failed (schools not in teacher whitelist): $e');

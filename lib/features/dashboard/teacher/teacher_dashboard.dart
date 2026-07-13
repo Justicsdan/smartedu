@@ -183,14 +183,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade400,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 22),
-                  ),
+                  provider.schoolLogoUrl.isNotEmpty
+                      ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()))
+                      : Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade400,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.person, color: Colors.white, size: 22),
+                        ),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text('Teacher Portal',
@@ -740,9 +742,21 @@ class _TeacherHomePage extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                provider.passportUrl.isNotEmpty
+                    ? ClipOval(child: Image.network(provider.passportUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(width: 64, height: 64)))
+                    : CircleAvatar(
+                        radius: 32,
+                        backgroundColor: Colors.white.withOpacity(0.15),
+                        child: Text('${provider.firstName.isNotEmpty ? provider.firstName[0] : ''}${provider.lastName.isNotEmpty ? provider.lastName[0] : ''}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 22)),
+                      ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 const Text("Welcome Back!",
                     style: TextStyle(color: Colors.white70, fontSize: 16)),
                 const SizedBox(height: 8),
@@ -784,6 +798,9 @@ class _TeacherHomePage extends StatelessWidget {
                             color: Colors.white, fontSize: 12)),
                   ),
                 ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

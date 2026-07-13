@@ -48,14 +48,14 @@ const SCHOOL_SCOPED_TABLES = [
   'students', 'teachers', 'classes', 'subjects', 'class_subjects',
   'scores', 'assignments', 'attendance', 'student_term_summaries',
   'term_comments', 'student_behavioural_ratings', 'academic_sessions',
-  'terms', 'school_settings', 'audit_logs', 'announcements', 'complaints', 'assignment_submissions', 'score_locks', 'fee_types', 'fee_payments', 'cbt_exams', 'cbt_questions', 'ace_pace_scores', 'ace_term_reports',
+  'terms', 'school_settings', 'audit_logs', 'announcements', 'complaints', 'assignment_submissions', 'score_locks', 'fee_types', 'fee_payments', 'fee_assignments', 'cbt_exams', 'cbt_questions', 'ace_pace_scores', 'ace_term_reports', 'fee_assignments',
 ];
 
 // ─── Tables where student can only see their own rows ───
 
 const STUDENT_OWNED_TABLES = [
   'scores', 'student_term_summaries', 'term_comments',
-  'student_behavioural_ratings', 'attendance', 'cbt_attempts', 'ace_pace_scores', 'ace_term_reports',
+  'student_behavioural_ratings', 'attendance', 'cbt_attempts', 'ace_pace_scores', 'ace_term_reports', 'fee_assignments',
 ];
 
 // ─── Whitelist: role → table → allowed actions ───
@@ -81,6 +81,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     audit_logs: ['select', 'insert'],
     fee_types: ['select', 'insert', 'update', 'delete'],
     fee_payments: ['select', 'insert', 'update'],
+    fee_assignments: ['select', 'insert', 'update', 'delete'],
     ace_pace_scores: ['select', 'insert', 'update', 'delete'],
     ace_term_reports: ['select', 'insert', 'update', 'delete'],
     announcements: ['select', 'insert', 'update', 'delete'],
@@ -105,6 +106,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     audit_logs: ['select', 'insert'],
     fee_types: ['select', 'insert', 'update', 'delete'],
     fee_payments: ['select', 'insert', 'update'],
+    fee_assignments: ['select', 'insert', 'update', 'delete'],
     announcements: ['select', 'insert', 'update', 'delete'],
     complaints: ['select', 'insert', 'update'],
     score_locks: ['select', 'insert', 'update'],
@@ -133,6 +135,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     cbt_attempts: ['select', 'insert'],
     score_locks: ['select'],
     fee_payments: ['select'],
+    fee_assignments: ['select'],
     fee_types: ['select'],
     complaints: ['select', 'insert'],
     assignment_submissions: ['select', 'insert'],
@@ -158,6 +161,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     cbt_attempts: ['select', 'insert'],
     score_locks: ['select'],
     fee_payments: ['select'],
+    fee_assignments: ['select'],
     fee_types: ['select'],
     complaints: ['select', 'insert'],
     assignment_submissions: ['select', 'insert'],

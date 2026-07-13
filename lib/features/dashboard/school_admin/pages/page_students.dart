@@ -1,13 +1,16 @@
-import 'package:smartedu/core/services/db_proxy.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-// ==========================================
-// File: lib/features/dashboard/school_admin/pages/page_students.dart
-// ==========================================
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
+import 'package:smartedu/core/services/db_proxy.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// ==========================================
+// File: lib/features/dashboard/school_admin/pages/page_students.dart
+// ==========================================
 
 class PageStudents extends StatefulWidget {
   final List<Map<String, dynamic>> students;
@@ -126,6 +129,18 @@ class _PageStudentsState extends State<PageStudents> {
     );
   }
 
+  void _showEditSheet(Map<String, dynamic> student) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _StudentEditSheet(
+        student: student,
+        onSave: () => widget.onRefresh?.call(),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -235,6 +250,22 @@ class _PageStudentsState extends State<PageStudents> {
                   height: 32,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFC5CAE9)),
+                    color: const Color(0xFFF0F4FF),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF1A237E)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => _showEditSheet(s),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.red.shade200),
                     color: const Color(0xFFFEF2F2),
                   ),
@@ -327,7 +358,6 @@ class _PageStudentsState extends State<PageStudents> {
       backgroundColor: const Color(0xFFF7F8FA),
       body: Column(
         children: [
-          // Flat header
           Container(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
             color: const Color(0xFFF7F8FA),
@@ -366,7 +396,6 @@ class _PageStudentsState extends State<PageStudents> {
                     }, active: _showSearch),
                   ],
                 ),
-                // Search field
                 AnimatedSize(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
@@ -403,7 +432,6 @@ class _PageStudentsState extends State<PageStudents> {
               ],
             ),
           ),
-          // Stat row
           if (!_showSearch)
             Container(
               margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
@@ -418,7 +446,6 @@ class _PageStudentsState extends State<PageStudents> {
               ),
             ),
           const SizedBox(height: 12),
-          // List
           Expanded(
             child: widget.students.isEmpty
                 ? _emptyState(icon: Icons.people_outline_rounded, title: 'No students yet', subtitle: 'Tap Add New to register')
@@ -589,7 +616,6 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Flat header
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
             child: Column(
@@ -672,6 +698,402 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// STUDENT EDIT SHEET — Profile + Passport
+// =========================================================
+
+class _StudentEditSheet extends StatefulWidget {
+  final Map<String, dynamic> student;
+  final VoidCallback onSave;
+  const _StudentEditSheet({required this.student, required this.onSave});
+
+  @override
+  State<_StudentEditSheet> createState() => _StudentEditSheetState();
+}
+
+class _StudentEditSheetState extends State<_StudentEditSheet> {
+  String? _passportUrl;
+  String? _selectedGender;
+  bool _saving = false;
+  bool _uploading = false;
+  final Map<String, String> _form = {};
+
+  String _val(String key) => (widget.student[key] ?? '').toString().trim();
+
+  String get _studentName {
+    final f = _val('first_name');
+    final l = _val('last_name');
+    if (f.isNotEmpty && l.isNotEmpty) return '$f $l';
+    return f.isNotEmpty ? f : (l.isNotEmpty ? l : 'Student');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _passportUrl = _val('passport_url');
+    final g = _val('gender');
+    if (g.isNotEmpty) {
+      _selectedGender = g[0].toUpperCase() + g.substring(1).toLowerCase();
+    }
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFFD32F2F))),
+        content: Text(message, style: const TextStyle(fontSize: 13, color: Color(0xFF374151), height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPassport() async {
+    if (_uploading) return;
+    setState(() => _uploading = true);
+    try {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      html.document.body?.append(input);
+      input.click();
+      await input.onChange.first;
+      final files = input.files;
+      input.remove();
+      if (files == null || files.isEmpty) {
+        if (mounted) setState(() => _uploading = false);
+        return;
+      }
+      final file = files.first;
+      debugPrint('PASSPORT UPLOAD: file picked: ' + file.name + ', size: ' + file.size.toString());
+      final reader = html.FileReader();
+      final readCompleter = Completer<Uint8List>();
+      reader.onLoadEnd.listen((_) {
+        final result = reader.result;
+        if (result is Uint8List) {
+          readCompleter.complete(result);
+        } else if (result is ByteBuffer) {
+          readCompleter.complete(Uint8List.view(result));
+        } else {
+          readCompleter.completeError('FileReader returned unexpected type: ' + result.runtimeType.toString());
+        }
+      });
+      reader.onError.listen((e) {
+        readCompleter.completeError('FileReader error: ' + e.toString());
+      });
+      reader.readAsArrayBuffer(file);
+      final bytes = await readCompleter.future;
+      debugPrint('PASSPORT UPLOAD: bytes read: ' + bytes.length.toString());
+      final studentId = widget.student['id'].toString();
+      final ext = file.name.split('.').last.toLowerCase();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storagePath = 'students/' + studentId + '/' + timestamp.toString() + '.' + ext;
+      final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+      final anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
+      final mimeMap = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'gif': 'gif', 'webp': 'webp'};
+      final mime = mimeMap[ext] ?? 'jpeg';
+      final uploadUrl = supabaseUrl + '/storage/v1/object/passports/' + storagePath;
+      final uploadRes = await http.post(
+        Uri.parse(uploadUrl),
+        headers: {
+          'apikey': anonKey,
+          'Content-Type': 'image/' + mime,
+          'x-upsert': 'true',
+        },
+        body: bytes,
+      );
+      if (uploadRes.statusCode != 200 && uploadRes.statusCode != 201) {
+        throw Exception('Storage upload failed (' + uploadRes.statusCode.toString() + '): ' + uploadRes.body);
+      }
+      final publicUrl = supabaseUrl + '/storage/v1/object/public/passports/' + storagePath;
+      debugPrint('PASSPORT UPLOAD: success, url: ' + publicUrl);
+      if (mounted) {
+        setState(() {
+          _passportUrl = publicUrl;
+          _uploading = false;
+        });
+      }
+    } catch (e, stack) {
+      debugPrint('PASSPORT UPLOAD ERROR: ' + e.toString());
+      debugPrint('PASSPORT UPLOAD STACK: ' + stack.toString());
+      if (mounted) {
+        setState(() => _uploading = false);
+        _showErrorDialog('Upload Failed', e.toString());
+      }
+    }
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final data = <String, dynamic>{};
+      if (_form.containsKey('first_name')) data['first_name'] = _form['first_name'];
+      if (_form.containsKey('last_name')) data['last_name'] = _form['last_name'];
+      if (_form.containsKey('middle_name')) data['middle_name'] = _form['middle_name'];
+      if (_selectedGender != null) {
+        data['gender'] = _selectedGender!.toLowerCase();
+      }
+      if (_form.containsKey('date_of_birth')) data['date_of_birth'] = _form['date_of_birth'];
+      if (_form.containsKey('parent_name')) data['parent_name'] = _form['parent_name'];
+      if (_form.containsKey('parent_phone')) data['parent_phone'] = _form['parent_phone'];
+      if (_form.containsKey('parent_email')) data['parent_email'] = _form['parent_email'];
+      if (_form.containsKey('parent_occupation')) data['parent_occupation'] = _form['parent_occupation'];
+      if (_form.containsKey('home_address')) data['home_address'] = _form['home_address'];
+      if (_passportUrl != null) data['passport_url'] = _passportUrl;
+
+      if (data.isNotEmpty) {
+        await DbProxy.instance.from('students').eq('id', widget.student['id']).update(data);
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onSave();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Student updated!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          backgroundColor: Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        _showErrorDialog('Save Failed', '$e');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gender = _val('gender').toLowerCase();
+    final isFemale = gender == 'female';
+
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 20, offset: Offset(0, -4))],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+            child: Column(
+              children: [
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E0E0), borderRadius: BorderRadius.circular(4))),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(14)),
+                      child: const Icon(Icons.edit_rounded, size: 22, color: Color(0xFF1A237E)),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Edit Student', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827), letterSpacing: -0.3)),
+                          const SizedBox(height: 2),
+                          Text('$_studentName  •  ${_val('admission_no')}', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 22, color: Color(0xFF9CA3AF)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE8EAED)),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFC5CAE9), width: 2),
+                            color: Colors.grey.shade100,
+                          ),
+                          child: _passportUrl != null && _passportUrl!.isNotEmpty
+                              ? ClipOval(child: Image.network(_passportUrl!, width: 90, height: 90, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _avatarPlaceholder(isFemale)))
+                              : _avatarPlaceholder(isFemale),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _uploading ? null : _pickAndUploadPassport,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(color: const Color(0xFF1A237E), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                              child: _uploading
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: TextButton(
+                      onPressed: _uploading ? null : _pickAndUploadPassport,
+                      child: Text(_uploading ? 'Uploading...' : 'Change Photo', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _sectionHeader('Personal Information', Icons.person_outline_rounded, const Color(0xFFF0F4FF), const Color(0xFF1A237E)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _field('First Name', 'first_name')),
+                      const SizedBox(width: 12),
+                      Expanded(child: _field('Last Name', 'last_name')),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _field('Middle Name', 'middle_name'),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _selectedGender,
+                    decoration: InputDecoration(
+                      labelText: 'Gender',
+                      labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E), width: 2)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Male', child: Text('Male', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'Female', child: Text('Female', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (v) => setState(() => _selectedGender = v),
+                  ),
+                  const SizedBox(height: 12),
+                  _field('Date of Birth', 'date_of_birth', hint: 'YYYY-MM-DD'),
+                  const SizedBox(height: 20),
+                  _sectionHeader('Parent / Guardian', Icons.family_restroom_rounded, const Color(0xFFF0FFF4), const Color(0xFF2E7D32)),
+                  const SizedBox(height: 12),
+                  _field('Parent Name', 'parent_name'),
+                  const SizedBox(height: 12),
+                  _field('Parent Phone', 'parent_phone'),
+                  const SizedBox(height: 12),
+                  _field('Parent Email', 'parent_email', hint: 'email@example.com'),
+                  const SizedBox(height: 12),
+                  _field('Parent Occupation', 'parent_occupation'),
+                  const SizedBox(height: 20),
+                  _sectionHeader('Other Details', Icons.info_outline_rounded, const Color(0xFFFFF8E1), const Color(0xFFF57F17)),
+                  const SizedBox(height: 12),
+                  _field('Home Address', 'home_address', maxLines: 3),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE8EAED))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _saving ? null : () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.grey.shade300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      child: Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _saving ? null : _save,
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), disabledBackgroundColor: Colors.grey.shade200, disabledForegroundColor: Colors.grey.shade400, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      child: _saving
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Save Changes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _avatarPlaceholder(bool isFemale) {
+    return Center(
+      child: Icon(isFemale ? Icons.girl : Icons.boy, size: 36, color: isFemale ? const Color(0xFFE91E63) : const Color(0xFF1565C0)),
+    );
+  }
+
+  Widget _sectionHeader(String title, IconData icon, Color bg, Color iconColor) {
+    return Row(
+      children: [
+        Container(width: 32, height: 32, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)), child: Icon(icon, size: 16, color: iconColor)),
+        const SizedBox(width: 10),
+        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+      ],
+    );
+  }
+
+  Widget _field(String label, String key, {String? hint, int maxLines = 1}) {
+    return TextFormField(
+      initialValue: _val(key),
+      onChanged: (v) => _form[key] = v.trim(),
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+        border: const OutlineInputBorder(),
+        enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))),
+        focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E), width: 2)),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        isDense: true,
       ),
     );
   }

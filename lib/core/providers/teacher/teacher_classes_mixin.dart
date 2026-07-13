@@ -71,6 +71,36 @@ mixin TeacherClassesMixin on TeacherBase {
       _mySubjectAssignments = List<Map<String, dynamic>>.from(subR);
       _isSubjectTeacher = _mySubjectAssignments.isNotEmpty;
 
+      // PRIMARY fallback: form master with no subject assignments gets all school subjects
+      if (_isFormMaster && _formTeacherClass != null) {
+        final tier = _formTeacherClass!['tier']?.toString() ?? '';
+        final cid = _formTeacherClassId ?? '';
+        final hasSubs = _mySubjectAssignments.any((a) => a['class_id']?.toString() == cid);
+        if (tier == 'PRIMARY' && !hasSubs) {
+          try {
+            final allSubs = await DbProxy.instance
+                .from('subjects')
+                .select('id, name, code')
+                .eq('school_id', schoolId)
+                .get();
+            for (final sub in allSubs) {
+              _mySubjectAssignments.add({
+                'id': 'synthetic_${sub['id']}_$cid',
+                'class_id': cid,
+                'subject_id': sub['id'],
+                'is_compulsory': true,
+                'subjects': sub,
+                'classes': _formTeacherClass,
+                '_is_synthetic': true,
+              });
+            }
+            _isSubjectTeacher = _mySubjectAssignments.isNotEmpty;
+          } catch (e) {
+            print('Error loading PRIMARY subjects: $e');
+          }
+        }
+      }
+
       final classMap = <String, Map<String, dynamic>>{};
 
       if (_formTeacherClass != null) {

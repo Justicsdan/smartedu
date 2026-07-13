@@ -1143,6 +1143,7 @@ class _PageClassesState extends State<PageClasses>
                     'name': name,
                     'section': section,
                     'studentCount': 0,
+                    'tier': selectedCategory == 'Junior School (JSS)' ? 'JSS' : selectedCategory == 'Primary School' ? 'PRIMARY' : 'SSS',
                     'class_level':
                         selectedCategory == 'Junior School (JSS)'
                             ? 'JSS'
