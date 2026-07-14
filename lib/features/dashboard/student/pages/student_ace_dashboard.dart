@@ -590,7 +590,7 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
   Future<void> _downloadPdf(StudentProvider provider) async {
     try {
       await AcePdfGenerator.generateAndDownload(
-        schoolInfo: {'name': provider.schoolName},
+        schoolInfo: provider.schoolInfoMap,
         student: {
           'first_name': provider.firstName,
           'last_name': provider.lastName,

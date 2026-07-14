@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 // ==========================================
 // File: lib/features/dashboard/student/pages/student_results_page.dart
 // ==========================================
@@ -110,15 +112,14 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
   Future<pw.ImageProvider?> _fetchImage(String? url) async {
     if (url == null || url.isEmpty) return null;
     try {
-      final res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
-        return pw.MemoryImage(res.bodyBytes);
-      }
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) return pw.MemoryImage(response.bodyBytes);
     } catch (e) {
-      debugPrint('Image fetch error: $e');
+      debugPrint('PDF IMG error: $e');
     }
     return null;
   }
+
 
   PdfColor _hexToPdf(String hex) {
     final h = hex.replaceAll('#', '');
@@ -190,6 +191,21 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
   // ═══════════════════════════════════════════
   //  PDF GENERATION — Classic Layout
   // ═══════════════════════════════════════════
+  static pw.Widget _watermark(pw.ImageProvider? logoImg, String schoolName) {
+    if (logoImg == null) return pw.SizedBox();
+    return pw.SizedBox(
+      width: 595.28,
+      height: 841.89,
+      child: pw.Center(
+        child: pw.Opacity(
+          opacity: 0.08,
+          child: pw.ClipOval(
+            child: pw.Image(logoImg, width: 1100, height: 1100, fit: pw.BoxFit.cover),
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _printResult() async {
     final provider = context.read<StudentProvider>();
@@ -212,7 +228,15 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       final totalScore = scores.fold<double>(0, (sum, s) => sum + ((s['total'] ?? 0) as num).toDouble());
       final totalStr = totalScore == totalScore.roundToDouble() ? totalScore.toInt().toString() : totalScore.toStringAsFixed(1);
 
-      final logoImg = await _fetchImage(provider.schoolLogoUrl);
+            String _logoUrl = provider.schoolLogoUrl;
+      if (_logoUrl.isEmpty) {
+        try {
+          final _r = await http.get(Uri.parse('https://tcjsmkhmfjigutfhjtem.supabase.co/rest/v1/schools?select=logo_url&id=eq.' + provider.schoolId), headers: {'apikey': 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg'});
+          if (_r.statusCode == 200) { final list = jsonDecode(_r.body) as List; if (list.isNotEmpty) _logoUrl = (list[0]['logo_url'] ?? '').toString(); }
+        } catch (_) {}
+      }
+      final logoImg = await _fetchImage(_logoUrl);
+
       final passportImg = await _fetchImage(provider.passportUrl);
       final sigImg = await _fetchImage(provider.principalSignatureUrl);
       final stampImg = await _fetchImage(provider.schoolStampUrl);
@@ -371,8 +395,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
       pdf.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(30),
+          pageTheme: pw.PageTheme(pageFormat: PdfPageFormat.a4, margin: const pw.EdgeInsets.all(30), buildForeground: (context) => _watermark(logoImg, provider.schoolName)),
           build: (context) {
             final pageWidgets = <pw.Widget>[];
 
@@ -381,10 +404,6 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  if (logoImg != null)
-                    pw.Container(width: 72, height: 72, child: pw.Image(logoImg, fit: pw.BoxFit.contain))
-                  else
-                    pw.SizedBox(width: 72, height: 72),
                   pw.Expanded(
                     child: pw.Column(
                       mainAxisSize: pw.MainAxisSize.min,
@@ -404,9 +423,9 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     ),
                   ),
                   if (logoImg != null)
-                    pw.Container(width: 72, height: 72, child: pw.Image(logoImg, fit: pw.BoxFit.contain))
+                    pw.Container(width: 85, height: 85, child: pw.Image(logoImg, fit: pw.BoxFit.contain))
                   else
-                    pw.SizedBox(width: 72, height: 72),
+                    pw.SizedBox(width: 85, height: 85),
                 ],
               ),
             );

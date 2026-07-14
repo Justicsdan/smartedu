@@ -28,8 +28,7 @@ class AcePdfGenerator {
     final studentName = '${student['first_name'] ?? ''} ${student['last_name'] ?? ''}'.trim();
     final pdf = pw.Document(theme: pw.ThemeData.withFont(base: pw.Font.helvetica()));
     pdf.addPage(pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(20),
+      pageTheme: pw.PageTheme(pageFormat: PdfPageFormat.a4, margin: const pw.EdgeInsets.all(20), buildForeground: (context) => _watermark(logoImg, schoolInfo['name']?.toString() ?? '')),
       build: (context) => [
         _buildHeader(schoolInfo, logoImg),
         pw.SizedBox(height: 8),
@@ -46,12 +45,24 @@ class AcePdfGenerator {
     final fileName = '${studentName.replaceAll(' ', '_')}_${term?['name'] ?? 'term'}_ACE_Report.pdf';
     downloadPdfBytes(bytes, fileName);
   }
+  static pw.Widget _watermark(pw.ImageProvider? logoImg, String schoolName) {
+    if (logoImg == null) return pw.SizedBox();
+    return pw.SizedBox(
+      width: 595.28,
+      height: 841.89,
+      child: pw.Center(
+        child: pw.Opacity(
+          opacity: 0.08,
+          child: pw.ClipOval(
+            child: pw.Image(logoImg, width: 1100, height: 1100, fit: pw.BoxFit.cover),
+          ),
+        ),
+      ),
+    );
+  }
 
   static pw.Widget _buildHeader(Map<String, dynamic> schoolInfo, pw.ImageProvider? logoImg) {
     final ch = <pw.Widget>[
-      if (logoImg != null)
-        pw.Container(width: 72, height: 72, child: pw.Image(logoImg, fit: pw.BoxFit.contain)),
-      pw.SizedBox(width: 10),
       pw.Expanded(
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -63,7 +74,10 @@ class AcePdfGenerator {
           ],
         ),
       ),
-      if (logoImg != null) pw.SizedBox(width: 72),
+      if (logoImg != null)
+        pw.Container(width: 85, height: 85, child: pw.Image(logoImg, fit: pw.BoxFit.contain))
+      else
+        pw.SizedBox(width: 85, height: 85),
     ];
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 6),

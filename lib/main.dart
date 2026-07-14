@@ -65,6 +65,35 @@ void main() async {
   );
 }
 
+
+class _SessionExpiredScreen extends StatelessWidget {
+  const _SessionExpiredScreen();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_clock_rounded, size: 64, color: Color(0xFF9CA3AF)),
+            const SizedBox(height: 16),
+            const Text('Session Expired', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+            const SizedBox(height: 8),
+            const Text('Please log in again to continue', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF))),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.go('/role-selection'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              child: const Text('Go to Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -111,6 +140,7 @@ final _router = GoRouter(
       path: '/dashboard/superadmin',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
+        if (data.isEmpty) return const _SessionExpiredScreen();
         return SuperAdminDashboard(adminData: data);
       },
     ),
@@ -118,6 +148,7 @@ final _router = GoRouter(
       path: '/dashboard/schooladmin',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
+        if (data.isEmpty) return const _SessionExpiredScreen();
         return _SchoolAdminInitializer(schoolData: data);
       },
     ),
@@ -125,6 +156,7 @@ final _router = GoRouter(
       path: '/dashboard/teacher',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
+        if (data.isEmpty) return const _SessionExpiredScreen();
         return _TeacherInitializer(teacherData: data);
       },
     ),
@@ -132,6 +164,7 @@ final _router = GoRouter(
       path: '/dashboard/student',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
+        if (data.isEmpty) return const _SessionExpiredScreen();
         return _StudentInitializer(studentData: data);
       },
     ),
@@ -139,6 +172,7 @@ final _router = GoRouter(
       path: '/teacher-profile',
       builder: (_, state) {
         final data = state.extra as Map<String, dynamic>? ?? {};
+        if (data.isEmpty) return const _SessionExpiredScreen();
         return TeacherDashboard(teacherData: data);
       },
     ),
