@@ -22,6 +22,7 @@ mixin AceMixin on BaseProvider {
   }
 
   Future<void> savePaceScore({
+    String? id,
     required String studentId,
     required String subjectId,
     required String sessionId,
@@ -29,19 +30,16 @@ mixin AceMixin on BaseProvider {
     required String paceNo,
     required double ptScore,
   }) async {
-    final existing = _acePaceScores.where((s) =>
-        s['student_id'].toString() == studentId &&
-        s['subject_id'].toString() == subjectId &&
-        s['pace_no'] == paceNo &&
-        s['term_id'].toString() == termId).toList();
-
-    if (existing.isNotEmpty) {
+    if (id != null && id.isNotEmpty) {
       await DbProxy.instance
           .from('ace_pace_scores')
-          .eq('id', existing.first['id'].toString())
+          .eq('id', id)
           .update({'pace_no': paceNo, 'pt_score': ptScore});
-      existing.first['pace_no'] = paceNo;
-      existing.first['pt_score'] = ptScore;
+      final idx = _acePaceScores.indexWhere((s) => s['id'].toString() == id);
+      if (idx != -1) {
+        _acePaceScores[idx]['pace_no'] = paceNo;
+        _acePaceScores[idx]['pt_score'] = ptScore;
+      }
     } else {
       final result = await DbProxy.instance.from('ace_pace_scores').insert({
         'school_id': schoolId,

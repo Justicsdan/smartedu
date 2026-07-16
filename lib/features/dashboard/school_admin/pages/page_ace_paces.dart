@@ -232,6 +232,7 @@ class _PageAcePacesState extends State<PageAcePaces> {
           for (final s in scoresToSave) {
             final provider = context.read<SchoolAdminProvider>();
             await provider.savePaceScore(
+              id: s['id']?.toString(),
               studentId: student['id'].toString(),
               subjectId: s['subject_id'] as String,
               sessionId: provider.currentSession?['id']?.toString() ?? '',
@@ -307,7 +308,11 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
     });
   }
 
+  final List<String> _pendingDeletes = [];
+
   void _removePaceSlot(String subjectId, int index) {
+    final pace = _subjectPaces[subjectId]![index];
+    if (pace['id'] != null) _pendingDeletes.add(pace['id'].toString());
     setState(() {
       _subjectPaces[subjectId]!.removeAt(index);
     });
@@ -339,6 +344,7 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
               toDelete.add(pace['id'].toString());
             } else {
               toSave.add({
+                'id': pace['id'],
                 'subject_id': entry.key,
                 'pace_no': paceNo,
                 'pt_score': ptScore,
@@ -348,6 +354,7 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
         }
       }
 
+      toDelete.addAll(_pendingDeletes);
       await widget.onSave(toDelete, toSave);
       widget.onSaved();
     } catch (e) {
