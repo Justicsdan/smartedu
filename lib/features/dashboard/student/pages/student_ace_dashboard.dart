@@ -444,6 +444,16 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
       );
     }
 
+    final _sortedEntries = scoresBySubject.entries.toList()
+      ..sort((a, b) {
+        final an = (a.value.firstOrNull?['subject_name'] ?? '').toString().toLowerCase();
+        final bn = (b.value.firstOrNull?['subject_name'] ?? '').toString().toLowerCase();
+        if (an.contains('math')) return -1;
+        if (bn.contains('math')) return 1;
+        if (an.contains('english')) return -1;
+        if (bn.contains('english')) return 1;
+        return an.compareTo(bn);
+      });
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -472,11 +482,11 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
               const DataColumn(label: Text('Subject')),
               for (int i = 0; i < maxPaces; i++) ...[
                 const DataColumn(label: Text('PACE No.')),
-                const DataColumn(label: Text('PT%')),
+                const DataColumn(label: Text('PT')),
               ],
               const DataColumn(label: Text('Total')),
             ],
-            rows: scoresBySubject.entries.map((entry) {
+            rows: _sortedEntries.map((entry) {
               final subjectId = entry.key;
               final paces = entry.value;
               final subject = _subjects
@@ -490,8 +500,7 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
                   .where((s) => s != null)
                   .cast<num>();
               final total = ptScores.isNotEmpty
-                  ? ptScores.reduce((a, b) => a + b) /
-                      ptScores.length
+                  ? ptScores.reduce((a, b) => a + b)
                   : 0.0;
               final totalColor = total >= 80
                   ? const Color(0xFF2E7D32)

@@ -159,7 +159,7 @@ class AcePdfGenerator {
     final hdr = <pw.Widget>[_hc('Subject')];
     for (int i = 0; i < maxP; i++) {
       hdr.add(_hc('P${i + 1} No.'));
-      hdr.add(_hc('PT%'));
+      hdr.add(_hc('PT'));
     }
     hdr.add(_hc('Total'));
 
@@ -167,12 +167,23 @@ class AcePdfGenerator {
       pw.TableRow(decoration: const pw.BoxDecoration(color: PdfColors.blue800), children: hdr),
     ];
 
-    for (final subj in subjects) {
+    final sortedSubjects = List<Map<String, dynamic>>.from(subjects)
+      ..sort((a, b) {
+        final an = (a['name'] ?? '').toString().toLowerCase();
+        final bn = (b['name'] ?? '').toString().toLowerCase();
+        if (an.contains('math')) return -1;
+        if (bn.contains('math')) return 1;
+        if (an.contains('english')) return -1;
+        if (bn.contains('english')) return 1;
+        return an.compareTo(bn);
+      });
+
+    for (final subj in sortedSubjects) {
       final sid = subj['id']?.toString() ?? '';
       final scores = bySubject[sid] ?? [];
       if (scores.isEmpty) continue;
       final validPts = scores.where((s) => s['pt_score'] != null).map((s) => (s['pt_score'] as num).toDouble()).toList();
-      final total = validPts.isNotEmpty ? validPts.reduce((a, b) => a + b) / validPts.length : 0.0;
+      final total = validPts.isNotEmpty ? validPts.reduce((a, b) => a + b) : 0.0;
       final totalColor = total < 80 ? PdfColors.red800 : PdfColors.green800;
       final rowBg = rows.length.isEven ? PdfColors.white : PdfColor(0.93, 0.96, 1.0);
 
