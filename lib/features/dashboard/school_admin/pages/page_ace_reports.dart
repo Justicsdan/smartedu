@@ -417,7 +417,7 @@ class _ReportSheetState extends State<_ReportSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _pub ? null : _saveAndPublish,
+                  onPressed: _saveAndPublish,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
@@ -497,7 +497,7 @@ class _ReportSheetState extends State<_ReportSheet> {
         ),
         maxLines: mx,
         keyboardType: num ? const TextInputType.numberWithOptions(decimal: true) : null,
-        readOnly: _pub,
+        readOnly: false,
       ),
     );
   }
