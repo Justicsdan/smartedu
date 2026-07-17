@@ -157,6 +157,7 @@ class _PageAcePacesState extends State<PageAcePaces> {
                   itemCount: _students.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 6),
                   itemBuilder: (context, index) {
+                    if (index >= _students.length) return const SizedBox.shrink();
                     final s = _students[index];
                     final sid = s['id'].toString();
                     final paceCount = _paceCountForStudent(sid);
@@ -221,6 +222,8 @@ class _PageAcePacesState extends State<PageAcePaces> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
+      isDismissible: false,
       builder: (ctx) => _PaceEntrySheet(
         student: student,
         subjects: _subjects,
@@ -243,8 +246,8 @@ class _PageAcePacesState extends State<PageAcePaces> {
           }
         },
         onSaved: () {
-          _loadStudents();
           Navigator.pop(ctx);
+          _loadStudents();
         },
       ),
     );
@@ -402,6 +405,7 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
               child: ListView.builder(
                 itemCount: widget.subjects.length,
                 itemBuilder: (context, index) {
+                  if (index >= widget.subjects.length) return const SizedBox.shrink();
                   final sub = widget.subjects[index];
                   final subId = sub['id'].toString();
                   final paces = _subjectPaces[subId] ?? [];
@@ -434,6 +438,7 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
                         const SizedBox(height: 8),
                         ...paces.asMap().entries.map((entry) {
                           final i = entry.key;
+                          if (i >= paces.length) return const SizedBox.shrink();
                           final pace = entry.value;
                           final ptScore = pace['pt_score'];
                           final isLow = ptScore != null && (ptScore as num).toDouble() < 80;
