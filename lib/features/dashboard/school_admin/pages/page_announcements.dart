@@ -66,7 +66,8 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
     bool isPinned = false;
     bool publishNow = true;
 
-    showModalBottomSheet(
+    final _sid = context.read<SchoolAdminProvider>().schoolId;
+        showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -206,8 +207,9 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                       try {
                         final provider = context.read<SchoolAdminProvider>();
                         final insertRow = <String, dynamic>{
-                          'school_id': provider.schoolId,
-                          'author_type': 'admin',
+                          'school_id': _sid,
+                          'author_id': _sid,
+                          'author_type': 'school_admin',
                           'title': titleCtrl.text.trim(),
                           'content': contentCtrl.text.trim(),
                           'target_audience': targetAudience,
@@ -215,14 +217,20 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                           'is_pinned': isPinned,
                           'is_published': publishNow,
                           'published_at': publishNow ? DateTime.now().toUtc().toIso8601String() : null,
+                          'attachment_url': null,
+                          'expires_at': null,
                         };
                         await DbProxy.instance.from('announcements').insert(insertRow);
                         if (mounted) {
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Announcement created'), backgroundColor: Color(0xFF2E7D32)),
-                          );
-                          _loadAnnouncements();
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Announcement created'), backgroundColor: Color(0xFF2E7D32)),
+                              );
+                              _loadAnnouncements();
+                            }
+                          });
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(ctx).showSnackBar(

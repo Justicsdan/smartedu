@@ -167,6 +167,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     assignment_submissions: ['select', 'insert'],
     ace_pace_scores: ['select'],
     ace_term_reports: ['select'],
+    announcements: ['select'],
   },
 };
 

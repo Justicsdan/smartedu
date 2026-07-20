@@ -2,6 +2,7 @@
 // File: lib/features/dashboard/student/pages/student_announcements_page.dart
 // ==========================================
 import 'package:flutter/material.dart';
+import '../../../../core/services/db_proxy.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
@@ -36,17 +37,23 @@ class _StudentAnnouncementsPageState extends State<StudentAnnouncementsPage> {
           .single();
       final classId = student['class_id']?.toString() ?? '';
 
-      // Fetch published, non-expired announcements for this school
-      final r = await Supabase.instance.client
+      // Fetch published announcements for this school via DbProxy (RLS enabled)
+      final r = await DbProxy.instance
           .from('announcements')
           .select()
           .eq('school_id', provider.schoolId)
           .eq('is_published', true)
-          .or('expires_at.is.null,expires_at.gt.${DateTime.now().toUtc().toIso8601String()}')
           .order('is_pinned', ascending: false)
-          .order('published_at', ascending: false);
+          .get();
 
-      final all = List<Map<String, dynamic>>.from(r);
+      final now = DateTime.now().toUtc();
+      final all = List<Map<String, dynamic>>.from(r)
+          .where((a) {
+            final exp = a['expires_at'];
+            if (exp == null) return true;
+            final expDt = DateTime.tryParse(exp.toString());
+            return expDt == null || expDt.isAfter(now);
+          }).toList();
 
       // Filter: school-wide (class_id null) OR class-specific matching student's class
       // Also filter target_audience: 'all', 'students', or 'student' + class match
