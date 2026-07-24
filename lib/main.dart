@@ -29,6 +29,7 @@ import 'features/dashboard/school_admin/pages/page_teachers.dart';
 import 'features/dashboard/school_admin/pages/page_fees.dart';
 import 'features/dashboard/school_admin/pages/page_ace_paces.dart';
 import 'features/dashboard/school_admin/pages/page_ace_reports.dart';
+import 'features/dashboard/school_admin/pages/page_reports.dart';
 import 'features/dashboard/school_admin/pages/page_announcements.dart';
 import 'features/dashboard/teacher/teacher_dashboard.dart';
 import 'features/dashboard/school_admin/widgets/chat_bot_widget.dart';
@@ -504,6 +505,7 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.campaign_rounded, label: 'Announcements'),
     _NavItem(icon: Icons.auto_stories_rounded, label: 'PACE Scores'),
     _NavItem(icon: Icons.assessment_rounded, label: 'ACE Reports'),
+    _NavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
   ];
 
   List<_NavItem> get _visibleNavItems {
@@ -688,6 +690,8 @@ class _AdminShellState extends State<_AdminShell> {
         return const PageAcePaces();
       case 13:
         return const PageAceReports();
+      case 14:
+        return const PageReports();
       default:
         return const SizedBox.shrink();
     }
