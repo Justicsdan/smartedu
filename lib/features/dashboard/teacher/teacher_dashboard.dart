@@ -9,6 +9,7 @@ import '../school_admin/widgets/change_password_section.dart';
 import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 import '../school_admin/widgets/chat_bot_widget.dart';
 import 'pages/teacher_my_classes.dart';
+import '../../../../core/services/db_proxy.dart';
 import 'pages/teacher_enter_scores.dart';
 import 'pages/teacher_my_students.dart';
 import 'pages/teacher_assignments.dart';
@@ -842,6 +843,8 @@ class _TeacherHomePage extends StatelessWidget {
               ),
             ),
 
+          const _TeacherRecordingProgressCard(),
+          const SizedBox(height: 20),
           if (isSubjectTeacher || isFormMaster)
             LayoutBuilder(
               builder: (context, constraints) {
@@ -1104,6 +1107,274 @@ class _TeacherHomePage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TeacherRecordingProgressCard extends StatefulWidget {
+  const _TeacherRecordingProgressCard();
+  @override
+  State<_TeacherRecordingProgressCard> createState() => _TeacherRecordingProgressCardState();
+}
+
+class _TeacherRecordingProgressCardState extends State<_TeacherRecordingProgressCard> {
+  bool _loading = true;
+  String _termLabel = '';
+  String _curriculumMode = 'traditional';
+  List<_TClassProg> _classes = [];
+  final Set<String> _expanded = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final p = context.read<TeacherProvider>();
+      _curriculumMode = p.curriculumMode;
+      final sessionId = p.currentSession?['id']?.toString() ?? '';
+      final currentTerm = p.terms.where((t) => t['is_current'] == true).firstOrNull;
+      final termId = currentTerm?['id']?.toString() ?? '';
+      _termLabel = [currentTerm?['name'] ?? '', p.currentSession?['name'] ?? ''].where((s) => s.isNotEmpty).join(', ');
+      if (sessionId.isEmpty || termId.isEmpty) { setState(() => _loading = false); return; }
+      final schoolId = p.schoolId;
+      final teacherId = p.teacherId;
+      final isAce = _curriculumMode == 'ace';
+      final csResult = await DbProxy.instance.from('class_subjects').select('class_id, subject_id, subjects(name)').eq('school_id', schoolId).eq('teacher_id', teacherId).get();
+      final Map<String, List<Map<String, dynamic>>> mySubjects = {};
+      final Set<String> myClassIds = {};
+      for (final r in csResult) {
+        final cid = r['class_id']?.toString() ?? '';
+        if (cid.isEmpty) continue;
+        myClassIds.add(cid);
+        mySubjects.putIfAbsent(cid, () => []);
+        final subj = r['subjects'] as Map<String, dynamic>? ?? {};
+        mySubjects[cid]!.add({'subject_id': r['subject_id']?.toString() ?? '', 'subject_name': subj['name']?.toString() ?? ''});
+      }
+      if (p.isFormMaster) {
+        final ftCid = p.formTeacherAssignment?['id']?.toString() ?? '';
+        if (ftCid.isNotEmpty && !myClassIds.contains(ftCid)) {
+          myClassIds.add(ftCid);
+          final allCs = await DbProxy.instance.from('class_subjects').select('subject_id, subjects(name)').eq('school_id', schoolId).eq('class_id', ftCid).get();
+          mySubjects[ftCid] = allCs.map((r) {
+            final subj = r['subjects'] as Map<String, dynamic>? ?? {};
+            return {'subject_id': r['subject_id']?.toString() ?? '', 'subject_name': subj['name']?.toString() ?? ''};
+          }).toList();
+        }
+      }
+      final scoreTable = isAce ? 'ace_pace_scores' : 'scores';
+      final scoreResult = await DbProxy.instance.from(scoreTable).select('class_id, subject_id, student_id').eq('session_id', sessionId).eq('term_id', termId).get();
+      final Map<String, Map<String, Set<String>>> scored = {};
+      for (final r in scoreResult) {
+        final cid = r['class_id']?.toString() ?? '';
+        final sid = r['subject_id']?.toString() ?? '';
+        final stuid = r['student_id']?.toString() ?? '';
+        if (cid.isEmpty || sid.isEmpty) continue;
+        scored.putIfAbsent(cid, () => {});
+        scored[cid]!.putIfAbsent(sid, () => {});
+        scored[cid]![sid]!.add(stuid);
+      }
+      final attResult = await DbProxy.instance.from('attendance').select('class_id, date').eq('session_id', sessionId).eq('term_id', termId).in_('class_id', myClassIds.toList()).order('date', ascending: false).get();
+      final Map<String, String> lastAtt = {};
+      for (final r in attResult) {
+        final cid = r['class_id']?.toString() ?? '';
+        if (cid.isEmpty) continue;
+        lastAtt.putIfAbsent(cid, () => r['date']?.toString() ?? '');
+      }
+      final Set<String> pubClasses = {};
+      final Set<String> draftClasses = {};
+      final Set<String> behavClasses = {};
+      if (p.isFormMaster) {
+        final ftCid = p.formTeacherAssignment?['id']?.toString() ?? '';
+        if (ftCid.isNotEmpty) {
+          if (!isAce) {
+            final behavR = await DbProxy.instance.from('student_behavioural_ratings').select('class_id').eq('session_id', sessionId).eq('term_id', termId).eq('class_id', ftCid).get();
+            if (behavR.isNotEmpty) behavClasses.add(ftCid);
+            final pubR = await DbProxy.instance.from('student_term_summaries').select('class_id, is_published').eq('session_id', sessionId).eq('term_id', termId).eq('class_id', ftCid).get();
+            if (pubR.any((r) => r['is_published'] == true)) pubClasses.add(ftCid);
+            if (pubR.isNotEmpty) draftClasses.add(ftCid);
+          } else {
+            final pubR = await DbProxy.instance.from('ace_term_reports').select('class_id, is_published').eq('session_id', sessionId).eq('term_id', termId).eq('class_id', ftCid).get();
+            if (pubR.any((r) => r['is_published'] == true)) pubClasses.add(ftCid);
+            if (pubR.isNotEmpty) draftClasses.add(ftCid);
+          }
+        }
+      }
+      final Map<String, int> stuCounts = {};
+      for (final s in p.students) {
+        final cid = s['class_id']?.toString() ?? '';
+        if (cid.isEmpty) continue;
+        stuCounts[cid] = (stuCounts[cid] ?? 0) + 1;
+      }
+      final ftCid = p.formTeacherAssignment?['id']?.toString() ?? '';
+      final List<_TClassProg> result = [];
+      for (final cid in myClassIds) {
+        final subjects = mySubjects[cid] ?? [];
+        final classScored = scored[cid] ?? {};
+        final subjectIds = subjects.map((s) => s['subject_id'] as String).toSet();
+        final scoredIds = classScored.keys.toSet();
+        final myScoredIds = subjectIds.intersection(scoredIds);
+        final isFM = cid == ftCid;
+        result.add(_TClassProg(
+          classId: cid, className: p.getClassName(cid), roleLabel: isFM ? 'Form Master' : 'Subject Teacher',
+          totalSubjects: subjects.length, scoredSubjects: myScoredIds.length,
+          subjects: subjects.map((s) => _TSubjProg(subjectId: s['subject_id'] as String, subjectName: s['subject_name'] as String, studentsScored: classScored[s['subject_id']]?.length ?? 0, totalStudents: stuCounts[cid] ?? 0)).toList(),
+          lastAttendance: lastAtt[cid], isFormMaster: isFM, hasBehavioral: behavClasses.contains(cid), hasDraft: draftClasses.contains(cid), isPublished: pubClasses.contains(cid),
+        ));
+      }
+      setState(() { _classes = result; _loading = false; });
+    } catch (_) { setState(() => _loading = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading || _termLabel.isEmpty || _classes.isEmpty) return const SizedBox.shrink();
+    final isAce = _curriculumMode == 'ace';
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Container(
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE5E7EB)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1565C0)]), borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                child: Row(children: [
+                  const Icon(Icons.trending_up_rounded, size: 17, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(isAce ? 'PACE PROGRESS' : 'RECORDING PROGRESS', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.6)),
+                  const Spacer(),
+                  Text(_termLabel, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7))),
+                ]),
+              ),
+              for (int i = 0; i < _classes.length; i++) ...[
+                _trRow(_classes[i]),
+                if (i < _classes.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
+              ],
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _trRow(_TClassProg cp) {
+    final pct = cp.totalSubjects > 0 ? cp.scoredSubjects / cp.totalSubjects : 0.0;
+    final color = pct >= 1.0 ? const Color(0xFF2E7D32) : pct > 0 ? const Color(0xFFF57F17) : const Color(0xFFC62828);
+    final isExp = _expanded.contains(cp.classId);
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() { isExp ? _expanded.remove(cp.classId) : _expanded.add(cp.classId); }),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(child: Text(cp.className, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF111827)))),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: cp.isFormMaster ? const Color(0xFFE0F2F1) : const Color(0xFFF3E5F5), borderRadius: BorderRadius.circular(4)), child: Text(cp.roleLabel, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cp.isFormMaster ? const Color(0xFF00695C) : const Color(0xFF7B1FA2)))),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 80, child: Row(children: [
+                    Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(value: pct, backgroundColor: const Color(0xFFEEEEEE), color: color, minHeight: 4))),
+                    const SizedBox(width: 5),
+                    Text('${cp.scoredSubjects}/${cp.totalSubjects}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                  ])),
+                  const SizedBox(width: 4),
+                  if (pct >= 1.0) const Icon(Icons.check_circle_rounded, size: 15, color: Color(0xFF2E7D32)) else AnimatedRotation(turns: isExp ? 0.5 : 0, duration: const Duration(milliseconds: 200), child: const Icon(Icons.expand_more_rounded, size: 16, color: Color(0xFFBDBDBD))),
+                ]),
+                if (cp.lastAttendance != null) ...[
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    const Icon(Icons.fact_check_rounded, size: 12, color: Color(0xFF9E9E9E)),
+                    const SizedBox(width: 4),
+                    Text('Last attendance: ${cp.lastAttendance}', style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E))),
+                  ]),
+                ],
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(duration: const Duration(milliseconds: 200), curve: Curves.easeInOut, child: isExp ? _trDetail(cp) : const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _trDetail(_TClassProg cp) {
+    final isAce = _curriculumMode == 'ace';
+    final scoreNavId = isAce ? 'pace_scores' : 'enter_scores';
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: const Color(0xFFFAFAFA), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFEEEEEE))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(spacing: 6, runSpacing: 4, children: [
+            for (final sp in cp.subjects)
+              if (sp.studentsScored > 0)
+                Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3), decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(5)), child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.check, size: 11, color: Color(0xFF2E7D32)), const SizedBox(width: 3), Text(sp.subjectName, style: const TextStyle(fontSize: 11, color: Color(0xFF2E7D32), fontWeight: FontWeight.w500))]))
+              else
+                GestureDetector(
+                  onTap: () { setState(() { context.read<_TeacherDashboardState>()._selectedNavId = scoreNavId; }); },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(5)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.circle, size: 7, color: Color(0xFFC62828)), const SizedBox(width: 3), Text(sp.subjectName, style: const TextStyle(fontSize: 11, color: Color(0xFFC62828), fontWeight: FontWeight.w600))]),
+                  ),
+                ),
+          ]),
+          if (cp.isFormMaster) ...[
+            const SizedBox(height: 6),
+            if (isAce)
+              Row(children: [
+                _miniStat('Report', cp.isPublished),
+                const Spacer(),
+                if (!cp.isPublished)
+                  GestureDetector(
+                    onTap: () { setState(() { context.read<_TeacherDashboardState>()._selectedNavId = 'publish_results'; }); },
+                    child: const Text('Go to ACE Reports \u2192', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1565C0))),
+                  ),
+              ])
+            else
+              Row(children: [
+                _miniStat('Behavioral', cp.hasBehavioral),
+                const SizedBox(width: 12),
+                _miniStat('Results', cp.isPublished),
+                const Spacer(),
+                if (!cp.isPublished)
+                  GestureDetector(
+                    onTap: () { setState(() { context.read<_TeacherDashboardState>()._selectedNavId = 'publish_results'; }); },
+                    child: const Text('Go to Publish \u2192', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1565C0))),
+                  ),
+              ]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, bool done) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 13, color: done ? const Color(0xFF2E7D32) : const Color(0xFFBDBDBD)),
+      const SizedBox(width: 3),
+      Text('$label: ', style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E))),
+      Text(done ? 'Done' : 'Pending', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: done ? const Color(0xFF2E7D32) : const Color(0xFF757575))),
+    ]);
+  }
+}
+
+class _TClassProg {
+  final String classId; final String className; final String roleLabel; final int totalSubjects; final int scoredSubjects; final List<_TSubjProg> subjects; final String? lastAttendance; final bool isFormMaster; final bool hasBehavioral; final bool hasDraft; final bool isPublished;
+  _TClassProg({required this.classId, required this.className, required this.roleLabel, required this.totalSubjects, required this.scoredSubjects, required this.subjects, required this.lastAttendance, required this.isFormMaster, required this.hasBehavioral, required this.hasDraft, required this.isPublished});
+}
+
+class _TSubjProg {
+  final String subjectId; final String subjectName; final int studentsScored; final int totalStudents;
+  _TSubjProg({required this.subjectId, required this.subjectName, required this.studentsScored, required this.totalStudents});
 }
 
 class _StatCard extends StatelessWidget {

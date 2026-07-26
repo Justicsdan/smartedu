@@ -163,7 +163,9 @@ mixin ReportsMixin on BaseProvider {
   }
 
   Future<List<Map<String, dynamic>>> _aceSubjectSummaries(String classId, String sessionId, String termId) async {
-    final scores = await DbProxy.instance.from('ace_pace_scores').eq('class_id', classId).eq('session_id', sessionId).eq('term_id', termId).get();
+    final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+    if (cStuIds.isEmpty) return [];
+    final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).eq('term_id', termId).get();
     if (scores.isEmpty) return [];
     final bySub = <String, List<double>>{};
     for (final s in scores) {
@@ -263,7 +265,9 @@ mixin ReportsMixin on BaseProvider {
   }
 
   Future<List<Map<String, dynamic>>> _aceSubjectCumulative(String classId, String sessionId, List<String> termIds) async {
-    final scores = await DbProxy.instance.from('ace_pace_scores').eq('class_id', classId).eq('session_id', sessionId).inFilter('term_id', termIds).get();
+    final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+    if (cStuIds.isEmpty) return [];
+    final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).inFilter('term_id', termIds).get();
     if (scores.isEmpty) return [];
     final bySubStu = <String, List<double>>{};
     for (final s in scores) {
@@ -603,7 +607,9 @@ mixin ReportsMixin on BaseProvider {
   // ═══ 14. SUBJECT TREND OVER TIME ═══
   Future<List<Map<String, dynamic>>> loadSubjectTrend(String classId, String subjectId, String sessionId, List<String> termIds) async {
     if (_isAce) {
-      final scores = await DbProxy.instance.from('ace_pace_scores').eq('class_id', classId).eq('subject_id', subjectId).eq('session_id', sessionId).inFilter('term_id', termIds).get();
+      final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+      if (cStuIds.isEmpty) return [];
+      final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).eq('subject_id', subjectId).inFilter('term_id', termIds).get();
       final byTerm = <String, List<double>>{};
       for (final s in scores) { final tid = s['term_id']?.toString() ?? ''; byTerm.putIfAbsent(tid, () => []).add(_numVal(s['pt_score'])); }
       final results = <Map<String, dynamic>>[];
@@ -681,7 +687,9 @@ mixin ReportsMixin on BaseProvider {
 
   // ═══ 16. PACE COMPLETION RATE (ACE only) ═══
   Future<List<Map<String, dynamic>>> loadPaceCompletionRate(String classId, String sessionId, List<String> termIds) async {
-    final scores = await DbProxy.instance.from('ace_pace_scores').eq('class_id', classId).eq('session_id', sessionId).inFilter('term_id', termIds).get();
+    final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+    if (cStuIds.isEmpty) return [];
+    final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).inFilter('term_id', termIds).get();
     if (scores.isEmpty) return [];
     final bySub = <String, List<Map<String, dynamic>>>{};
     for (final s in scores) { final sid = s['subject_id']?.toString() ?? ''; bySub.putIfAbsent(sid, () => []).add(s); }

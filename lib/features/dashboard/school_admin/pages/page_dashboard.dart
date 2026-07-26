@@ -4,6 +4,9 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/services/db_proxy.dart';
+import '../../../../core/providers/school_admin_provider.dart';
 
 class PageDashboard extends StatefulWidget {
   final int studentCount;
@@ -40,6 +43,12 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
   late AnimationController _gradientController;
   late AnimationController _staggerController;
   late Animation<double> _staggerAnimation;
+  bool _progressLoading = true;
+  String? _progressError;
+  List<_ClassProgress> _classProgress = [];
+  String _currentTermLabel = '';
+  final Set<String> _expandedClasses = {};
+  String _curriculumMode = 'traditional';
 
   @override
   void initState() {
@@ -49,6 +58,7 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
     _staggerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
     _staggerAnimation = CurvedAnimation(parent: _staggerController, curve: Curves.easeOutCubic);
     _staggerController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRecordingProgress());
   }
 
   @override
@@ -108,6 +118,11 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
               child: _buildStatGrid(),
             ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
+              child: _buildRecordingProgress(),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
               child: _buildMidSection(sssCount, jssCount, primaryCount, unassigned, total),
@@ -119,6 +134,341 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _loadRecordingProgress() async {
+    try {
+      final p = context.read<SchoolAdminProvider>();
+      _curriculumMode = p.schoolSettings?['curriculum_mode'] ?? 'traditional';
+      final sessionId = p.currentSession?['id']?.toString() ?? '';
+      final currentTerm = (p.termsList ?? []).where((t) => t['is_current'] == true).firstOrNull;
+      final termId = currentTerm?['id']?.toString() ?? '';
+      final sessionName = p.currentSession?['name']?.toString() ?? '';
+      final termName = currentTerm?['name']?.toString() ?? '';
+      _currentTermLabel = [termName, sessionName].where((s) => s.isNotEmpty).join(', ');
+      if (sessionId.isEmpty || termId.isEmpty) {
+        setState(() { _progressLoading = false; });
+        return;
+      }
+      final schoolId = p.schoolId;
+      final csResult = await DbProxy.instance
+          .from('class_subjects')
+          .select('class_id, subject_id, subjects(name)')
+          .eq('school_id', schoolId)
+          .get();
+      final Map<String, List<Map<String, dynamic>>> csMap = {};
+      for (final r in csResult) {
+        final cid = r['class_id']?.toString() ?? '';
+        if (cid.isEmpty) continue;
+        csMap.putIfAbsent(cid, () => []);
+        final subj = r['subjects'] as Map<String, dynamic>? ?? {};
+        csMap[cid]!.add({
+          'subject_id': r['subject_id']?.toString() ?? '',
+          'subject_name': subj['name']?.toString() ?? '',
+        });
+      }
+      final scoreTable = _curriculumMode == 'ace' ? 'ace_pace_scores' : 'scores';
+      final scoreResult = await DbProxy.instance
+          .from(scoreTable)
+          .select('class_id, subject_id, student_id')
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .get();
+      final Map<String, Map<String, Set<String>>> scoredMap = {};
+      for (final r in scoreResult) {
+        final cid = r['class_id']?.toString() ?? '';
+        final sid = r['subject_id']?.toString() ?? '';
+        final stuid = r['student_id']?.toString() ?? '';
+        if (cid.isEmpty || sid.isEmpty) continue;
+        scoredMap.putIfAbsent(cid, () => {});
+        scoredMap[cid]!.putIfAbsent(sid, () => {});
+        scoredMap[cid]![sid]!.add(stuid);
+      }
+      final behavResult = await DbProxy.instance
+          .from('student_behavioural_ratings')
+          .select('class_id')
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .get();
+      final behavClasses = behavResult
+          .map((r) => r['class_id']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      final pubTable = _curriculumMode == 'ace' ? 'ace_term_reports' : 'student_term_summaries';
+      final pubResult = await DbProxy.instance
+          .from(pubTable)
+          .select('class_id, is_published')
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .get();
+      final pubClasses = pubResult
+          .where((r) => r['is_published'] == true)
+          .map((r) => r['class_id']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      final draftClasses = pubResult
+          .map((r) => r['class_id']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      final Map<String, int> studentCounts = {};
+      for (final c in widget.classes) {
+        studentCounts[c['id']?.toString() ?? ''] = c['studentCount'] as int? ?? 0;
+      }
+      final List<_ClassProgress> progress = [];
+      for (final c in widget.classes) {
+        final cid = c['id']?.toString() ?? '';
+        final name = c['name']?.toString() ?? '';
+        final section = c['section']?.toString() ?? '';
+        final className = section.isNotEmpty ? '$name - $section' : name;
+        final subjects = csMap[cid] ?? [];
+        final scored = scoredMap[cid] ?? {};
+        final total = studentCounts[cid] ?? 0;
+        final subjectIds = subjects.map((s) => s['subject_id'] as String).toSet();
+        final scoredIds = scored.keys.toSet();
+        progress.add(_ClassProgress(
+          classId: cid,
+          className: className,
+          totalSubjects: subjects.length,
+          scoredSubjects: subjectIds.intersection(scoredIds).length,
+          subjects: subjects
+              .map((s) => _SubjectProgress(
+                    subjectId: s['subject_id'] as String,
+                    subjectName: s['subject_name'] as String,
+                    studentsScored: scored[s['subject_id']]?.length ?? 0,
+                    totalStudents: total,
+                  ))
+              .toList(),
+          hasBehavioral: behavClasses.contains(cid),
+          hasDraft: draftClasses.contains(cid),
+          isPublished: pubClasses.contains(cid),
+        ));
+      }
+      setState(() {
+        _classProgress = progress;
+        _progressLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _progressError = e.toString();
+        _progressLoading = false;
+      });
+    }
+  }
+
+  Widget _buildRecordingProgress() {
+    if (_progressLoading || _progressError != null || _currentTermLabel.isEmpty || widget.classes.isEmpty) return const SizedBox.shrink();
+    final n = _classProgress.length;
+    if (n == 0) return const SizedBox.shrink();
+    final totalSubjects = _classProgress.fold(0, (sum, c) => sum + c.totalSubjects);
+    final scoredSubjects = _classProgress.fold(0, (sum, c) => sum + c.scoredSubjects);
+    final isAce = _curriculumMode == 'ace';
+    final behavCount = _classProgress.where((c) => c.hasBehavioral).length;
+    final pubCount = _classProgress.where((c) => c.isPublished).length;
+    final overallPct = totalSubjects > 0 ? scoredSubjects / totalSubjects : 0.0;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Color(0xFF1565C0), Color(0xFF1E88E5)]),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.trending_up_rounded, size: 17, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(isAce ? 'PACE PROGRESS' : 'RECORDING PROGRESS', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.6)),
+                    const Spacer(),
+                    Text(_currentTermLabel, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7))),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    _summaryPill('$scoredSubjects/$totalSubjects', isAce ? 'PACEs' : 'Subjects', overallPct >= 1.0 ? const Color(0xFF2E7D32) : const Color(0xFFF57F17), overallPct >= 1.0 ? Icons.check_circle_rounded : Icons.edit_note_rounded),
+                    const SizedBox(width: 8),
+                    if (!isAce)
+                      _summaryPill('$behavCount/$n', 'Behavioral', behavCount == n ? const Color(0xFF2E7D32) : const Color(0xFF9E9E9E), Icons.psychology_rounded),
+                    if (!isAce) const SizedBox(width: 8),
+                    _summaryPill('$pubCount/$n', isAce ? 'Reports' : 'Published', pubCount == n ? const Color(0xFF2E7D32) : const Color(0xFF9E9E9E), Icons.task_alt_rounded),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              for (int i = 0; i < _classProgress.length; i++) ...[
+                _compactClassRow(_classProgress[i]),
+                if (i < _classProgress.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
+              ],
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryPill(String value, String label, Color color, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 5),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color, height: 1.1)),
+                Text(label, style: TextStyle(fontSize: 9, color: color.withOpacity(0.7), fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _compactClassRow(_ClassProgress cp) {
+    final pct = cp.totalSubjects > 0 ? cp.scoredSubjects / cp.totalSubjects : 0.0;
+    final color = pct >= 1.0 ? const Color(0xFF2E7D32) : pct > 0 ? const Color(0xFFF57F17) : const Color(0xFFC62828);
+    final isExpanded = _expandedClasses.contains(cp.classId);
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() {
+            isExpanded ? _expandedClasses.remove(cp.classId) : _expandedClasses.add(cp.classId);
+          }),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(child: Text(cp.className, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF111827)))),
+                SizedBox(
+                  width: 90,
+                  child: Row(
+                    children: [
+                      Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(value: pct, backgroundColor: const Color(0xFFEEEEEE), color: color, minHeight: 4))),
+                      const SizedBox(width: 6),
+                      Text('${cp.scoredSubjects}/${cp.totalSubjects}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                if (pct >= 1.0)
+                  const Icon(Icons.check_circle_rounded, size: 15, color: Color(0xFF2E7D32))
+                else
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more_rounded, size: 16, color: Color(0xFFBDBDBD)),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(duration: const Duration(milliseconds: 200), curve: Curves.easeInOut, child: isExpanded ? _compactDetail(cp) : const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _compactDetail(_ClassProgress cp) {
+    final isAce = _curriculumMode == 'ace';
+    final scoreNavIdx = isAce ? 11 : 5;
+    final pubNavIdx = isAce ? 12 : 7;
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: const Color(0xFFFAFAFA), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFEEEEEE))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final sp in cp.subjects)
+                if (sp.studentsScored > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(5)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.check, size: 11, color: Color(0xFF2E7D32)),
+                      const SizedBox(width: 3),
+                      Text(sp.subjectName, style: const TextStyle(fontSize: 11, color: Color(0xFF2E7D32), fontWeight: FontWeight.w500)),
+                    ]),
+                  )
+                else
+                  GestureDetector(
+                    onTap: () => widget.onNavigate?.call(scoreNavIdx),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFFFEBEE), borderRadius: BorderRadius.circular(5)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.circle, size: 7, color: Color(0xFFC62828)),
+                        const SizedBox(width: 3),
+                        Text(sp.subjectName, style: const TextStyle(fontSize: 11, color: Color(0xFFC62828), fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (isAce) ...[
+            Row(
+              children: [
+                _miniStatus('Report', cp.isPublished ? 'Published' : cp.hasDraft ? 'Draft' : 'Pending', cp.isPublished),
+                const Spacer(),
+                if (!cp.isPublished)
+                  GestureDetector(
+                    onTap: () => widget.onNavigate?.call(pubNavIdx),
+                    child: const Text('Go to ACE Reports →', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1565C0))),
+                  ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                _miniStatus('Behavioral', cp.hasBehavioral ? 'Done' : 'Pending', cp.hasBehavioral),
+                const SizedBox(width: 12),
+                _miniStatus('Results', cp.isPublished ? 'Published' : cp.hasDraft ? 'Draft' : 'Pending', cp.isPublished),
+                const Spacer(),
+                if (!cp.isPublished)
+                  GestureDetector(
+                    onTap: () => widget.onNavigate?.call(pubNavIdx),
+                    child: const Text('Go to Publish →', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1565C0))),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStatus(String label, String value, bool isDone) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 13, color: isDone ? const Color(0xFF2E7D32) : const Color(0xFFBDBDBD)),
+        const SizedBox(width: 3),
+        Text('$label: ', style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E))),
+        Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isDone ? const Color(0xFF2E7D32) : const Color(0xFF757575))),
+      ],
     );
   }
 
@@ -1281,6 +1631,26 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
       ),
     );
   }
+}
+
+class _ClassProgress {
+  final String classId;
+  final String className;
+  final int totalSubjects;
+  final int scoredSubjects;
+  final List<_SubjectProgress> subjects;
+  final bool hasBehavioral;
+  final bool hasDraft;
+  final bool isPublished;
+  _ClassProgress({required this.classId, required this.className, required this.totalSubjects, required this.scoredSubjects, required this.subjects, required this.hasBehavioral, required this.hasDraft, required this.isPublished});
+}
+
+class _SubjectProgress {
+  final String subjectId;
+  final String subjectName;
+  final int studentsScored;
+  final int totalStudents;
+  _SubjectProgress({required this.subjectId, required this.subjectName, required this.studentsScored, required this.totalStudents});
 }
 
 class _StatCardData {
