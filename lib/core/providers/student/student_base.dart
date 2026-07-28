@@ -539,6 +539,27 @@ abstract class StudentBase extends ChangeNotifier {
     }
   }
 
+
+  Future<bool> setCurrentSession(String sessionId) async {
+    try {
+      final session = _sessions.cast<Map<String, dynamic>?>().firstWhere(
+        (s) => s?['id']?.toString() == sessionId,
+        orElse: () => null,
+      );
+      if (session == null) return false;
+      _currentSession = session;
+      _currentSessionId = session['id']?.toString() ?? '';
+      _currentSessionName = session['name']?.toString() ?? '';
+      await _loadTerms();
+      await loadStudentData();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error setting current session: $e');
+      return false;
+    }
+  }
+
   String calculateGrade(double total) {
     for (final g in _gradingSystem) {
       final min = (g['min'] as num?)?.toDouble();

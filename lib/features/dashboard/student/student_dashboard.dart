@@ -302,11 +302,33 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF2E7D32))),
               const Spacer(),
-              if (!isSmall)
+              if (!isSmall) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButton<String>(
+                    value: provider.currentSession?['id'] as String?,
+                    underline: const SizedBox(),
+                    isDense: true,
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF1A237E)),
+                    items: provider.sessions
+                        .map((s) => DropdownMenuItem(
+                            value: s['id'] as String?,
+                            child: Text('${s['name']}',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF1A237E)))))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) provider.setCurrentSession(value);
+                    },
+                  ),
+                ),
                 Container(
                   margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2E7D32).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -315,6 +337,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     value: provider.currentTerm?['id'] as String?,
                     underline: const SizedBox(),
                     isDense: true,
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF2E7D32)),
                     items: provider.terms
                         .map((t) => DropdownMenuItem(
                             value: t['id'] as String?,
@@ -328,6 +351,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     },
                   ),
                 ),
+              ],
               const Icon(Icons.notifications_outlined, color: Colors.grey, size: 24),
               const SizedBox(width: 12),
               GestureDetector(
