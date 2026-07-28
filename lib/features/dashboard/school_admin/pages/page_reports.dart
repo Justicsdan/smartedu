@@ -93,9 +93,9 @@ class _PageReportsState extends State<PageReports> {
       final tids = _isCumulative ? _selectedTermIds : [_selectedTermId!];
       switch (_selectedReport) {
         case 'Class Term Summary': _classSummary = await p.loadClassTermSummary(_selectedClassId!, sid, _selectedTermId!);
-        case 'Subject Term Summary': _listData = await p.loadSubjectTermSummaries(_selectedClassId!, sid, _selectedTermId!);
+        case 'Subject Term Summary': _listData = await p.loadSubjectTermSummaries(_selectedClassId!, sid, _selectedTermId!, subjectId: _selectedSubjectId);
         case 'Cumulative Class Summary': _classSummary = await p.loadClassCumulativeSummary(_selectedClassId!, sid, tids);
-        case 'Cumulative Subject Summary': _listData = await p.loadSubjectCumulativeSummaries(_selectedClassId!, sid, tids);
+        case 'Cumulative Subject Summary': _listData = await p.loadSubjectCumulativeSummaries(_selectedClassId!, sid, tids, subjectId: _selectedSubjectId);
         case 'Class Comparison': _listData = await p.loadClassComparison(sid, tids, _classLevel);
         case 'Top Students': _listData = await p.loadTopStudents(sid, tids, classId: _selectedClassId, classLevel: _classLevel.isNotEmpty ? _classLevel : null, limit: _topLimit);
         case 'Promotion Readiness': _listData = await p.loadPromotionReadiness(sid, tids, classId: _selectedClassId, threshold: _promoThreshold);
@@ -110,9 +110,9 @@ class _PageReportsState extends State<PageReports> {
         case 'PACE Completion Rate': _listData = await p.loadPaceCompletionRate(_selectedClassId!, sid, tids);
       }
     } catch (e) { _error = e.toString(); } finally { setState(() => _loading = false); }
-    // Filter to single subject if selected
+    // Filter to single subject if selected (only for aggregate format, not student format)
     if (_selectedSubjectId != null && _selectedSubjectId!.isNotEmpty) {
-      if (_selectedReport == 'Subject Term Summary' || _selectedReport == 'Cumulative Subject Summary') {
+      if ((_selectedReport == 'Subject Term Summary' || _selectedReport == 'Cumulative Subject Summary') && (_listData.isEmpty || !_listData.first.containsKey('is_student_format'))) {
         _listData = _listData.where((r) => r['subject_id']?.toString() == _selectedSubjectId).toList();
       }
     }
@@ -187,6 +187,29 @@ class _PageReportsState extends State<PageReports> {
         return;
       case 'Subject Term Summary':
       case 'Cumulative Subject Summary':
+        if (_listData.isNotEmpty && _listData.first.containsKey('is_student_format')) {
+          final csvHdrs = <String>['#', 'STUDENTS NAME'];
+          final csvTd = _listData.first['term_data'] as List;
+          for (var t = 0; t < csvTd.length; t++) {
+            csvHdrs.add('TERM ${t + 1}');
+          }
+          if (isAce) csvHdrs.addAll(['TOTAL PACEs', 'CUM. AVG', 'POSITION']);
+          else csvHdrs.addAll(['TOTAL', 'AVERAGE', 'POSITION']);
+          downloadCsv(csvHdrs, _listData.asMap().entries.map((e) {
+            final s = e.value;
+            final stdTd = s['term_data'] as List;
+            final row = <String>['${e.key + 1}', (s['student_name'] ?? '').toString().toUpperCase()];
+            for (var t = 0; t < stdTd.length; t++) {
+              final tm = stdTd[t] as Map;
+              row.add(_fmt(tm['avg_pt'] ?? tm['total'] ?? 0));
+            }
+            if (isAce) { row.add('${s['total_paces'] ?? 0}'); row.add('${s['cumulative_avg']}'); }
+            else { row.add('${s['cumulative_total']}'); row.add('${s['cumulative_avg']}'); }
+            row.add('${s['position'] ?? '--'}');
+            return row;
+          }).toList(), '$safeName.csv');
+          return;
+        }
         final sk = isAce ? 'avg_pt' : 'avg_score';
         downloadCsv(
           ['Subject', 'Code', isAce ? 'Avg PT' : 'Avg Score', 'Pass %', 'Highest', 'Lowest', 'Students'],
@@ -303,13 +326,15 @@ class _PageReportsState extends State<PageReports> {
           padding: const EdgeInsets.all(20),
           children: [
             _headerBar(),
+            if (_classSummary != null || _listData.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _downloadRow(),
+            ],
             const SizedBox(height: 16),
             _filtersCard(),
             const SizedBox(height: 16),
             _generateButton(),
             const SizedBox(height: 20),
-            if (_classSummary != null || _listData.isNotEmpty) _downloadButtons(),
-            if (_classSummary != null || _listData.isNotEmpty) const SizedBox(height: 16),
             if (_error != null) _errorCard(),
             if (_classSummary != null) ...[
               _buildSummaryView(_classSummary!, _isAce),
@@ -640,39 +665,69 @@ class _PageReportsState extends State<PageReports> {
     );
   }
 
-  Widget _downloadButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 44,
-            child: OutlinedButton.icon(
-              onPressed: _downloadPdf,
-              icon: const Icon(Icons.picture_as_pdf, size: 18, color: Color(0xFFE65100)),
-              label: const Text('Download PDF', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFE65100))),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE65100)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  Widget _downloadRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE0E3EA)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.download_rounded, size: 18, color: Color(0xFF1A237E)),
+          const SizedBox(width: 8),
+          const Text('Download:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF555))),
+          const SizedBox(width: 6),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: _downloadPdf,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFFCC80)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.picture_as_pdf, size: 16, color: Color(0xFFE65100)),
+                    SizedBox(width: 6),
+                    Text('Download PDF', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE65100))),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: SizedBox(
-            height: 44,
-            child: OutlinedButton.icon(
-              onPressed: _downloadCsv,
-              icon: const Icon(Icons.table_chart, size: 18, color: Color(0xFF2E7D32)),
-              label: const Text('Download CSV', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF2E7D32)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: _downloadCsv,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFA5D6A7)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.table_chart, size: 16, color: Color(0xFF2E7D32)),
+                    SizedBox(width: 6),
+                    Text('Download CSV', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -813,6 +868,7 @@ class _PageReportsState extends State<PageReports> {
       ]);
     }
     if (d['terms_count'] != null) cards.add({'l': 'Terms', 'v': d['terms_count'], 'c': Colors.grey.shade600});
+    final stuList = d['student_list'] as List<dynamic>?;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -822,6 +878,48 @@ class _PageReportsState extends State<PageReports> {
           runSpacing: 10,
           children: cards.map((c) => _metricCard(c['l'] as String, c['v'], c['c'] as Color)).toList(),
         ),
+        if (stuList != null && stuList.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Builder(builder: (ctx) {
+            final isCum2 = d['terms_count'] != null;
+            final tCols = <DataColumn>[_hcol('#'), _hcol('STUDENT NAME')];
+            if (isAce) { tCols.add(_hcol('HACS')); tCols.add(_hcol('NCE')); tCols.add(_hcol('PACEs')); }
+            else { tCols.add(_hcol('TOTAL')); tCols.add(_hcol('AVERAGE')); tCols.add(_hcol('POSITION')); }
+            if (isCum2) tCols.add(_hcol('TERMS'));
+            final tRows = List.generate(stuList.length, (i) {
+              final s = stuList[i] as Map<String, dynamic>;
+              final nm = (s['student_name'] ?? 'Unknown').toString().toUpperCase();
+              final rk = i + 1;
+              final cells = <DataCell>[
+                DataCell(Container(width: 28, height: 28, decoration: BoxDecoration(color: rk <= 3 ? const Color(0xFF1A237E) : Colors.grey.shade200, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(rk.toString(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: rk <= 3 ? Colors.white : Colors.grey.shade600)))),
+                DataCell(Text(nm, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
+              ];
+              if (isAce) {
+                final hv = _numVal(s['hacs_score']);
+                cells.add(DataCell(Text(_fmt(hv), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: hv >= 80 ? const Color(0xFF2E7D32) : const Color(0xFFC62828)))));
+                cells.add(DataCell(Text(_fmt(s['nce_score']), style: const TextStyle(fontSize: 13))));
+                cells.add(DataCell(Text((s['paces_completed'] ?? 0).toString())));
+              } else {
+                cells.add(DataCell(Text(_fmt(s['total_score']), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))));
+                cells.add(DataCell(Text(_fmt(s['average_score']), style: const TextStyle(fontSize: 13))));
+                cells.add(DataCell(Text((s['position'] ?? '-').toString(), style: const TextStyle(fontSize: 13))));
+              }
+              if (isCum2) cells.add(DataCell(Text((s['terms_count'] ?? 0).toString())));
+              return DataRow(cells: cells);
+            });
+            return _resultCard(SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              child: DataTable(
+                headingRowColor: const WidgetStatePropertyAll(Color(0xFFF0F4FF)),
+                headingTextStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1A237E)),
+                dataRowMinHeight: 44,
+                columns: tCols,
+                rows: tRows,
+              ),
+            ));
+          }),
+        ],
       ],
     );
   }
@@ -920,7 +1018,50 @@ class _PageReportsState extends State<PageReports> {
     }
   }
 
+  Widget _subjectStudentTable(bool isAce) {
+    if (_listData.isEmpty) return const SizedBox.shrink();
+    final subName = _selectedSubjectId != null
+        ? (context.read<SchoolAdminProvider>().subjects.firstWhere((s) => s['id']?.toString() == _selectedSubjectId, orElse: () => <String, dynamic>{})['name']?.toString() ?? '')
+        : '';
+    final cols = <DataColumn>[_hcol('#'), _hcol('STUDENT NAME')];
+    if (isAce) {
+      cols.add(_hcol('PACEs'));
+      cols.add(_hcol('TERM AVG'));
+      cols.add(_hcol('PACE RANGE'));
+    } else {
+      cols.add(_hcol('TOTAL SCORE'));
+      cols.add(_hcol('GRADE'));
+      cols.add(_hcol('POSITION'));
+    }
+    final rows = _listData.asMap().entries.map((e) {
+      final s = e.value;
+      final nm = (s['student_name'] ?? 'Unknown').toString().toUpperCase();
+      final rk = e.key + 1;
+      final cells = <DataCell>[
+        DataCell(Container(width: 28, height: 28, decoration: BoxDecoration(color: rk <= 3 ? const Color(0xFF1A237E) : Colors.grey.shade200, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(rk.toString(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: rk <= 3 ? Colors.white : Colors.grey.shade600)))),
+        DataCell(Text(nm, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
+      ];
+      if (isAce) {
+        final avg = _numVal(s['term_average']);
+        cells.add(DataCell(Text((s['paces_completed'] ?? 0).toString())));
+        cells.add(DataCell(Text(_fmt(avg), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: avg >= 80 ? const Color(0xFF2E7D32) : const Color(0xFFC62828)))));
+        cells.add(DataCell(Text((s['pace_range'] ?? '--').toString(), style: const TextStyle(fontSize: 13))));
+      } else {
+        cells.add(DataCell(Text(_fmt(s['total_score']), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))));
+        cells.add(DataCell(Text((s['grade'] ?? '').toString(), style: const TextStyle(fontSize: 13, color: Color(0xFF283593)))));
+        cells.add(DataCell(Text((s['position'] ?? '--').toString(), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1A237E)))));
+      }
+      return DataRow(cells: cells);
+    }).toList();
+    return _resultCard(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (subName.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8), child: Text('SUBJECT: ' + subName.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
+      SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(12), child: DataTable(headingRowColor: const WidgetStatePropertyAll(Color(0xFFF0F4FF)), headingTextStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1A237E)), dataRowMinHeight: 44, columns: cols, rows: rows)),
+    ]));
+  }
+
+
   Widget _subjectTable(bool isAce) {
+    if (_listData.isNotEmpty && _listData.first.containsKey('is_student_format')) return _subjectStudentTable(isAce);
     final sk = isAce ? 'avg_pt' : 'avg_score';
     final hk = isAce ? 'highest_pt' : 'highest_avg';
     final lk = isAce ? 'lowest_pt' : 'lowest_avg';
@@ -944,6 +1085,7 @@ class _PageReportsState extends State<PageReports> {
       ),
     ));
   }
+
 
   Widget _comparisonTable(bool isAce) {
     final sk = isAce ? 'avg_hacs' : 'avg_score';

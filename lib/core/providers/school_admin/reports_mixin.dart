@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/services/db_proxy.dart';
 import '../base_provider.dart';
+import '../../../utils/grading_utils.dart';
 
 double _r1(num v) => double.parse(v.toStringAsFixed(1));
 
@@ -11,7 +12,6 @@ mixin ReportsMixin on BaseProvider {
     return num.tryParse((schoolSettings?['pass_mark'] ?? '').toString()) ?? 50;
   }
 
-
   String _teacherName(dynamic teacherId) {
     if (teacherId == null) return 'Unknown';
     final tid = teacherId.toString();
@@ -21,6 +21,7 @@ mixin ReportsMixin on BaseProvider {
     final name = '$fn $ln'.trim();
     return name.isEmpty ? 'Unknown' : name;
   }
+
   Map<String, String> _getStudentNames(List<String> studentIds) {
     final map = <String, String>{};
     for (final id in studentIds) {
@@ -40,6 +41,26 @@ mixin ReportsMixin on BaseProvider {
     if (v is int) return v.toDouble();
     if (v is String) return num.tryParse(v)?.toDouble() ?? 0.0;
     return 0.0;
+  }
+
+  String _ordinal(int n) {
+    if (n <= 0) return n.toString();
+    final lastTwo = n % 100;
+    if (lastTwo >= 11 && lastTwo <= 13) return n.toString() + 'th';
+    switch (n % 10) {
+      case 1: return n.toString() + 'st';
+      case 2: return n.toString() + 'nd';
+      case 3: return n.toString() + 'rd';
+      default: return n.toString() + 'th';
+    }
+  }
+
+  String _getGrade(double score, String classId) {
+    final cls = classes.firstWhere((c) => c['id']?.toString() == classId, orElse: () => <String, dynamic>{});
+    final tier = (cls['tier'] ?? '').toString();
+    final system = GradingUtils.getGradingSystemForTier(tier, schoolSettings ?? {});
+    final g = GradingUtils.getGradeFromSystem(score, system);
+    return g?.toString() ?? '';
   }
 
   Future<List<Map<String, dynamic>>> _loadStudentCumulatives(String classId, String sessionId, List<String> termIds) async {
@@ -101,10 +122,23 @@ mixin ReportsMixin on BaseProvider {
     final avg = scores.reduce((a, b) => a + b) / n;
     final passCount = scores.where((s) => s >= pm).length;
     final distCount = scores.where((s) => s >= 75).length;
+    rows.sort((a, b) => _numVal(a['position']).compareTo(_numVal(b['position'])));
+    final studentList = rows.map((r) {
+      final sid = r['student_id']?.toString() ?? '';
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      final pos = _numVal(r['position']).toInt();
+      return {
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'total_score': _r1(_numVal(r['total_score'])),
+        'average_score': _r1(_numVal(r['average_score'])),
+        'position': _ordinal(pos) + ' / ' + (r['position_out_of'] ?? '-').toString(),
+      };
+    }).toList();
     return {
       'total_students': n, 'avg_score': _r1(avg), 'pass_rate': _r1((passCount / n) * 100),
       'distinction_count': distCount, 'highest_score': _r1(scores.reduce((a, b) => a > b ? a : b)),
       'lowest_score': _r1(scores.reduce((a, b) => a < b ? a : b)), 'at_risk_count': n - passCount,
+      'student_list': studentList,
     };
   }
 
@@ -120,6 +154,17 @@ mixin ReportsMixin on BaseProvider {
     final avgP = paces.isNotEmpty ? paces.reduce((a, b) => a + b) / paces.length : 0.0;
     final passC = hacs.where((h) => h >= 80).length;
     final distC = hacs.where((h) => h >= 95).length;
+    final studentList = rows.map((r) {
+      final sid = r['student_id']?.toString() ?? '';
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      return {
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'hacs_score': _r1(_numVal(r['hacs_score'])),
+        'nce_score': _r1(_numVal(r['nce_score'])),
+        'paces_completed': _numVal(r['paces_completed']).toInt(),
+      };
+    }).toList();
+    studentList.sort((a, b) => _numVal(b['hacs_score']).compareTo(_numVal(a['hacs_score'])));
     return {
       'total_students': n, 'avg_hacs': _r1(avgH), 'avg_nce': _r1(avgN), 'avg_paces': _r1(avgP),
       'pass_rate': _r1(hacs.isNotEmpty ? (passC / hacs.length) * 100 : 0.0),
@@ -127,13 +172,68 @@ mixin ReportsMixin on BaseProvider {
       'highest_hacs': _r1(hacs.isNotEmpty ? hacs.reduce((a, b) => a > b ? a : b) : 0.0),
       'lowest_hacs': _r1(hacs.isNotEmpty ? hacs.reduce((a, b) => a < b ? a : b) : 0.0),
       'at_risk_count': hacs.length - passC,
+      'student_list': studentList,
     };
   }
 
   // ═══ 2. SUBJECT TERM SUMMARY ═══
-  Future<List<Map<String, dynamic>>> loadSubjectTermSummaries(String classId, String sessionId, String termId) async {
+  Future<List<Map<String, dynamic>>> loadSubjectTermSummaries(String classId, String sessionId, String termId, {String? subjectId}) async {
+    if (subjectId != null && subjectId.isNotEmpty) {
+      if (_isAce) return _aceSubjectStudentList(classId, sessionId, termId, subjectId);
+      return _traditionalSubjectStudentList(classId, sessionId, termId, subjectId);
+    }
     if (_isAce) return _aceSubjectSummaries(classId, sessionId, termId);
     return _traditionalSubjectSummaries(classId, sessionId, termId);
+  }
+
+  Future<List<Map<String, dynamic>>> _traditionalSubjectStudentList(String classId, String sessionId, String termId, String subjectId) async {
+    final scores = await DbProxy.instance.from('scores').eq('class_id', classId).eq('session_id', sessionId).eq('term_id', termId).eq('subject_id', subjectId).get();
+    if (scores.isEmpty) return [];
+    final results = <Map<String, dynamic>>[];
+    for (final s in scores) {
+      final sid = s['student_id']?.toString() ?? '';
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      final total = _numVal(s['total']);
+      results.add({
+        'student_id': sid,
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'total_score': _r1(total), 'grade': _getGrade(total, classId), 'is_student_format': true,
+      });
+    }
+    results.sort((a, b) => _numVal(b['total_score']).compareTo(_numVal(a['total_score'])));
+    for (var i = 0; i < results.length; i++) { results[i]['position'] = _ordinal(i + 1); }
+    return results;
+  }
+
+  Future<List<Map<String, dynamic>>> _aceSubjectStudentList(String classId, String sessionId, String termId, String subjectId) async {
+    final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+    if (cStuIds.isEmpty) return [];
+    final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).eq('term_id', termId).eq('subject_id', subjectId).get();
+    if (scores.isEmpty) return [];
+    final byStudent = <String, List<Map<String, dynamic>>>{};
+    for (final s in scores) {
+      final sid = s['student_id']?.toString() ?? '';
+      byStudent.putIfAbsent(sid, () => []).add(s);
+    }
+    final results = <Map<String, dynamic>>[];
+    for (final entry in byStudent.entries) {
+      final stuScores = entry.value;
+      final pts = stuScores.map((s) => _numVal(s['pt_score'])).toList();
+      final avg = pts.isNotEmpty ? pts.reduce((a, b) => a + b) / pts.length : 0.0;
+      final paceNos = stuScores.map((s) => (s['pace_no'] ?? '').toString()).where((p) => p.isNotEmpty).toList()..sort();
+      final paceRange = paceNos.isNotEmpty ? paceNos.join(' - ') : '--';
+      final sid = entry.key;
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      results.add({
+        'student_id': sid,
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'paces_completed': stuScores.length, 'term_average': _r1(avg), 'pace_range': paceRange,
+        'is_student_format': true,
+      });
+    }
+    results.sort((a, b) => _numVal(b['term_average']).compareTo(_numVal(a['term_average'])));
+    for (var i = 0; i < results.length; i++) { results[i]['position'] = _ordinal(i + 1); }
+    return results;
   }
 
   Future<List<Map<String, dynamic>>> _traditionalSubjectSummaries(String classId, String sessionId, String termId) async {
@@ -196,7 +296,13 @@ mixin ReportsMixin on BaseProvider {
     final cumData = await _loadStudentCumulatives(classId, sessionId, termIds);
     if (cumData.isEmpty) return {'total_students': 0};
     final n = cumData.length;
+    for (final item in cumData) {
+      final sid = item['student_id']?.toString() ?? '';
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      item['student_name'] = ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim();
+    }
     if (_isAce) {
+      cumData.sort((a, b) => _numVal(b['cumulative_hacs']).compareTo(_numVal(a['cumulative_hacs'])));
       final hacs = cumData.map((s) => _numVal(s['cumulative_hacs'])).toList();
       final nces = cumData.map((s) => _numVal(s['cumulative_nce'])).toList();
       final paces = cumData.map((s) => _numVal(s['cumulative_paces'])).toList();
@@ -211,8 +317,10 @@ mixin ReportsMixin on BaseProvider {
         'highest_hacs': _r1(hacs.reduce((a, b) => a > b ? a : b)),
         'lowest_hacs': _r1(hacs.reduce((a, b) => a < b ? a : b)),
         'at_risk_count': n - passC, 'terms_count': termIds.length,
+        'student_list': List<Map<String, dynamic>>.from(cumData),
       };
     } else {
+      cumData.sort((a, b) => _numVal(b['cumulative_score']).compareTo(_numVal(a['cumulative_score'])));
       final sc = cumData.map((s) => _numVal(s['cumulative_score'])).toList();
       final pm = _passMark.toDouble();
       final avg = sc.reduce((a, b) => a + b) / n;
@@ -222,14 +330,109 @@ mixin ReportsMixin on BaseProvider {
         'total_students': n, 'avg_score': _r1(avg), 'pass_rate': _r1((passC / n) * 100),
         'distinction_count': distC, 'highest_score': _r1(sc.reduce((a, b) => a > b ? a : b)),
         'lowest_score': _r1(sc.reduce((a, b) => a < b ? a : b)), 'at_risk_count': n - passC, 'terms_count': termIds.length,
+        'student_list': List<Map<String, dynamic>>.from(cumData),
       };
     }
   }
 
   // ═══ 4. CUMULATIVE SUBJECT SUMMARY ═══
-  Future<List<Map<String, dynamic>>> loadSubjectCumulativeSummaries(String classId, String sessionId, List<String> termIds) async {
+  Future<List<Map<String, dynamic>>> loadSubjectCumulativeSummaries(String classId, String sessionId, List<String> termIds, {String? subjectId}) async {
+    if (subjectId != null && subjectId.isNotEmpty) {
+      if (_isAce) return _aceCumulativeSubjectStudentList(classId, sessionId, termIds, subjectId);
+      return _traditionalCumulativeSubjectStudentList(classId, sessionId, termIds, subjectId);
+    }
     if (_isAce) return _aceSubjectCumulative(classId, sessionId, termIds);
     return _traditionalSubjectCumulative(classId, sessionId, termIds);
+  }
+
+  Future<List<Map<String, dynamic>>> _traditionalCumulativeSubjectStudentList(String classId, String sessionId, List<String> termIds, String subjectId) async {
+    final scores = await DbProxy.instance.from('scores').eq('class_id', classId).eq('session_id', sessionId).eq('subject_id', subjectId).inFilter('term_id', termIds).get();
+    if (scores.isEmpty) return [];
+    final byStuTerm = <String, Map<String, Map<String, dynamic>>>{};
+    for (final s in scores) {
+      final sid = s['student_id']?.toString() ?? '';
+      final tid = s['term_id']?.toString() ?? '';
+      byStuTerm.putIfAbsent(sid, () => {});
+      byStuTerm[sid]!.putIfAbsent(tid, () => {'total': 0.0, 'count': 0});
+      byStuTerm[sid]![tid]!['total'] = _numVal(byStuTerm[sid]![tid]!['total']) + _numVal(s['total']);
+      byStuTerm[sid]![tid]!['count'] = _numVal(byStuTerm[sid]![tid]!['count']) + 1;
+    }
+    final results = <Map<String, dynamic>>[];
+    for (final entry in byStuTerm.entries) {
+      final sid = entry.key;
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      final termData = <Map<String, dynamic>>[];
+      var cumTotal = 0.0;
+      var scoredTerms = 0;
+      for (final tid in termIds) {
+        final tInfo = entry.value[tid];
+        if (tInfo != null && _numVal(tInfo['count']) > 0) {
+          final total = _numVal(tInfo['total']);
+          cumTotal += total;
+          scoredTerms++;
+          final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});
+          termData.add({'term_name': (term['name'] ?? '').toString(), 'term_id': tid, 'total': _r1(total), 'grade': _getGrade(total, classId)});
+        } else {
+          final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});
+          termData.add({'term_name': (term['name'] ?? '').toString(), 'term_id': tid, 'total': '--', 'grade': ''});
+        }
+      }
+      final cumAvg = scoredTerms > 0 ? cumTotal / scoredTerms : 0.0;
+      results.add({
+        'student_id': sid,
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'term_data': termData, 'cumulative_total': _r1(cumTotal), 'cumulative_avg': _r1(cumAvg),
+        'is_student_format': true, 'is_cumulative': true,
+      });
+    }
+    results.sort((a, b) => _numVal(b['cumulative_avg']).compareTo(_numVal(a['cumulative_avg'])));
+    for (var i = 0; i < results.length; i++) { results[i]['position'] = _ordinal(i + 1); }
+    return results;
+  }
+
+  Future<List<Map<String, dynamic>>> _aceCumulativeSubjectStudentList(String classId, String sessionId, List<String> termIds, String subjectId) async {
+    final cStuIds = students.where((s) => s['class_id']?.toString() == classId).map((s) => s['id']!.toString()).toList();
+    if (cStuIds.isEmpty) return [];
+    final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).eq('subject_id', subjectId).inFilter('term_id', termIds).get();
+    if (scores.isEmpty) return [];
+    final byStuTerm = <String, Map<String, List<Map<String, dynamic>>>>{};
+    for (final s in scores) {
+      final sid = s['student_id']?.toString() ?? '';
+      final tid = s['term_id']?.toString() ?? '';
+      byStuTerm.putIfAbsent(sid, () => {});
+      byStuTerm[sid]!.putIfAbsent(tid, () => []);
+      byStuTerm[sid]![tid]!.add(s);
+    }
+    final results = <Map<String, dynamic>>[];
+    for (final entry in byStuTerm.entries) {
+      final sid = entry.key;
+      final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
+      final termData = <Map<String, dynamic>>[];
+      var totalPaces = 0; var totalPts = 0.0; var ptCount = 0;
+      for (final tid in termIds) {
+        final tScores = entry.value[tid];
+        if (tScores != null && tScores.isNotEmpty) {
+          final pts = tScores.map((s) => _numVal(s['pt_score'])).toList();
+          final avg = pts.reduce((a, b) => a + b) / pts.length;
+          totalPaces += tScores.length; totalPts += avg; ptCount++;
+          final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});
+          termData.add({'term_name': (term['name'] ?? '').toString(), 'term_id': tid, 'avg_pt': _r1(avg), 'paces': tScores.length});
+        } else {
+          final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});
+          termData.add({'term_name': (term['name'] ?? '').toString(), 'term_id': tid, 'avg_pt': '--', 'paces': 0});
+        }
+      }
+      final cumAvg = ptCount > 0 ? totalPts / ptCount : 0.0;
+      results.add({
+        'student_id': sid,
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'term_data': termData, 'total_paces': totalPaces, 'cumulative_avg': _r1(cumAvg),
+        'is_student_format': true, 'is_cumulative': true,
+      });
+    }
+    results.sort((a, b) => _numVal(b['cumulative_avg']).compareTo(_numVal(a['cumulative_avg'])));
+    for (var i = 0; i < results.length; i++) { results[i]['position'] = _ordinal(i + 1); }
+    return results;
   }
 
   Future<List<Map<String, dynamic>>> _traditionalSubjectCumulative(String classId, String sessionId, List<String> termIds) async {
@@ -397,6 +600,7 @@ mixin ReportsMixin on BaseProvider {
     }
     return atRisk;
   }
+
   // ═══════════════════════════════════════════════════════════
   // PHASE 2 — EXPANDED REPORTS
   // ═══════════════════════════════════════════════════════════
@@ -530,7 +734,6 @@ mixin ReportsMixin on BaseProvider {
       final totalPaid = ftPayments.map((p) => _numVal(p['amount_paid'])).reduce((a, b) => a + b);
       final outstanding = totalExpected - totalPaid;
       final rate = totalExpected > 0 ? (totalPaid / totalExpected) * 100 : 0.0;
-      // Look up fee type name
       final ftList = await DbProxy.instance.from('fee_types').eq('school_id', schoolId).get();
       final ft = ftList.firstWhere((f) => f['id']?.toString() == ftId, orElse: () => <String, dynamic>{});
       results.add({'fee_type_id': ftId, 'fee_type_name': (ft['name'] ?? 'Unknown').toString(), 'total_expected': _r1(totalExpected), 'total_paid': _r1(totalPaid), 'outstanding': _r1(outstanding), 'collection_rate': _r1(rate), 'students_count': ftPayments.map((p) => p['student_id']).toSet().length});
@@ -538,7 +741,6 @@ mixin ReportsMixin on BaseProvider {
     results.sort((a, b) => (a['fee_type_name'] as String).compareTo(b['fee_type_name'] as String));
     return results;
   }
-
 
   // ═══ 12. TEACHER PERFORMANCE ═══
   Future<List<Map<String, dynamic>>> loadTeacherPerformance(String sessionId, List<String> termIds, {String? subjectId}) async {
@@ -664,7 +866,6 @@ mixin ReportsMixin on BaseProvider {
     ];
     final ids = rows.map((r) => r['student_id']?.toString() ?? '').where((id) => id.isNotEmpty).toSet().toList();
     final names = _getStudentNames(ids);
-    // Average NCE per student across terms
     final byStu = <String, List<double>>{};
     for (final r in rows) {
       final sid = r['student_id']?.toString() ?? '';
@@ -692,14 +893,25 @@ mixin ReportsMixin on BaseProvider {
     final scores = await DbProxy.instance.from('ace_pace_scores').inFilter('student_id', cStuIds).eq('session_id', sessionId).inFilter('term_id', termIds).get();
     if (scores.isEmpty) return [];
     final bySub = <String, List<Map<String, dynamic>>>{};
-    for (final s in scores) { final sid = s['subject_id']?.toString() ?? ''; bySub.putIfAbsent(sid, () => []).add(s); }
+    for (final s in scores) {
+      final sid = s['subject_id']?.toString() ?? '';
+      bySub.putIfAbsent(sid, () => []).add(s);
+    }
     final results = <Map<String, dynamic>>[];
     for (final entry in bySub.entries) {
       final paces = entry.value;
       final pts = paces.map((p) => _numVal(p['pt_score'])).toList();
       final avg = pts.isNotEmpty ? pts.reduce((a, b) => a + b) / pts.length : 0.0;
+      final passC = pts.where((p) => p >= 80).length;
       final sub = subjects.firstWhere((s) => s['id']?.toString() == entry.key, orElse: () => <String, dynamic>{});
-      results.add({'subject_id': entry.key, 'subject_name': (sub['name'] ?? '').toString(), 'subject_code': (sub['code'] ?? '').toString(), 'total_paces': paces.length, 'unique_students': paces.map((p) => p['student_id']).toSet().length, 'avg_paces_per_student': _r1(paces.map((p) => p['student_id']).toSet().length > 0 ? paces.length / paces.map((p) => p['student_id']).toSet().length : 0.0), 'avg_pt': _r1(avg)});
+      final studentCount = paces.map((p) => p['student_id']?.toString()).where((id) => id != null).toSet().length;
+      results.add({
+        'subject_id': entry.key, 'subject_name': (sub['name'] ?? '').toString(), 'subject_code': (sub['code'] ?? '').toString(),
+        'total_paces': paces.length, 'avg_pt': _r1(avg), 'pass_rate': _r1(pts.isNotEmpty ? (passC / pts.length) * 100 : 0),
+        'highest_pt': _r1(pts.isNotEmpty ? pts.reduce((a, b) => a > b ? a : b) : 0.0),
+        'lowest_pt': _r1(pts.isNotEmpty ? pts.reduce((a, b) => a < b ? a : b) : 0.0),
+        'students_count': studentCount,
+      });
     }
     results.sort((a, b) => (a['subject_name'] as String).compareTo(b['subject_name'] as String));
     return results;
