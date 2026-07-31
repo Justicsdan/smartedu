@@ -399,7 +399,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           build: (context) {
             final pageWidgets = <pw.Widget>[];
 
-            // ── 1. SCHOOL HEADER — Logo left, name center, logo right ──
+            // ── 1. SCHOOL HEADER ──
             pageWidgets.add(
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -595,11 +595,19 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     final totalScore = scores.fold<double>(0, (sum, s) => sum + ((s['total'] ?? 0) as num).toDouble());
     final overallGradeInfo = GradingUtils.getGradeFromSystem(average, gradingSystem);
 
+    // ── Design tokens ──
+    const navy = Color(0xFF1A237E);
+    const passClr = Color(0xFF2E7D32);
+    const failClr = Color(0xFFD32F2F);
+    const hdrFs = 12.0; // header font size
+    const cellFs = 13.0; // data font size
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Title bar ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -607,15 +615,15 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               if (scores.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFF1A237E).withOpacity(0.2))),
-                  child: Text(provider.currentTermName ?? '', style: TextStyle(fontSize: 13, color: Color(0xFF1A237E), fontWeight: FontWeight.w600)),
+                  decoration: BoxDecoration(color: navy.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: navy.withOpacity(0.2))),
+                  child: Text(provider.currentTermName ?? '', style: const TextStyle(fontSize: 13, color: navy, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: _isGeneratingPdf ? null : _printResult,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(color: _isGeneratingPdf ? Colors.grey.shade300 : const Color(0xFF1A237E), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: _isGeneratingPdf ? Colors.grey.shade300 : navy, borderRadius: BorderRadius.circular(8)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -624,7 +632,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                         else
                           const Icon(Icons.download_rounded, color: Colors.white, size: 18),
                         const SizedBox(width: 6),
-                        Text(_isGeneratingPdf ? 'Preparing...' : 'Print Result', style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
+                        Text(_isGeneratingPdf ? 'Preparing...' : 'Print Result', style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -634,9 +642,11 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           ),
           if (provider.currentSessionName != null) ...[
             const SizedBox(height: 4),
-            Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+            Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
           ],
           const SizedBox(height: 20),
+
+          // ── Stat cards ──
           Row(
             children: [
               _StatCard(title: "Subjects", value: "${scores.length}", color: const Color(0xFF1565C0), icon: Icons.menu_book),
@@ -654,20 +664,22 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(color: const Color(0xFF1A237E).withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF1A237E).withOpacity(0.15))),
+              decoration: BoxDecoration(color: navy.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: navy.withOpacity(0.15))),
               child: Row(
                 children: [
-                  const Icon(Icons.emoji_events, color: Color(0xFF1A237E), size: 22),
+                  const Icon(Icons.emoji_events, color: navy, size: 22),
                   const SizedBox(width: 12),
                   const Text('Position in Class: ', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-                  Text('${_ordinal(provider.termPosition)} out of ${provider.positionOutOf}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+                  Text('${_ordinal(provider.termPosition)} out of ${provider.positionOutOf}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: navy)),
                   const Spacer(),
-                  Text('Total: $totalScore', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
+                  Text('Total: $totalScore', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: navy)),
                 ],
               ),
             ),
           ],
           const SizedBox(height: 24),
+
+          // ── Empty state ──
           if (scores.isEmpty)
             const Center(
               child: Padding(
@@ -681,62 +693,78 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 ]),
               ),
             )
+
+          // ── Scores table ──
           else ...[
             Container(
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 18,
-                  headingRowColor: WidgetStateProperty.all(const Color(0xFF1A237E)),
-                  horizontalMargin: 16,
-                  headingRowHeight: 56,
-                  dataRowMinHeight: 54,
-                  dataRowMaxHeight: 64,
-                  columns: [
-                    const DataColumn(label: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14))),
-                    ...assessmentTypes.map((at) => DataColumn(
-                      label: Text('${at['name']}\n(${at['max']})', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
-                      numeric: true,
-                    )),
-                    const DataColumn(label: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14)), numeric: true),
-                    const DataColumn(label: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14))),
-                    const DataColumn(label: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14))),
-                  ],
-                  rows: scores.map((score) {
-                    final total = (score['total'] ?? 0).toDouble();
-                    final isPass = total >= passMark;
-                    final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
-                    final grade = gradeInfo['grade'] as String? ?? '';
-                    final remark = gradeInfo['remark'] as String? ?? '';
-                    final scoresJson = score['scores_json'] as Map<String, dynamic>? ?? {};
-                    return DataRow(
-                      color: WidgetStateProperty.all(scores.indexOf(score).isEven ? Colors.white : const Color(0xFFFAFBFC)),
-                      cells: [
-                        DataCell(Text(score['subject_name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: 14))),
-                        ...assessmentTypes.map((at) {
-                          final aid = (at['id'] ?? '').toString().toLowerCase();
-                          final val = scoresJson[aid] ?? 0;
-                          final display = val is int ? '$val' : val.toString();
-                          return DataCell(Text(display, textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF111827), fontSize: 14)));
-                        }),
-                        DataCell(Text(
-                          total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1),
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: isPass ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F)),
-                          textAlign: TextAlign.center,
-                        )),
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: isPass ? const Color(0xFFE8F5E9) : const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(6)),
-                            child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, color: isPass ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F), fontSize: 14), textAlign: TextAlign.center),
-                          ),
-                        ),
-                        DataCell(Text(remark, style: TextStyle(fontSize: 13, color: isPass ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F)))),
-                      ],
-                    );
-                  }).toList(),
-                ),
+              child: DataTable(
+                columnSpacing: 8,
+                headingRowColor: WidgetStateProperty.all(navy),
+                horizontalMargin: 16,
+                headingRowHeight: 56,
+                dataRowMinHeight: 48,
+                dataRowMaxHeight: 56,
+                columns: [
+                  // Subject — left-aligned label column
+                  const DataColumn(
+                    label: SizedBox(height: 56, child: Center(child: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    columnWidth: FlexColumnWidth(2.0),
+                  ),
+                  // Assessment columns — equal width, centered
+                  ...assessmentTypes.map((at) => DataColumn(
+                    label: SizedBox(height: 56, child: Center(child: Text('${at['name']}\n(${at['max']})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    columnWidth: const FlexColumnWidth(1.3),
+                  )),
+                  // Total
+                  const DataColumn(
+                    label: SizedBox(height: 56, child: Center(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    columnWidth: FlexColumnWidth(0.7),
+                  ),
+                  // Grade
+                  const DataColumn(
+                    label: SizedBox(height: 56, child: Center(child: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    columnWidth: FlexColumnWidth(0.7),
+                  ),
+                  // Remark
+                  const DataColumn(
+                    label: SizedBox(height: 56, child: Center(child: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    columnWidth: FlexColumnWidth(1.2),
+                  ),
+                ],
+                rows: scores.map((score) {
+                  final total = (score['total'] ?? 0).toDouble();
+                  final isPass = total >= passMark;
+                  final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
+                  final grade = gradeInfo['grade'] as String? ?? '';
+                  final remark = gradeInfo['remark'] as String? ?? '';
+                  final scoresJson = score['scores_json'] as Map<String, dynamic>? ?? {};
+                  final clr = isPass ? passClr : failClr;
+                  final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
+                  return DataRow(
+                    color: WidgetStateProperty.all(scores.indexOf(score).isEven ? Colors.white : const Color(0xFFFAFBFC)),
+                    cells: [
+                      // Subject — left-aligned
+                      DataCell(Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(score['subject_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs)),
+                      )),
+                      // Assessment scores — centered
+                      ...assessmentTypes.map((at) {
+                        final aid = (at['id'] ?? '').toString().toLowerCase();
+                        final val = scoresJson[aid] ?? 0;
+                        final display = val is int ? '$val' : val.toString();
+                        return DataCell(Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
+                      }),
+                      // Total — centered, bold
+                      DataCell(Center(child: Text(totalStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                      // Grade — centered, bold
+                      DataCell(Center(child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                      // Remark — centered
+                      DataCell(Center(child: Text(remark, style: TextStyle(fontSize: cellFs, color: clr)))),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
             const SizedBox(height: 24),
@@ -779,7 +807,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.25))),
                     child: Row(
                       children: [
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))), const SizedBox(height: 3), Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color))])),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))), const SizedBox(height: 3), Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color))])),
                         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                       ],
                     ),
@@ -825,7 +853,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.person_outline, size: 16, color: Color(0xFF1565C0)), SizedBox(width: 6), Text('Class Teacher', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1565C0)))]),
                 const SizedBox(height: 8),
-                Text(tc, style: TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
+                Text(tc, style: const TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
               ]),
             ),
           if (tc.isNotEmpty && pc.isNotEmpty) const SizedBox(height: 12),
@@ -836,7 +864,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.school, size: 16, color: Color(0xFF2E7D32)), SizedBox(width: 6), Text('Principal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32)))]),
                 const SizedBox(height: 8),
-                Text(pc, style: TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
+                Text(pc, style: const TextStyle(fontSize: 14, color: Color(0xFF1B2A4A), height: 1.4)),
               ]),
             ),
         ],
@@ -869,7 +897,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor)),
-                  child: Column(children: [Text(grade, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)), const SizedBox(height: 2), Text('$min-$max', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))), Text(remark, style: TextStyle(fontSize: 10, color: textColor))]),
+                  child: Column(children: [Text(grade, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)), const SizedBox(height: 2), Text('$min-$max', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))), Text(remark, style: TextStyle(fontSize: 10, color: textColor))]),
                 );
               }).toList(),
             ),
@@ -894,7 +922,7 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.15))),
-        child: Column(children: [Icon(icon, color: color, size: 20), const SizedBox(height: 4), Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)), const SizedBox(height: 2), Text(title, style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)))]),
+        child: Column(children: [Icon(icon, color: color, size: 20), const SizedBox(height: 4), Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)), const SizedBox(height: 2), Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)))]),
       ),
     );
   }

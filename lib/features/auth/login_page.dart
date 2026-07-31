@@ -125,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
 
     final response = await Supabase.instance.client
         .from('students')
-        .select('id, school_id, first_name, last_name, class_id, passport_url, is_active')
+        .select('id, school_id, first_name, middle_name, last_name, class_id, passport_url, is_active')
         .eq('admission_no', admissionNo)
         .eq('pin', pin)
         .maybeSingle();
@@ -141,6 +141,7 @@ class _LoginPageState extends State<LoginPage> {
         'schoolId': response['school_id'],
         'firstName': response['first_name'],
         'lastName': response['last_name'],
+        'middleName': response['middle_name'],
         'classId': response['class_id'],
         'admissionNo': admissionNo,
         'passportUrl': response['passport_url'],

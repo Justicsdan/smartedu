@@ -140,7 +140,7 @@ class _PageReportsState extends State<PageReports> {
     if (_selectedReport == 'Promotion Readiness') filters['threshold'] = _promoThreshold.toStringAsFixed(0);
     if (_selectedStudentId != null) {
       final s = p.students.firstWhere((s) => s['id']?.toString() == _selectedStudentId, orElse: () => <String, dynamic>{});
-      filters['student'] = '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
+      filters['student'] = '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
     }
     if (_selectedSubjectId != null) {
       final s = p.subjects.firstWhere((s) => s['id']?.toString() == _selectedSubjectId, orElse: () => <String, dynamic>{});

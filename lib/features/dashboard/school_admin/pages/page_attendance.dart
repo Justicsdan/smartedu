@@ -75,7 +75,7 @@ class _PageAttendanceState extends State<PageAttendance> {
     try {
       final r = await _supabase
           .from('attendance')
-          .select('id, student_id, status, remark, students(first_name, last_name, admission_no)')
+          .select('id, student_id, status, remark, students(first_name, middle_name, last_name, admission_no)')
           .eq('school_id', _p.schoolId)
           .eq('class_id', _selectedClassId!)
           .eq('date', _selectedDate);
@@ -357,7 +357,7 @@ class _PageAttendanceState extends State<PageAttendance> {
           child: Column(children: _dailyRecords.asMap().entries.map((e) {
             final r = e.value;
             final st = r['students'] as Map<String, dynamic>?;
-            final name = st != null ? '${st['first_name'] ?? ''} ${st['last_name'] ?? ''}'.trim() : 'Unknown';
+            final name = st != null ? '${st['first_name'] ?? ''} ${st['middle_name'] ?? ''} ${st['last_name'] ?? ''}'.trim() : 'Unknown';
             final status = (r['status'] ?? '').toString();
             final remark = (r['remark'] ?? '').toString();
             return Container(

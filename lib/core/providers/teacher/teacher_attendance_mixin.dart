@@ -55,7 +55,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
     try {
       return await DbProxy.instance
           .from('attendance')
-          .select('*, students(id, first_name, last_name, admission_no)')
+          .select('*, students(id, first_name, middle_name, last_name, admission_no)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])
@@ -76,7 +76,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
     try {
       final r = await DbProxy.instance
           .from('attendance')
-          .select('student_id, status, students(first_name, last_name, admission_no)')
+          .select('student_id, status, students(first_name, middle_name, last_name, admission_no)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])

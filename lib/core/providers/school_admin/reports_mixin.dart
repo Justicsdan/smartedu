@@ -128,7 +128,7 @@ mixin ReportsMixin on BaseProvider {
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       final pos = _numVal(r['position']).toInt();
       return {
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'total_score': _r1(_numVal(r['total_score'])),
         'average_score': _r1(_numVal(r['average_score'])),
         'position': _ordinal(pos) + ' / ' + (r['position_out_of'] ?? '-').toString(),
@@ -158,7 +158,7 @@ mixin ReportsMixin on BaseProvider {
       final sid = r['student_id']?.toString() ?? '';
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       return {
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'hacs_score': _r1(_numVal(r['hacs_score'])),
         'nce_score': _r1(_numVal(r['nce_score'])),
         'paces_completed': _numVal(r['paces_completed']).toInt(),
@@ -196,7 +196,7 @@ mixin ReportsMixin on BaseProvider {
       final total = _numVal(s['total']);
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'total_score': _r1(total), 'grade': _getGrade(total, classId), 'is_student_format': true,
       });
     }
@@ -226,7 +226,7 @@ mixin ReportsMixin on BaseProvider {
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'paces_completed': stuScores.length, 'term_average': _r1(avg), 'pace_range': paceRange,
         'is_student_format': true,
       });
@@ -299,7 +299,7 @@ mixin ReportsMixin on BaseProvider {
     for (final item in cumData) {
       final sid = item['student_id']?.toString() ?? '';
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
-      item['student_name'] = ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim();
+      item['student_name'] = ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim();
     }
     if (_isAce) {
       cumData.sort((a, b) => _numVal(b['cumulative_hacs']).compareTo(_numVal(a['cumulative_hacs'])));
@@ -380,7 +380,7 @@ mixin ReportsMixin on BaseProvider {
       final cumAvg = scoredTerms > 0 ? cumTotal / scoredTerms : 0.0;
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'term_data': termData, 'cumulative_total': _r1(cumTotal), 'cumulative_avg': _r1(cumAvg),
         'is_student_format': true, 'is_cumulative': true,
       });
@@ -425,7 +425,7 @@ mixin ReportsMixin on BaseProvider {
       final cumAvg = ptCount > 0 ? totalPts / ptCount : 0.0;
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
         'term_data': termData, 'total_paces': totalPaces, 'cumulative_avg': _r1(cumAvg),
         'is_student_format': true, 'is_cumulative': true,
       });
@@ -609,7 +609,7 @@ mixin ReportsMixin on BaseProvider {
   Future<Map<String, dynamic>> loadStudentIndividualSummary(String studentId, String sessionId, List<String> termIds) async {
     final stu = students.firstWhere((s) => s['id']?.toString() == studentId, orElse: () => <String, dynamic>{});
     final result = <String, dynamic>{
-      'student_name': '${stu['first_name'] ?? ''} ${stu['last_name'] ?? ''}'.trim(),
+      'student_name': '${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}'.trim(),
       'admission_no': stu['admission_no'] ?? '',
       'terms': <Map<String, dynamic>>[],
       'subjects': <Map<String, dynamic>>[],

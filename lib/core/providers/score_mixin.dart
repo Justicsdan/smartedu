@@ -47,7 +47,7 @@ mixin ScoreMixin on BaseProvider {
           .from('scores')
           .select(
             '*, '
-            'students(first_name, last_name, admission_no, class_id, passport_url), '
+            'students(first_name, middle_name, last_name, admission_no, class_id, passport_url), '
             'subjects(name, code), '
             'classes(name, section)',
           )
@@ -70,7 +70,7 @@ mixin ScoreMixin on BaseProvider {
           .from('scores')
           .select(
             '*, '
-            'students(first_name, last_name, admission_no, class_id, passport_url), '
+            'students(first_name, middle_name, last_name, admission_no, class_id, passport_url), '
             'subjects(name, code), '
             'classes(name, section)',
           )

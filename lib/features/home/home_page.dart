@@ -298,7 +298,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
         decoration: const BoxDecoration(
           color: Color(0xFF0E0E2A),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
           decoration: const BoxDecoration(
             color: Color(0xFF0E0E2A),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

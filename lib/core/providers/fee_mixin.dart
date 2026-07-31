@@ -259,7 +259,7 @@ mixin FeeMixin on BaseProvider {
       if (totalOutstanding > 0) {
         summary.add({
           'student_id': sid,
-          'student_name': '${student['first_name'] ?? ''} ${student['last_name'] ?? ''}'.trim(),
+          'student_name': '${student['first_name'] ?? ''} ${student['middle_name'] ?? ''} ${student['last_name'] ?? ''}'.trim(),
           'admission_no': student['admission_no'] ?? '',
           'total_outstanding': totalOutstanding,
           'fee_breakdown': outstanding,
@@ -300,7 +300,7 @@ mixin FeeMixin on BaseProvider {
     try {
       var q = DbProxy.instance
           .from('fee_payments')
-          .select('*, fee_types(name), students(first_name, last_name, admission_no)')
+          .select('*, fee_types(name), students(first_name, middle_name, last_name, admission_no)')
           .eq('school_id', schoolId);
       if (sessionId != null) q = q.eq('session_id', sessionId);
       if (termId != null) q = q.eq('term_id', termId);

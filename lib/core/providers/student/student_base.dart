@@ -293,7 +293,7 @@ abstract class StudentBase extends ChangeNotifier {
 
       _firstName = data['firstName'] ?? data['first_name']?.toString() ?? '';
       _lastName = data['lastName'] ?? data['last_name']?.toString() ?? '';
-      _middleName = data['middle_name']?.toString() ?? '';
+      _middleName = data['middleName'] ?? data['middle_name']?.toString() ?? '';
       _admissionNo = data['admissionNo'] ?? data['admission_no']?.toString() ?? '';
       _gender = data['gender']?.toString() ?? '';
       _dateOfBirth = data['date_of_birth']?.toString() ?? '';

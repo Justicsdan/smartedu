@@ -344,7 +344,7 @@ class _PageClassesState extends State<PageClasses>
                           final s = classStudents[i];
                           final gender = s['gender']?.toString() ?? '';
                           final name =
-                              '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'
+                              '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'
                                   .trim();
                           return Container(
                             margin: const EdgeInsets.only(bottom: 4),

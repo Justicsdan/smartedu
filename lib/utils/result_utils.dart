@@ -210,7 +210,7 @@ class ResultUtils {
         'admission_no': student['admission_no'] ?? '',
         'first_name': student['first_name'] ?? '',
         'last_name': student['last_name'] ?? '',
-        'student_name': '${student['first_name'] ?? ''} ${student['last_name'] ?? ''}'.trim(),
+        'student_name': '${student['first_name'] ?? ''} ${student['middle_name'] ?? ''} ${student['last_name'] ?? ''}'.trim(),
         'total_score': totalScore,
         'subjects_taken': subjectsWithScores,
         'average': average,

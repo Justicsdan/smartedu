@@ -45,7 +45,7 @@ class _PageAcePacesState extends State<PageAcePaces> {
           .eq('class_id', _selectedClassId)
           .eq('is_active', true)
           .order('first_name', ascending: true)
-          .select('id, first_name, last_name, admission_no')
+          .select('id, first_name, middle_name, last_name, admission_no')
           .get();
       final students = List<Map<String, dynamic>>.from(studentResult);
 
@@ -76,7 +76,7 @@ class _PageAcePacesState extends State<PageAcePaces> {
   }
 
   String _studentName(Map<String, dynamic> s) {
-    return '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
+    return '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
   }
 
   int _paceCountForStudent(String studentId) {
@@ -278,7 +278,7 @@ class _PaceEntrySheetState extends State<_PaceEntrySheet> {
   bool _saving = false;
 
   String _studentName() {
-    return '${widget.student['first_name'] ?? ''} ${widget.student['last_name'] ?? ''}'.trim();
+    return '${widget.student['first_name'] ?? ''} ${widget.student['middle_name'] ?? ''} ${widget.student['last_name'] ?? ''}'.trim();
   }
 
   @override

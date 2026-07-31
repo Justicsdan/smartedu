@@ -29,7 +29,7 @@ class _PageComplaintsState extends State<PageComplaints> {
       final schoolId = Supabase.instance.client.auth.currentUser?.id;
       // We need school_id from context — but this page doesn't have provider access
       // Fetch all and filter, or accept schoolId as param
-      final r = await DbProxy.instance.from('complaints').select('*, students(first_name, last_name, admission_no, class_id), classes(name)').order('created_at', ascending: false).get();
+      final r = await DbProxy.instance.from('complaints').select('*, students(first_name, middle_name, last_name, admission_no, class_id), classes(name)').order('created_at', ascending: false).get();
       if (mounted) setState(() { _complaints = List<Map<String, dynamic>>.from(r); _loading = false; });
     } catch (e) {
       debugPrint('Load complaints error: $e');
@@ -49,7 +49,7 @@ class _PageComplaintsState extends State<PageComplaints> {
       final q = _searchQuery.toLowerCase();
       list = list.where((c) {
         final student = c['students'] as Map<String, dynamic>? ?? {};
-        final name = '${student['first_name'] ?? ''} ${student['last_name'] ?? ''}'.toLowerCase();
+        final name = '${student['first_name'] ?? ''} ${student['middle_name'] ?? ''} ${student['last_name'] ?? ''}'.trim().toLowerCase();
         final subject = (c['subject'] ?? '').toString().toLowerCase();
         return name.contains(q) || subject.contains(q);
       }).toList();

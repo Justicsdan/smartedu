@@ -89,7 +89,7 @@ mixin AttendanceMixin on BaseProvider {
     try {
       final r = await supabase
           .from('attendance')
-          .select('*, students(id, first_name, last_name, admission_no, passport_url)')
+          .select('*, students(id, first_name, middle_name, last_name, admission_no, passport_url)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])
@@ -172,7 +172,7 @@ mixin AttendanceMixin on BaseProvider {
     try {
       final r = await supabase
           .from('attendance')
-          .select('student_id, status, students(first_name, last_name, admission_no)')
+          .select('student_id, status, students(first_name, middle_name, last_name, admission_no)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])
@@ -245,7 +245,7 @@ mixin AttendanceMixin on BaseProvider {
     try {
       final r = await supabase
           .from('attendance')
-          .select('*, students(first_name, last_name, admission_no)')
+          .select('*, students(first_name, middle_name, last_name, admission_no)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])

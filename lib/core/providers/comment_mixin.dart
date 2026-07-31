@@ -272,7 +272,7 @@ mixin CommentMixin on BaseProvider {
     try {
       final result = await supabase
           .from('term_comments')
-          .select('*, students(first_name, last_name, admission_no, passport_url)')
+          .select('*, students(first_name, middle_name, last_name, admission_no, passport_url)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', currentSession!['id'])
@@ -294,7 +294,7 @@ mixin CommentMixin on BaseProvider {
     try {
       final result = await supabase
           .from('term_comments')
-          .select('*, students(first_name, last_name, admission_no, passport_url)')
+          .select('*, students(first_name, middle_name, last_name, admission_no, passport_url)')
           .eq('school_id', schoolId)
           .eq('class_id', classId)
           .eq('session_id', sid)

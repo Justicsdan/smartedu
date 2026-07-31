@@ -1118,7 +1118,7 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
                   itemBuilder: (ctx, i) {
                     final row = _summaryData[i];
                     final name =
-                        '${row['first_name'] ?? ''} ${row['last_name'] ?? ''}'
+                        '${row['first_name'] ?? ''} ${row['middle_name'] ?? ''} ${row['last_name'] ?? ''}'
                             .trim();
                     return Container(
                       padding: const EdgeInsets.symmetric(

@@ -25,7 +25,7 @@ class AcePdfGenerator {
   }) async {
     final logoImg = await _fetchImage(schoolInfo['logo_url'] as String?);
     final passportImg = await _fetchImage(student['passport_url'] as String?);
-    final studentName = '${student['first_name'] ?? ''} ${student['last_name'] ?? ''}'.trim();
+    final studentName = '${student['first_name'] ?? ''} ${student['middle_name'] ?? ''} ${student['last_name'] ?? ''}'.trim();
     final pdf = pw.Document(theme: pw.ThemeData.withFont(base: pw.Font.helvetica()));
     pdf.addPage(pw.MultiPage(
       pageTheme: pw.PageTheme(pageFormat: PdfPageFormat.a4, margin: const pw.EdgeInsets.all(20), buildForeground: (context) => _watermark(logoImg, schoolInfo['name']?.toString() ?? '')),

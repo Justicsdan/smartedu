@@ -397,7 +397,7 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
     try {
       await AcePdfGenerator.generateAndDownload(
         schoolInfo: provider.schoolInfoMap,
-        student: {'first_name': provider.firstName, 'last_name': provider.lastName, 'passport_url': provider.passportUrl, 'admission_no': provider.admissionNo},
+        student: {'first_name': provider.firstName, 'middle_name': provider.middleName, 'last_name': provider.lastName, 'passport_url': provider.passportUrl, 'admission_no': provider.admissionNo},
         report: provider.myAceReport,
         paceScores: provider.myPaceScores,
         subjects: _subjects,

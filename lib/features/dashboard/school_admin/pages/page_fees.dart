@@ -70,7 +70,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
       DbProxy.instance.from('fee_types').select().eq('school_id', sid).order('name').get(),
       DbProxy.instance.from('fee_payments').select().eq('school_id', sid).order('payment_date', ascending: false).get(),
       DbProxy.instance.from('classes').select().eq('school_id', sid).order('name').get(),
-      DbProxy.instance.from('students').select('id, first_name, last_name, class_id, admission_no').eq('school_id', sid).order('first_name').get(),
+      DbProxy.instance.from('students').select('id, first_name, middle_name, last_name, class_id, admission_no').eq('school_id', sid).order('first_name').get(),
       DbProxy.instance.from('fee_assignments').select('*').eq('school_id', sid).order('assigned_at', ascending: false).get(),
     ]);
     if (!mounted) return;
@@ -88,7 +88,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     if (id == null) return '\u2014';
     for (final s in _students) {
       if (s['id'] == id) {
-        return '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
+        return '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
       }
     }
     return '\u2014';
@@ -169,7 +169,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     if (_rpStudentSearch.isNotEmpty) {
       final q = _rpStudentSearch.toLowerCase();
       list = list.where((s) {
-        final name = '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.toLowerCase();
+        final name = '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim().toLowerCase();
         final adm = (s['admission_no'] ?? '').toString().toLowerCase();
         return name.contains(q) || adm.contains(q);
       }).toList();
@@ -205,7 +205,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
     if (_histStudentSearch.isNotEmpty) {
       final q = _histStudentSearch.toLowerCase();
       list = list.where((s) {
-        final name = '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.toLowerCase();
+        final name = '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim().toLowerCase();
         final adm = (s['admission_no'] ?? '').toString().toLowerCase();
         return name.contains(q) || adm.contains(q);
       }).toList();
@@ -1128,7 +1128,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                       ),
                     ),
                     title: Text(
-                      '${s['first_name']} ${s['last_name']}',
+                      '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
@@ -1273,7 +1273,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                 for (final s in _rpFilteredStudents)
                   DropdownMenuItem<String>(
                     value: s['id'] as String?,
-                    child: Text('${s['first_name']} ${s['last_name']} (${s['admission_no']})'),
+                    child: Text('${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''} (${s['admission_no']})'),
                   ),
               ],
               onChanged: (v) {
@@ -1509,7 +1509,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                     for (final s in _historyFilteredStudents)
                       DropdownMenuItem<String>(
                         value: s['id'] as String?,
-                        child: Text('${s['first_name']} ${s['last_name']}', style: const TextStyle(fontSize: 12)),
+                        child: Text('${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}', style: const TextStyle(fontSize: 12)),
                       ),
                   ],
                   onChanged: (v) => setState(() => _filterStudentId = v),

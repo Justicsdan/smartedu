@@ -29,7 +29,7 @@ mixin TeacherScoresMixin on TeacherBase {
 
       final r = await DbProxy.instance
           .from('scores')
-          .select('*, students(id, first_name, last_name, admission_no), subjects(name, code)')
+          .select('*, students(id, first_name, middle_name, last_name, admission_no), subjects(name, code)')
           .eq('school_id', schoolId)
           .eq('session_id', currentSession!['id'])
           .eq('term_id', currentTerm!['id'])

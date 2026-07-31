@@ -141,48 +141,53 @@ class ReportsPdfGenerator {
   }
 
   // ═══ SUMMARY CARDS ═══
+  static String _ordinal(int n) {
+    if (n <= 0) return '\$n';
+    final lastTwo = n % 100;
+    if (lastTwo >= 11 && lastTwo <= 13) return '\${n}th';
+    switch (n % 10) {
+      case 1: return '\${n}st';
+      case 2: return '\${n}nd';
+      case 3: return '\${n}rd';
+      default: return '\${n}th';
+    }
+  }
+
   static List<pw.Widget> _summaryCards(Map<String, dynamic>? d, bool isAce) {
     if (d == null || (d['total_students'] ?? 0) == 0) {
       return [pw.Center(child: pw.Text('No data found', style: const pw.TextStyle(color: PdfColors.grey)))];
     }
-    final items = <_PdfCard>[];
-    items.add(_PdfCard('Total Students', _fmt(d['total_students']), PdfColors.blue));
-    if (isAce) {
-      items.addAll([
-        _PdfCard('Avg HACS', _fmt(d['avg_hacs']), PdfColors.blue),
-        _PdfCard('Avg NCE', _fmt(d['avg_nce']), PdfColors.orange),
-        _PdfCard('Avg PACEs', _fmt(d['avg_paces']), PdfColors.teal),
-      ]);
-    } else {
-      items.add(_PdfCard('Avg Score', _fmt(d['avg_score']), PdfColors.blue));
-    }
-    items.addAll([
-      _PdfCard('Pass Rate', '${d['pass_rate']}%', PdfColors.green),
-      _PdfCard('Distinctions', _fmt(d['distinction_count']), PdfColors.purple),
-      _PdfCard('At Risk', _fmt(d['at_risk_count']), PdfColors.red),
-    ]);
-    if (isAce) {
-      items.add(_PdfCard('Highest HACS', _fmt(d['highest_hacs']), PdfColors.indigo));
-      items.add(_PdfCard('Lowest HACS', _fmt(d['lowest_hacs']), PdfColors.deepOrange));
-    } else {
-      items.add(_PdfCard('Highest', _fmt(d['highest_score']), PdfColors.indigo));
-      items.add(_PdfCard('Lowest', _fmt(d['lowest_score']), PdfColors.deepOrange));
-    }
-    if (d['terms_count'] != null) items.add(_PdfCard('Terms', _fmt(d['terms_count']), PdfColors.grey));
-
     final rows = <pw.Widget>[];
-    for (var i = 0; i < items.length; i += 4) {
-      final chunk = items.skip(i).take(4).toList();
-      rows.add(pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-        children: chunk.map((c) => _buildCard(c)).toList(),
+    final stuList = d['student_list'] as List<dynamic>?;
+    if (stuList != null && stuList.isNotEmpty) {
+      final isCum = d['terms_count'] != null;
+      final hdrs = <String>['#', 'Student Name'];
+      if (isAce) hdrs.addAll(['HACS', 'NCE', 'PACEs']);
+      else hdrs.addAll(['Total Score', 'Average', 'Position']);
+      if (isCum) hdrs.add('Terms');
+      final tData = <List<String>>[];
+      for (var i = 0; i < stuList.length; i++) {
+        final s = stuList[i] as Map<String, dynamic>;
+        final row = <String>[(i + 1).toString(), s['student_name']?.toString() ?? 'Unknown'];
+        if (isAce) row.addAll([_fmt(s['hacs_score']), _fmt(s['nce_score']), (s['paces_completed'] ?? 0).toString()]);
+        else row.addAll([_fmt(s['total_score']), _fmt(s['average_score']), (s['position'] ?? '-').toString()]);
+        if (isCum) row.add((s['terms_count'] ?? 0).toString());
+        tData.add(row);
+      }
+      rows.add(pw.SizedBox(height: 12));
+      rows.add(pw.Table.fromTextArray(
+        headers: hdrs,
+        data: tData,
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.blue),
+        cellStyle: const pw.TextStyle(fontSize: 9),
+        cellAlignment: pw.Alignment.center,
+        columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(3)},
       ));
-      if (i + 4 < items.length) rows.add(pw.SizedBox(height: 8));
     }
     return rows;
   }
-
-  static pw.Widget _buildCard(_PdfCard c) {
+    static pw.Widget _buildCard(_PdfCard c) {
     return pw.Container(
       width: 155,
       padding: const pw.EdgeInsets.all(10),
@@ -201,6 +206,10 @@ class ReportsPdfGenerator {
   // ═══ SUBJECT TABLE ═══
   static List<pw.Widget> _subjectTable(List<Map<String, dynamic>> data, bool isAce) {
     if (data.isEmpty) return [pw.Text('No subject data')];
+    if (data.first.containsKey('is_student_format')) {
+      if (data.first.containsKey('term_data')) return _subjectCumulativeStudentPdf(data, isAce);
+      return _subjectStudentPdf(data, isAce);
+    }
     final scoreKey = isAce ? 'avg_pt' : 'avg_score';
     final highKey = isAce ? 'highest_pt' : 'highest_avg';
     final lowKey = isAce ? 'lowest_pt' : 'lowest_avg';
@@ -227,6 +236,71 @@ class ReportsPdfGenerator {
   }
 
   // ═══ COMPARISON TABLE ═══
+  static List<pw.Widget> _subjectStudentPdf(List<Map<String, dynamic>> data, bool isAce) {
+    final hdrs = <String>['#', 'STUDENTS NAME'];
+    if (isAce) {
+      hdrs.addAll(['PACES COMPLETED', 'TERM AVERAGE (%)', 'PACE RANGE']);
+    } else {
+      hdrs.addAll(['TOTAL SCORE', 'GRADE', 'CLASS POSITION']);
+    }
+    final tData = <List<String>>[];
+    for (var i = 0; i < data.length; i++) {
+      final s = data[i];
+      final row = <String>[(i + 1).toString(), (s['student_name'] ?? 'Unknown').toString().toUpperCase()];
+      if (isAce) {
+        row.add((s['paces_completed'] ?? 0).toString());
+        row.add(_fmt(s['term_average']));
+        row.add((s['pace_range'] ?? '--').toString());
+      } else {
+        row.add(_fmt(s['total_score']));
+        row.add((s['grade'] ?? '').toString());
+        row.add((s['position'] ?? '--').toString());
+      }
+      tData.add(row);
+    }
+    return [
+      pw.Table.fromTextArray(
+        headers: hdrs,
+        data: tData,
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.blue),
+        cellStyle: const pw.TextStyle(fontSize: 8.5),
+        cellAlignment: pw.Alignment.center,
+        columnWidths: {0: const pw.FixedColumnWidth(22), 1: const pw.FlexColumnWidth(3)},
+      ),
+    ];
+  }
+
+  static List<pw.Widget> _subjectCumulativeStudentPdf(List<Map<String, dynamic>> data, bool isAce) {
+    if (data.isEmpty) return [pw.Text('No data')];
+    final termData = data.first['term_data'] as List<dynamic>;
+    final termCount = termData.length;
+    final hdrs = <String>['#', 'STUDENTS NAME'];
+    for (var t = 0; t < termCount; t++) {
+      final tn = (termData[t]['term_name'] ?? 'T\${t + 1}').toString();
+      if (isAce) { hdrs.addAll(['\$tn AVG PT', '\$tn PACEs']); }
+      else { hdrs.addAll(['\$tn TOTAL', '\$tn GRADE', '\$tn POS']); }
+    }
+    if (isAce) { hdrs.addAll(['TOTAL PACEs', 'CUM. AVG', 'POSITION']); }
+    else { hdrs.addAll(['TOTAL', 'AVERAGE', 'POSITION']); }
+    final tData = <List<String>>[];
+    for (var i = 0; i < data.length; i++) {
+      final s = data[i];
+      final td = s['term_data'] as List;
+      final row = <String>[(i + 1).toString(), (s['student_name'] ?? 'Unknown').toString().toUpperCase()];
+      for (var t = 0; t < td.length; t++) {
+        final tm = td[t] as Map;
+        if (isAce) { row.add(_fmt(tm['avg_pt'])); row.add((tm['paces'] ?? 0).toString()); }
+        else { row.add(_fmt(tm['total'])); row.add((tm['grade'] ?? '').toString()); row.add((tm['position'] ?? '--').toString()); }
+      }
+      if (isAce) { row.add((s['total_paces'] ?? 0).toString()); row.add(_fmt(s['cumulative_avg'])); }
+      else { row.add(_fmt(s['cumulative_total'])); row.add(_fmt(s['cumulative_avg'])); }
+      row.add((s['position'] ?? '--').toString());
+      tData.add(row);
+    }
+    return [pw.Table.fromTextArray(headers: hdrs, data: tData, headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8, color: PdfColors.white), headerDecoration: const pw.BoxDecoration(color: PdfColors.blue), cellStyle: const pw.TextStyle(fontSize: 8), cellAlignment: pw.Alignment.center, columnWidths: {0: const pw.FixedColumnWidth(18), 1: const pw.FlexColumnWidth(3)})];
+  }
+
   static List<pw.Widget> _comparisonTable(List<Map<String, dynamic>> data, bool isAce) {
     if (data.isEmpty) return [pw.Text('No comparison data')];
     final scoreKey = isAce ? 'avg_hacs' : 'avg_score';

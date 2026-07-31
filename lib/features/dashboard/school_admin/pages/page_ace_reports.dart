@@ -48,7 +48,7 @@ class _PageAceReportsState extends State<PageAceReports> {
   }
 
   String _sName(Map<String, dynamic> s) =>
-      '${s['first_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
+      '${s['first_name'] ?? ''} ${s['middle_name'] ?? ''} ${s['last_name'] ?? ''}'.trim();
 
   void _openSheet(Map<String, dynamic> student) {
     final id = student['id'].toString();
@@ -252,7 +252,7 @@ class _ReportSheetState extends State<_ReportSheet> {
 
   Map<String, dynamic>? get _r => widget.existingReport;
   bool get _pub => _r?['is_published'] == true;
-  String get _name => '${widget.student['first_name'] ?? ''} ${widget.student['last_name'] ?? ''}'.trim();
+  String get _name => '${widget.student['first_name'] ?? ''} ${widget.student['middle_name'] ?? ''} ${widget.student['last_name'] ?? ''}'.trim();
 
   @override
   void initState() {
