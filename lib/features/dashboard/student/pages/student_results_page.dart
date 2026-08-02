@@ -12,6 +12,8 @@ import 'package:smartedu/utils/grading_utils.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../../../../utils/pdf_download_utils.dart';
+import '../widgets/student_performance_trend_chart.dart';
+import '../widgets/student_subject_radar_chart.dart';
 
 class StudentResultsPage extends StatefulWidget {
   const StudentResultsPage({super.key});
@@ -767,6 +769,10 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 }).toList(),
               ),
             ),
+            const SizedBox(height: 24),
+            const StudentPerformanceTrendChart(),
+            const SizedBox(height: 16),
+            const StudentSubjectRadarChart(),
             const SizedBox(height: 24),
             if (_behavioralRatings != null && _behavioralRatings!.isNotEmpty) _buildBehavioralSection(),
             const SizedBox(height: 16),

@@ -213,9 +213,11 @@ abstract class StudentBase extends ChangeNotifier {
   Map<String, dynamic>? get behavioralLabels => _behavioralLabels;
   List<Map<String, dynamic>> _sessions = [];
   List<Map<String, dynamic>> _terms = [];
+  List<Map<String, dynamic>> _termHistory = [];
 
   List<Map<String, dynamic>> get sessions => _sessions;
   List<Map<String, dynamic>> get terms => _terms;
+  List<Map<String, dynamic>> get termHistory => _termHistory;
 
   Future<bool> login(String username, String pin) async {
     try {
@@ -571,6 +573,41 @@ abstract class StudentBase extends ChangeNotifier {
     return 'F';
   }
 
+  Future<void> loadTermHistory() async {
+    if (_studentId.isEmpty || _schoolId.isEmpty) return;
+    try {
+      final r = await DbProxy.instance
+          .from('student_term_summaries')
+          .select('session_id, term_id, average_score, is_published')
+          .eq('student_id', _studentId)
+          .eq('school_id', _schoolId)
+          .order('created_at', ascending: true)
+          .get();
+      final history = <Map<String, dynamic>>[];
+      for (final row in r) {
+        final sesId = (row['session_id'] ?? '').toString();
+        final terId = (row['term_id'] ?? '').toString();
+        final sesName = _sessions.cast<Map<String, dynamic>?>().firstWhere(
+              (s) => s?['id']?.toString() == sesId,
+              orElse: () => {'name': 'Session'},
+        )?['name']?.toString() ?? 'Session';
+        final terName = _terms.cast<Map<String, dynamic>?>().firstWhere(
+              (t) => t?['id']?.toString() == terId,
+              orElse: () => {'name': 'Term'},
+        )?['name']?.toString() ?? 'Term';
+        history.add({
+          'session_name': sesName,
+          'term_name': terName,
+          'average_score': (row['average_score'] as num?)?.toDouble() ?? 0,
+          'is_published': row['is_published'] == true,
+        });
+      }
+      _termHistory = history;
+    } catch (e) {
+      debugPrint('Error loading term history: $e');
+    }
+  }
+
   String getGradeRemark(double total) {
     for (final g in _gradingSystem) {
       final min = (g['min'] as num?)?.toDouble();
@@ -639,6 +676,7 @@ abstract class StudentBase extends ChangeNotifier {
     _showPosition = true;
     _sessions = [];
     _terms = [];
+    _termHistory = [];
     _locale = 'en';
     _currencyCode = 'NGN';
     _currencySymbol = '₦';

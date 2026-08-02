@@ -26,6 +26,7 @@ dependencies:
   icons_plus: ^5.0.0
   flutter_animate: ^4.5.2
   url_launcher: ^6.3.2
+  fl_chart: ^0.69.0
   
   # PDF & Print (already here — school-branded result sheets)
   pdf: ^3.12.0
