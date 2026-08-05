@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
+import '../widgets/student_subject_bar_chart.dart';
+import '../widgets/student_session_comparison_chart.dart';
+import '../widgets/student_term_pie_chart.dart';
 
 class StudentHomePage extends StatelessWidget {
   const StudentHomePage({super.key});
@@ -73,11 +76,21 @@ class StudentHomePage extends StatelessWidget {
                   children: [
                     Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFFF0F4FF), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.assignment_rounded, size: 18, color: Color(0xFF1A237E))),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(score['subjectName'] ?? 'Subject', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF111827)))),
+                    Expanded(child: Text(((score['subjects'] as Map?)?['name'] ?? 'Subject').toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF111827)))),
                     Text('${score['total'] ?? 0}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
                   ],
                 ),
               )),
+          if (!isAce) ...[
+            const SizedBox(height: 24),
+            _sectionTitle('Performance Charts'),
+            const SizedBox(height: 14),
+            const SizedBox(height: 200, child: StudentSubjectBarChart()),
+            const SizedBox(height: 12),
+            const SizedBox(height: 200, child: StudentSessionComparisonChart()),
+            const SizedBox(height: 12),
+            const SizedBox(height: 200, child: StudentTermPieChart()),
+          ],
           ],
         ],
       ),

@@ -322,4 +322,65 @@ mixin StudentResultsMixin on StudentBase {
     if (n == 3) return '3rd';
     return '${n}th';
   }
+
+  // ── Session-wide scores for multi-term charts (Charts 2 & 3) ──
+  Map<String, List<Map<String, dynamic>>> _sessionScores = {};
+  List<Map<String, dynamic>> _sessionTerms = [];
+
+  Map<String, List<Map<String, dynamic>>> get sessionScores => _sessionScores;
+  List<Map<String, dynamic>> get sessionTerms => _sessionTerms;
+
+  bool _sessionScoresLoaded = false;
+  bool get sessionScoresLoaded => _sessionScoresLoaded;
+
+  /// Loads ALL scores for the student across every term in the current session.
+  /// Call once from chart parent initState. Results cached — repeated calls are no-ops.
+  Future<void> loadSessionScores() async {
+    if (_sessionScoresLoaded || currentSessionId == null) return;
+    _sessionScoresLoaded = true;
+
+    try {
+      // Load all scores for this student in this session (no term filter)
+      final response = await DbProxy.instance
+          .from('scores')
+          .select('id, term_id, total, subjects(name, code)')
+          .eq('student_id', studentId)
+          .eq('session_id', currentSessionId!)
+          .get();
+
+      final List<Map<String, dynamic>> allScores =
+          List<Map<String, dynamic>>.from(response);
+
+      // Group by term_id
+      _sessionScores = {};
+      for (final s in allScores) {
+        final tid = (s['term_id'] ?? '').toString();
+        if (tid.isEmpty) continue;
+        _sessionScores.putIfAbsent(tid, () => []);
+        final subject = s['subjects'] as Map<String, dynamic>?;
+        _sessionScores[tid]!.add({
+          ...s,
+          'subject_name': subject?['name'] ?? '',
+          'subject_code': subject?['code'] ?? '',
+        });
+      }
+
+      // Load term names for labels
+      final termsResp = await DbProxy.instance
+          .from('terms')
+          .select('id, name')
+          .eq('session_id', currentSessionId!)
+          .order('created_at')
+          .get();
+
+      _sessionTerms = List<Map<String, dynamic>>.from(termsResp);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading session scores: $e');
+      _sessionScores = {};
+      _sessionTerms = [];
+      notifyListeners();
+    }
+  }
+
 }

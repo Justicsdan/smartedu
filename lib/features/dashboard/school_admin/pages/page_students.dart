@@ -7,6 +7,7 @@ import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/admin_student_results_sheet.dart';
 
 // ==========================================
 // File: lib/features/dashboard/school_admin/pages/page_students.dart
@@ -260,6 +261,28 @@ class _PageStudentsState extends State<PageStudents> {
                     onPressed: () => _showEditSheet(s),
                   ),
                 ),
+                const SizedBox(width: 6),
+                if ((s['class_id'] ?? '').toString().isNotEmpty)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade300),
+                      color: const Color(0xFFF0FFF4),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.visibility_outlined, size: 16, color: Color(0xFF2E7D32)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      onPressed: () {
+                        Navigator.push(
+                          context, MaterialPageRoute(
+                            builder: (ctx) => AdminStudentResultsPage(student: s),
+                        ));
+                      },
+                    ),
+                  ),
                 const SizedBox(width: 6),
                 Container(
                   width: 32,

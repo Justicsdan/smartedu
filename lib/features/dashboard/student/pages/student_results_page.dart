@@ -12,8 +12,6 @@ import 'package:smartedu/utils/grading_utils.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../../../../utils/pdf_download_utils.dart';
-import '../widgets/student_performance_trend_chart.dart';
-import '../widgets/student_subject_radar_chart.dart';
 
 class StudentResultsPage extends StatefulWidget {
   const StudentResultsPage({super.key});
@@ -37,6 +35,45 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
 
   @override
+  /// Maps assessment type IDs to actual scores_json keys with positional fallback
+  List<String> _resolveKeys(List<Map<String, dynamic>> assessments, Map<String, dynamic> sj) {
+    final norm = (String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final dataKeys = sj.keys.toList();
+    final result = <String>[];
+    for (final at in assessments) {
+      final aid = norm((at['id'] ?? '').toString());
+      String matched = '';
+      if (sj.containsKey(aid)) {
+        matched = aid;
+      } else {
+        for (final k in dataKeys) {
+          final nk = norm(k);
+          if (nk.length >= 3 && aid.length >= 3 && (nk.startsWith(aid) || aid.startsWith(nk))) {
+            matched = k; break;
+          }
+        }
+      }
+      result.add(matched);
+    }
+    final matchedCount = result.where((k) => k.isNotEmpty).length;
+    final usedKeys = result.where((k) => k.isNotEmpty).toSet();
+    final unusedKeys = dataKeys.where((k) => !usedKeys.contains(k)).toList();
+    final unmatchedIdx = <int>[];
+    for (int i = 0; i < result.length; i++) { if (result[i].isEmpty) unmatchedIdx.add(i); }
+    if (matchedCount < result.length && unusedKeys.length == unmatchedIdx.length) {
+      for (int i = 0; i < unmatchedIdx.length; i++) { result[unmatchedIdx[i]] = unusedKeys[i]; }
+    }
+    return result;
+  }
+  Map<String, dynamic> _parseSj(dynamic raw) {
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String && raw.isNotEmpty) {
+      try { return jsonDecode(raw) as Map<String, dynamic>; } catch (_) {}
+    }
+    return {};
+  }
+
   void initState() {
     super.initState();
     _loadCommentsAndRatings();
@@ -253,7 +290,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           children: [
             _pdfHdr('S/N'),
             _pdfHdr('Subject'),
-            ...assessmentTypes.map((at) => _pdfHdr('${at['name']}\n(${at['max']})')),
+            ...assessmentTypes.map((at) => _pdfHdr('${at['name']} (${at['max']})')),
             _pdfHdr('Total'),
             _pdfHdr('Grade'),
             _pdfHdr('Remark'),
@@ -266,7 +303,8 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         final total = (score['total'] ?? 0).toDouble();
         final isPass = total >= passMark;
         final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
-        final scoresJson = score['scores_json'] as Map<String, dynamic>? ?? {};
+        final scoresJson = _parseSj(score['scores_json']);
+        final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
         final rowColor = idx.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
         final txtColor = isPass ? PdfColors.green800 : PdfColors.red800;
 
@@ -275,10 +313,9 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             decoration: pw.BoxDecoration(color: rowColor),
             children: [
               _pdfCell('$idx', align: pw.TextAlign.center),
-              _pdfCell(score['subject_name'] ?? '', weight: pw.FontWeight.bold),
-              ...assessmentTypes.map((at) {
-                final aid = (at['id'] ?? '').toString().toLowerCase();
-                final val = scoresJson[aid] ?? 0;
+              _pdfCell(((score['subjects'] as Map?)?['name'] ?? '').toString(), weight: pw.FontWeight.bold),
+              ...List.generate(assessmentTypes.length, (i) {
+                final val = scoresJson[resolvedKeys[i]] ?? 0;
                 return _pdfCell(val is int ? '$val' : val.toString(), align: pw.TextAlign.center);
               }),
               _pdfCell(
@@ -715,7 +752,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   ),
                   // Assessment columns — equal width, centered
                   ...assessmentTypes.map((at) => DataColumn(
-                    label: SizedBox(height: 56, child: Center(child: Text('${at['name']}\n(${at['max']})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                    label: Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text('${at['name']} (${at['max']})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
                     columnWidth: const FlexColumnWidth(1.3),
                   )),
                   // Total
@@ -740,7 +777,8 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                   final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
                   final grade = gradeInfo['grade'] as String? ?? '';
                   final remark = gradeInfo['remark'] as String? ?? '';
-                  final scoresJson = score['scores_json'] as Map<String, dynamic>? ?? {};
+                  final scoresJson = _parseSj(score['scores_json']);
+                  final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
                   final clr = isPass ? passClr : failClr;
                   final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
                   return DataRow(
@@ -749,12 +787,11 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                       // Subject — left-aligned
                       DataCell(Padding(
                         padding: const EdgeInsets.only(left: 8),
-                        child: Text(score['subject_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs)),
+                        child: Text(((score['subjects'] as Map?)?['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs)),
                       )),
                       // Assessment scores — centered
-                      ...assessmentTypes.map((at) {
-                        final aid = (at['id'] ?? '').toString().toLowerCase();
-                        final val = scoresJson[aid] ?? 0;
+                      ...List.generate(assessmentTypes.length, (i) {
+                        final val = scoresJson[resolvedKeys[i]] ?? 0;
                         final display = val is int ? '$val' : val.toString();
                         return DataCell(Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
                       }),
@@ -769,10 +806,6 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 24),
-            const StudentPerformanceTrendChart(),
-            const SizedBox(height: 16),
-            const StudentSubjectRadarChart(),
             const SizedBox(height: 24),
             if (_behavioralRatings != null && _behavioralRatings!.isNotEmpty) _buildBehavioralSection(),
             const SizedBox(height: 16),
