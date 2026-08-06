@@ -354,6 +354,7 @@ abstract class BaseProvider extends ChangeNotifier {
     _currentUserData = loginData;
     try {
       await Future.wait([
+        loadScores(),
         _loadSchoolInfo(),
         _loadSchoolSettings(),
       ]);
@@ -385,6 +386,7 @@ abstract class BaseProvider extends ChangeNotifier {
       _schoolType = loginData['school_type']?.toString() ?? 'secondary';
 
       await Future.wait([
+        loadScores(),
         _loadSchoolInfo(),
         _loadSchoolSettings(),
         loadAcademicSessions(),
@@ -401,6 +403,7 @@ abstract class BaseProvider extends ChangeNotifier {
 
   Future<void> refreshSchoolInfo() async {
     await Future.wait([
+        loadScores(),
       _loadSchoolInfo(),
       _loadSchoolSettings(),
     ]);
@@ -650,6 +653,7 @@ abstract class BaseProvider extends ChangeNotifier {
     try {
       // Critical: blocks render — dashboard needs these to display
       await Future.wait([
+        loadScores(),
         loadClasses(),
         loadSubjects(),
         loadStudents(),
@@ -667,6 +671,7 @@ abstract class BaseProvider extends ChangeNotifier {
   Future<void> _loadDeferredData() async {
     try {
       await Future.wait([
+        loadScores(),
         loadClassSubjects(),
         loadAssignments(),
         loadCbtExams(),

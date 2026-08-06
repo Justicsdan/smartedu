@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/db_proxy.dart';
+import '../widgets/admin_subject_averages_chart.dart';
 import '../../../../core/providers/school_admin_provider.dart';
 
 class PageDashboard extends StatefulWidget {
@@ -130,6 +131,11 @@ class _PageDashboardState extends State<PageDashboard> with TickerProviderStateM
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
               child: _buildClassesSection(),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 0),
+              child: const AdminSubjectAveragesChart(),
             ),
           ],
         ),
