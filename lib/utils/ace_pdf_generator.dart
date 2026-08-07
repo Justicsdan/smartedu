@@ -221,6 +221,21 @@ class AcePdfGenerator {
     );
   }
 
+  // Reading Progress table helpers
+  static pw.Widget _rpLabel(String t) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      child: pw.Text(t, style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold)),
+    );
+  }
+
+  static pw.Widget _rpValue(String t) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      child: pw.Text(t, style: pw.TextStyle(fontSize: 7)),
+    );
+  }
+
   static pw.Widget _buildReadingProgress(Map<String, dynamic>? r) {
     if (r == null) return pw.SizedBox();
     final wpm = _fm(r['reading_wpm']);
@@ -233,67 +248,99 @@ class AcePdfGenerator {
     final dit = _fi(r['day_in_term']).toString();
     final da = _fi(r['days_absent']).toString();
     final sc = r['supervisor_comment'] ?? '';
-    const ss = 'Signature: ___________________';
     final pc2 = r['principal_comment'] ?? '';
-    const ps = 'Signature: ___________________';
+
+    // 555pt usable width, 6 columns
+    const halfW = 92.5;
+    const dataColWidths = <int, pw.TableColumnWidth>{
+      0: pw.FixedColumnWidth(halfW),
+      1: pw.FixedColumnWidth(halfW),
+      2: pw.FixedColumnWidth(halfW),
+      3: pw.FixedColumnWidth(halfW),
+      4: pw.FixedColumnWidth(halfW),
+      5: pw.FixedColumnWidth(halfW),
+    };
+
+    final dataRows = <pw.TableRow>[
+      pw.TableRow(children: [
+        _rpLabel('Words per minute (W.P.W)'), _rpValue(wpm),
+        _rpLabel('W.P.W Comprehension'), _rpValue(cp),
+        _rpLabel('Composite'), _rpValue(comp),
+      ]),
+      pw.TableRow(children: [
+        _rpLabel('NO. of PACEs completed'), _rpValue(pc),
+        _rpLabel('PACE score AVG'), _rpValue(pa),
+        _rpLabel('Total (PACES Cass)'), _rpValue(pt),
+      ]),
+      pw.TableRow(children: [
+        _rpLabel('Date'), _rpValue(date),
+        _rpLabel('Days in Term'), _rpValue(dit),
+        _rpLabel('Days Absent'), _rpValue(da),
+      ]),
+    ];
+
     return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400), borderRadius: pw.BorderRadius.circular(4)),
-      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(vertical: 4),
-          decoration: const pw.BoxDecoration(color: PdfColors.blue800),
-          child: pw.Center(child: pw.Text('READING PROGRESS', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
-        ),
-        pw.SizedBox(height: 6),
-        _rr('Words per minute (W.P.W):', wpm, 'W.P.W Comprehension:', cp, 'Composite:', comp),
-        _rr('NO. of PACEs completed:', pc, 'PACE score AVG:', pa, 'Total (PACES Cass):', pt),
-        _rr('Date:', date, 'Days in Term:', dit, 'Days Absent:', da),
-        pw.SizedBox(height: 6),
-        _cs("Supervisor's Comment:", sc, ss),
-        pw.SizedBox(height: 6),
-        _cs("Principal's Comment:", pc2, ps),
-      ]),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          // Blue header row
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 5),
+            decoration: const pw.BoxDecoration(
+              color: PdfColors.blue800,
+              borderRadius: pw.BorderRadius.only(topLeft: pw.Radius.circular(4), topRight: pw.Radius.circular(4)),
+            ),
+            child: pw.Center(child: pw.Text('READING PROGRESS', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
+          ),
+          // Data table (no outer border — outer container provides it)
+          pw.Table(
+            columnWidths: dataColWidths,
+            border: pw.TableBorder(
+              horizontalInside: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
+              verticalInside: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
+            ),
+            children: dataRows,
+          ),
+          // Comments section inside the bordered container
+          pw.Padding(
+            padding: const pw.EdgeInsets.fromLTRB(6, 6, 6, 8),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _rpCommentBlock("Supervisor's Comment:", sc),
+                pw.SizedBox(height: 8),
+                _rpCommentBlock("Principal's Comment:", pc2),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  static pw.Widget _rr(String l1, String v1, String l2, String v2, String l3, String v3) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 4),
-      child: pw.Row(children: [
-        pw.Expanded(child: pw.RichText(text: pw.TextSpan(children: [
-          pw.TextSpan(text: l1, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-          pw.TextSpan(text: ' $v1', style: pw.TextStyle(fontSize: 8)),
-        ]))),
-        pw.Expanded(child: pw.RichText(text: pw.TextSpan(children: [
-          pw.TextSpan(text: l2, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-          pw.TextSpan(text: ' $v2', style: pw.TextStyle(fontSize: 8)),
-        ]))),
-        pw.Expanded(child: pw.RichText(text: pw.TextSpan(children: [
-          pw.TextSpan(text: l3, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-          pw.TextSpan(text: ' $v3', style: pw.TextStyle(fontSize: 8)),
-        ]))),
-      ]),
+  static pw.Widget _rpCommentBlock(String title, String comment) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(title, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+        pw.SizedBox(height: 2),
+        if (comment.isNotEmpty)
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(4),
+            decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: pw.BorderRadius.circular(2)),
+            child: pw.Text(comment, style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic)),
+          )
+        else
+          pw.SizedBox(height: 16),
+        pw.SizedBox(height: 4),
+        pw.Text('Signature: ___________________', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+      ],
     );
-  }
-
-  static pw.Widget _cs(String title, String comment, String sig) {
-    return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-      pw.Text(title, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-      pw.SizedBox(height: 2),
-      if (comment.isNotEmpty)
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(4),
-          decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300), borderRadius: pw.BorderRadius.circular(2)),
-          child: pw.Text(comment, style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic)),
-        )
-      else
-        pw.SizedBox(height: 16),
-      pw.SizedBox(height: 4),
-      pw.Text(sig, style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
-    ]);
   }
 
   static pw.Widget _buildFooterCard(Map<String, dynamic>? r) {
