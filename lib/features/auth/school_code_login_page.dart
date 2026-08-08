@@ -159,8 +159,8 @@ class _SchoolCodeLoginPageState extends State<SchoolCodeLoginPage>
       ),
       clipBehavior: Clip.antiAlias,
       child: url.isNotEmpty
-          ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.school, size: 40, color: Colors.white70))
-          : const Icon(Icons.school, size: 40, color: Colors.white70),
+          ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover))
+          : Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover),
     );
   }
 
