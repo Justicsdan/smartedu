@@ -1436,7 +1436,7 @@ class _PageSettingsState extends State<PageSettings>
           ),
           const SizedBox(height: 20),
           _tierSelector(
-              tier, (t) => setState(() => _assessmentTier = t)),
+              tier, (t) => setState(() { _assessmentTier = t; _selectedClassId = null; _classAts = []; })),
           const SizedBox(height: 12),
           Container(
             padding:
@@ -1740,7 +1740,7 @@ class _PageSettingsState extends State<PageSettings>
                     value: null,
                     child: Text('-- None (use tier defaults) --', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                   ),
-                  ...provider.classes.map((c) {
+                  ...provider.classes.where((c) => ((c['tier'] as String?) ?? 'SSS') == _assessmentTier).map((c) {
                     final cid = c['id']?.toString() ?? '';
                     final name = '${c['name'] ?? ''} ${c['section'] ?? ''}'.trim();
                     final tier = (c['tier'] as String?) ?? 'SSS';
