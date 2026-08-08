@@ -69,6 +69,15 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
   }
 
   List<Map<String, dynamic>> get _assessmentTypes {
+    // Class-level override first
+    if (_selectedClassId != null) {
+      try {
+        final cls = _myClasses.firstWhere((c) => c['id'].toString() == _selectedClassId);
+        if (cls['assessment_types'] != null) {
+          return List<Map<String, dynamic>>.from(cls['assessment_types']);
+        }
+      } catch (_) {}
+    }
     final tier = _getClassTier();
     final provider = context.read<TeacherProvider>();
     final settings = provider.schoolSettings;

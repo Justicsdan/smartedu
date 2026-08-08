@@ -47,6 +47,8 @@ class _PageSettingsState extends State<PageSettings>
 
   String _gradingTier = 'SSS';
   String _assessmentTier = 'SSS';
+  String? _selectedClassId;
+  List<Map<String, dynamic>> _classAts = [];
 
   static const _tiers = ['SSS', 'JSS', 'PRIMARY'];
   static const _tierLabels = {
@@ -1701,7 +1703,198 @@ class _PageSettingsState extends State<PageSettings>
                 : () => _saveTierAssessment(provider, tier),
             bg: _tierColors[tier],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+
+          const SizedBox(height: 20),
+          Row(children: [
+            const Expanded(child: Divider(color: Color(0xFFE5E7EB), thickness: 1)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('OR OVERRIDE PER CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey.shade400, letterSpacing: 1.2)),
+            ),
+            const Expanded(child: Divider(color: Color(0xFFE5E7EB), thickness: 1)),
+          ]),
+          const SizedBox(height: 20),
+          _pageHeader('Class-Specific Columns',
+              'Override assessment columns for individual classes'),
+          const SizedBox(height: 6),
+          Text(
+            'Select a class to set custom columns different from its tier default.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFFFAFBFC),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String?>(
+                value: _selectedClassId,
+                isExpanded: true,
+                hint: const Text('Select a class...', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('-- None (use tier defaults) --', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  ),
+                  ...provider.classes.map((c) {
+                    final cid = c['id']?.toString() ?? '';
+                    final name = '${c['name'] ?? ''} ${c['section'] ?? ''}'.trim();
+                    final tier = (c['tier'] as String?) ?? 'SSS';
+                    return DropdownMenuItem<String?>(
+                      value: cid,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: (_tierColors[tier] ?? Colors.grey).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(tier, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _tierColors[tier])),
+                          ),
+                          Expanded(child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: (v) {
+                  setState(() {
+                    _selectedClassId = v;
+                    if (v != null) {
+                      try {
+                        final cls = provider.classes.firstWhere((c) => c['id']?.toString() == v);
+                        final raw = cls['assessment_types'];
+                        _classAts = raw != null ? List<Map<String, dynamic>>.from(raw) : [];
+                      } catch (_) {
+                        _classAts = [];
+                      }
+                    } else {
+                      _classAts = [];
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+          if (_selectedClassId != null) ...[
+            const SizedBox(height: 14),
+            Builder(builder: (_) {
+              final cls = provider.classes.where((c) => c['id']?.toString() == _selectedClassId).toList();
+              final tier = cls.isNotEmpty ? ((cls.first['tier'] as String?) ?? 'SSS') : 'SSS';
+              final hasOverride = _classAts.isNotEmpty;
+              final total = _classAts.fold<int>(0, (s, a) => s + ((a['max'] as num?)?.toInt() ?? 0));
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: hasOverride ? Colors.orange.shade50 : Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: hasOverride ? Colors.orange.shade200 : Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(hasOverride ? Icons.edit_note : Icons.check_circle_outline, size: 18, color: hasOverride ? Colors.orange : Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        hasOverride ? 'Custom override active ($total/100)' : 'Using $tier tier default',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: hasOverride ? Colors.orange.shade700 : Colors.green.shade700),
+                      ),
+                    ),
+                    if (hasOverride)
+                      TextButton(
+                        onPressed: () => setState(() => _classAts = []),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red, padding: const EdgeInsets.symmetric(horizontal: 8), visualDensity: VisualDensity.compact),
+                        child: const Text('Clear', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _actionPill(
+                  icon: Icons.content_copy_rounded,
+                  label: 'Copy Tier Default',
+                  color: Colors.grey.shade600,
+                  onTap: () {
+                    final cls = provider.classes.where((c) => c['id']?.toString() == _selectedClassId).toList();
+                    final t = cls.isNotEmpty ? ((cls.first['tier'] as String?) ?? 'SSS') : 'SSS';
+                    final d = GradingUtils.getDefaultAssessmentTypes(t == 'SSS' ? provider.examTemplate : (t == 'JSS' ? 'BECE' : 'PRIMARY'));
+                    setState(() => _classAts = List<Map<String, dynamic>>.from(d.map((e) => Map<String, dynamic>.from(e))));
+                  },
+                ),
+                const SizedBox(width: 10),
+                _actionPill(
+                  icon: Icons.add_rounded,
+                  label: 'Add Column',
+                  color: const Color(0xFF1A237E),
+                  onTap: () async {
+                    final r = await showDialog<Map<String, dynamic>>(context: context, builder: (c) => const _AssessDialog(title: 'Add Column'));
+                    if (r != null) setState(() => _classAts.add(r));
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_classAts.isEmpty)
+              _emptyState(Icons.tune_outlined, 'No custom columns', 'Click "Copy Tier Default" or "Add Column"')
+            else
+              for (int i = 0; i < _classAts.length; i++)
+                Builder(builder: (_) {
+                  final at = _classAts[i];
+                  final nm = (at['name'] ?? at['id'] ?? '').toString();
+                  final mx = (at['max'] as num?)?.toInt() ?? 0;
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE8EAED))),
+                      child: Row(
+                        children: [
+                          Container(width: 4, color: Colors.orange),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              child: Row(
+                                children: [
+                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Text(nm, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+                                    const SizedBox(height: 2),
+                                    Text('Max: $mx marks', style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                                  ])),
+                                  const SizedBox(width: 12),
+                                  _rowActions(
+                                    onEdit: () async {
+                                      final r = await showDialog<Map<String, dynamic>>(context: context, builder: (c) => _AssessDialog(title: 'Edit Column', initial: at));
+                                      if (r != null) setState(() => _classAts[i] = r);
+                                    },
+                                    onDelete: _classAts.length > 1 ? () => setState(() => _classAts.removeAt(i)) : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            const SizedBox(height: 16),
+            if (_classAts.isNotEmpty)
+              _saveBtn(
+                label: 'Save Class Columns',
+                loading: _isSaving,
+                onTap: _isSaving ? null : () => _saveClassAssessment(provider),
+                bg: Colors.orange,
+              ),
+          ],
         ],
       ),
     );
@@ -1871,6 +2064,24 @@ class _PageSettingsState extends State<PageSettings>
     final ok = await p.updateTierGrading(t, cur);
     setState(() => _isSaving = false);
     _snack(ok ? 'Grading saved for $t!' : 'Failed to save');
+  }
+
+  Future<void> _saveClassAssessment(SchoolAdminProvider provider) async {
+    if (_selectedClassId == null || _classAts.isEmpty) return;
+    final v = GradingUtils.validateAssessmentTypes(_classAts);
+    if (v['valid'] != true) {
+      _snack('Fix errors before saving', success: false);
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await DbProxy.instance.from('classes').eq('id', _selectedClassId).update({'assessment_types': _classAts});
+      await provider.reloadData();
+      if (mounted) _snack('Class columns saved!');
+    } catch (e) {
+      if (mounted) _snack('Error: $e', success: false);
+    }
+    setState(() => _isSaving = false);
   }
 
   Future<void> _addAssessmentType(
