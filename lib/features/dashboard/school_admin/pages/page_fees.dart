@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import '../../../../core/providers/school_admin_provider.dart';
+import '../widgets/fee_collection_donut_chart.dart';
 
 class PageFees extends StatefulWidget {
   const PageFees({super.key});
@@ -1562,6 +1563,21 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ],
           ),
         ),
+        // Collection overview donut
+        if (_feeAssignments.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 12, 28, 0),
+            child: Builder(builder: (ctx) {
+              double totalCollected = 0, totalOutstanding = 0;
+              for (final a in _feeAssignments) {
+                final owed = (a['amount_owed'] ?? 0).toDouble();
+                final paid = (a['amount_paid'] ?? 0).toDouble();
+                totalCollected += paid.clamp(0.0, owed);
+                totalOutstanding += (owed - paid).clamp(0.0, double.infinity);
+              }
+              return FeeCollectionDonutChart(collected: totalCollected, outstanding: totalOutstanding, currency: currency);
+            }),
+          ),
         Expanded(
           child: filtered.isEmpty
               ? _emptyState(Icons.receipt_long_rounded, 'No Fee Assignments', 'Post fees for students first')

@@ -201,47 +201,48 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
             child: const Text('READING PROGRESS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.5)),
           ),
           const SizedBox(height: 12),
-          Row(children: [_rpField('W.P.W', r['reading_wpm']), const SizedBox(width: 12), _rpField('W.P.W Comprehension %', r['reading_comprehension']), const SizedBox(width: 12), _rpField('Composite', r['reading_composite'])]),
-          const SizedBox(height: 10),
-          Row(children: [_rpReadOnly('NO. of PACEs completed', r['paces_completed']?.toString() ?? '0'), const SizedBox(width: 12), _rpReadOnly('PACE score AVG', _fmtNum(r['paces_avg'])), const SizedBox(width: 12), _rpReadOnly('Total (PACES Cass)', _fmtNum(r['paces_total']))]),
-          const SizedBox(height: 10),
-          Row(children: [_rpField('Date', r['published_at'] != null ? (r['published_at'] as String).split('T').first : null), const SizedBox(width: 12), _rpField('Days in Term', r['day_in_term']), const SizedBox(width: 12), _rpField('Days Absent', r['days_absent'])]),
-          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 10,
+            children: [
+              _rpItem('Words per minute (W.P.W)', r['reading_wpm']),
+              _rpItem('W.P.W Comprehension %', r['reading_comprehension']),
+              _rpItem('Composite', r['reading_composite']),
+              _rpItem('NO. of PACEs completed', r['paces_completed']?.toString() ?? '0', isReadOnly: true),
+              _rpItem('PACE score AVG', _fmtNum(r['paces_avg']), isReadOnly: true),
+              _rpItem('Total (PACES Cass)', _fmtNum(r['paces_total']), isReadOnly: true),
+              _rpItem('Date', r['published_at'] != null ? (r['published_at'] as String).split('T').first : null),
+              _rpItem('Days in Term', r['day_in_term']),
+              _rpItem('Days Absent', r['days_absent']),
+            ],
+          ),
+          const SizedBox(height: 16),
           _rpCommentSection('Supervisor\'s Comment', r['supervisor_comment']),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _rpCommentSection('Principal\'s Comment', r['principal_comment']),
         ],
       ),
     );
   }
 
-  Widget _rpField(String label, dynamic value) {
+  Widget _rpItem(String label, dynamic value, {bool isReadOnly = false}) {
     final display = value != null ? value.toString() : '--';
-    return Expanded(
+    return SizedBox(
+      width: 190,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(color: const Color(0xFFF7F8FA), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFE8EAED))),
-            child: Text(display, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _rpReadOnly(String label, String value) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+          Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 1),
+          if (isReadOnly)
+            Text(display, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1A2377E)))
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(color: const Color(0xFFF7F8FA), borderRadius: BorderRadius.circular(6), border: Border.all(color: const Color(0xFFE8EAED))),
+              child: Text(display, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+            ),
         ],
       ),
     );

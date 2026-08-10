@@ -263,19 +263,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: child,
           ),
           child: Container(
-            width: w ? 180 : 140, height: w ? 180 : 140,
+            width: w ? 190 : 150, height: w ? 190 : 150,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               color: Colors.white,
+              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
               boxShadow: [
-                BoxShadow(color: Colors.indigo.withOpacity(0.35), blurRadius: 40, offset: const Offset(0, 14)),
-                BoxShadow(color: Colors.white.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, -5)),
+                BoxShadow(color: Color(0xFF3B82F6).withOpacity(0.5), blurRadius: 50, spreadRadius: 2, offset: const Offset(0, 14)),
+                BoxShadow(color: Color(0xFF6366F1).withOpacity(0.3), blurRadius: 40, spreadRadius: 0, offset: const Offset(0, 0)),
+                BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.contain),
-            ),
+          ),
           ),
         ),
         const SizedBox(height: 28),
