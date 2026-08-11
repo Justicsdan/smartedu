@@ -318,21 +318,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               width: 40, height: 4,
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(2)),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             const Text('How would you like to sign in?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text('Choose your preferred method', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4))),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _entryOptionCard(ctx, Icons.qr_code_rounded, 'Enter with School Code', 'Use your school code for a branded experience', const Color(0xFF6366F1), () {
               Navigator.pop(ctx);
               _showCodeSheet(ctx);
             }),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _entryOptionCard(ctx, Icons.login_rounded, 'Continue without code', 'Go directly to role selection', const Color(0xFF10B981), () {
               Navigator.pop(ctx);
               context.go('/role-selection');
             }),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
           ],
         ),
       ),
