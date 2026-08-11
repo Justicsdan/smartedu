@@ -465,8 +465,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         Text(
                           _getStudentName(provider),
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
+                              color: Colors.white,
+                              fontSize: 15,
                               fontWeight: FontWeight.w500),
                         ),
                         if (_getAdmissionNo(provider).isNotEmpty)
@@ -479,8 +479,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         Text(
                           _getClassDisplay(provider),
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.4),
-                              fontSize: 11),
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 12),
                         ),
                       ],
                     );
@@ -499,13 +499,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       leading: Icon(item.icon,
                           color: _selectedIndex == index
                               ? Colors.white
-                              : Colors.white54,
+                              : Colors.white.withOpacity(0.85),
                           size: 20),
                       title: Text(item.label,
                           style: TextStyle(
                               color: _selectedIndex == index
                                   ? Colors.white
-                                  : Colors.white70,
+                                  : Colors.white.withOpacity(0.9),
                               fontSize: 14)),
                       onTap: () {
                         setState(() => _selectedIndex = index);
