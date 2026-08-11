@@ -710,10 +710,6 @@ ThemeData _buildTheme() {
     brightness: Brightness.light,
     colorSchemeSeed: const Color(0xFF1B2A4A),
     scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-    textTheme: ThemeData.light().textTheme.apply(
-      bodyFontSizeFactor: 1.08,
-      displayFontSizeFactor: 1.03,
-    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1B2A4A),
       foregroundColor: Colors.white,

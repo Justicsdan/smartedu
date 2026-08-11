@@ -642,7 +642,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     const cellFs = 13.0; // data font size
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -686,16 +686,14 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           const SizedBox(height: 20),
 
           // ── Stat cards ──
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _StatCard(title: "Subjects", value: "${scores.length}", color: const Color(0xFF1565C0), icon: Icons.menu_book),
-              const SizedBox(width: 12),
               _StatCard(title: "Average", value: average.toStringAsFixed(1), color: const Color(0xFF2E7D32), icon: Icons.trending_up),
-              const SizedBox(width: 12),
               _StatCard(title: "Grade", value: overallGradeInfo['grade'] as String? ?? '', color: const Color(0xFF00897B), icon: Icons.grade),
-              const SizedBox(width: 12),
               _StatCard(title: "Passed", value: "$passed", color: const Color(0xFF2E7D32), icon: Icons.check_circle),
-              const SizedBox(width: 12),
               _StatCard(title: "Failed", value: "$failed", color: failed > 0 ? const Color(0xFFD32F2F) : const Color(0xFF2E7D32), icon: Icons.cancel),
             ],
           ),
@@ -735,9 +733,11 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
           // ── Scores table ──
           else ...[
-            Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
-              child: DataTable(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
+                child: DataTable(
                 columnSpacing: 8,
                 headingRowColor: WidgetStateProperty.all(navy),
                 horizontalMargin: 16,
@@ -804,6 +804,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     ],
                   );
                 }).toList(),
+              ),
               ),
             ),
             const SizedBox(height: 24),
@@ -957,7 +958,8 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return SizedBox(
+      width: 130,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.15))),
