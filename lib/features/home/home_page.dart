@@ -582,16 +582,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           );
         },
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: w ? 36 : 28, vertical: w ? 14 : 12),
+          padding: EdgeInsets.symmetric(horizontal: w ? 48 : 36, vertical: w ? 18 : 16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0E0E2A), Color(0xFF191940)]),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('Get Started', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.2)),
-            SizedBox(width: 6),
-            Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.white),
-          ]),
+          child: Text('Get Started', style: TextStyle(fontSize: w ? 16 : 15, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.3)),
         ),
       ),
     );
