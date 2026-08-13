@@ -733,81 +733,63 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
           // ── Scores table ──
           else ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 600),
-                child: Container(
+            Container(
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
-              child: DataTable(
-                columnSpacing: 8,
-                headingRowColor: WidgetStateProperty.all(navy),
-                horizontalMargin: 16,
-                headingRowHeight: 56,
-                dataRowMinHeight: 48,
-                dataRowMaxHeight: 56,
-                columns: [
-                  // Subject — left-aligned label column
-                  const DataColumn(
-                    label: SizedBox(height: 56, child: Center(child: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                    columnWidth: FlexColumnWidth(2.0),
+              child: Column(
+                children: [
+                  // Header row
+                  Container(
+                    height: 48,
+                    decoration: const BoxDecoration(color: navy, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        const Expanded(flex: 3, child: Center(child: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                        ...assessmentTypes.map((at) => Expanded(flex: 1, child: Center(child: Text(at['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs), overflow: TextOverflow.ellipsis)))),
+                        const Expanded(flex: 1, child: Center(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                        const Expanded(flex: 1, child: Center(child: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                        const Expanded(flex: 1, child: Center(child: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                      ],
+                    ),
                   ),
-                  // Assessment columns — equal width, centered
-                  ...assessmentTypes.map((at) => DataColumn(
-                    label: Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text('${at['name']} (${at['max']})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                    columnWidth: const FlexColumnWidth(1.3),
-                  )),
-                  // Total
-                  const DataColumn(
-                    label: SizedBox(height: 56, child: Center(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                    columnWidth: FlexColumnWidth(0.7),
-                  ),
-                  // Grade
-                  const DataColumn(
-                    label: SizedBox(height: 56, child: Center(child: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                    columnWidth: FlexColumnWidth(0.7),
-                  ),
-                  // Remark
-                  const DataColumn(
-                    label: SizedBox(height: 56, child: Center(child: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                    columnWidth: FlexColumnWidth(1.2),
-                  ),
+                  // Data rows
+                  ...scores.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final score = entry.value;
+                    final total = (score['total'] ?? 0).toDouble();
+                    final isPass = total >= passMark;
+                    final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
+                    final grade = gradeInfo['grade'] as String? ?? '';
+                    final remark = gradeInfo['remark'] as String? ?? '';
+                    final scoresJson = _parseSj(score['scores_json']);
+                    final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
+                    final clr = isPass ? passClr : failClr;
+                    final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
+                    final isLast = i == scores.length - 1;
+                    return Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: i.isEven ? Colors.white : const Color(0xFFFAFBFC),
+                        border: Border(bottom: BorderSide(color: const Color(0xFFE5E7EB).withOpacity(isLast ? 0 : 1))),
+                        borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(12)) : null,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(flex: 3, child: Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(left: 4), child: Text(((score['subjects'] as Map?)?['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs), overflow: TextOverflow.ellipsis)))),
+                          ...List.generate(assessmentTypes.length, (j) {
+                            final val = scoresJson[resolvedKeys[j]] ?? 0;
+                            final display = val is int ? '$val' : val.toString();
+                            return Expanded(flex: 1, child: Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
+                          }),
+                          Expanded(flex: 1, child: Center(child: Text(totalStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                          Expanded(flex: 1, child: Center(child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                          Expanded(flex: 1, child: Center(child: Text(remark, style: TextStyle(fontSize: cellFs, color: clr)))),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
-                rows: scores.map((score) {
-                  final total = (score['total'] ?? 0).toDouble();
-                  final isPass = total >= passMark;
-                  final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
-                  final grade = gradeInfo['grade'] as String? ?? '';
-                  final remark = gradeInfo['remark'] as String? ?? '';
-                  final scoresJson = _parseSj(score['scores_json']);
-                  final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
-                  final clr = isPass ? passClr : failClr;
-                  final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
-                  return DataRow(
-                    color: WidgetStateProperty.all(scores.indexOf(score).isEven ? Colors.white : const Color(0xFFFAFBFC)),
-                    cells: [
-                      // Subject — left-aligned
-                      DataCell(Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Text(((score['subjects'] as Map?)?['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs)),
-                      )),
-                      // Assessment scores — centered
-                      ...List.generate(assessmentTypes.length, (i) {
-                        final val = scoresJson[resolvedKeys[i]] ?? 0;
-                        final display = val is int ? '$val' : val.toString();
-                        return DataCell(Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
-                      }),
-                      // Total — centered, bold
-                      DataCell(Center(child: Text(totalStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
-                      // Grade — centered, bold
-                      DataCell(Center(child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
-                      // Remark — centered
-                      DataCell(Center(child: Text(remark, style: TextStyle(fontSize: cellFs, color: clr)))),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
               ),
             ),
             const SizedBox(height: 24),
