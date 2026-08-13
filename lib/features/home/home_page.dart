@@ -303,6 +303,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _showEntryOptions() {
     showModalBottomSheet(
+      isScrollControlled: true,
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(

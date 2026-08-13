@@ -733,7 +733,11 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
 
           // ── Scores table ──
           else ...[
-            Container(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 600),
+                child: Container(
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
               child: DataTable(
                 columnSpacing: 8,
@@ -802,6 +806,8 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     ],
                   );
                 }).toList(),
+              ),
+            ),
               ),
             ),
             const SizedBox(height: 24),
