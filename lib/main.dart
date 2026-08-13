@@ -578,7 +578,7 @@ class _AdminShellState extends State<_AdminShell> {
                 ],
               ),
             ),
-            Expanded(child: _buildPage(p)),
+            Expanded(child: InteractiveViewer(minScale: 1.0, maxScale: 3.0, child: _buildPage(p))),
           ],
         ),
       ),

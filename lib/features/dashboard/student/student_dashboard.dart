@@ -109,7 +109,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             child: Column(
               children: [
                 _buildTopBar(isSmall),
-                Expanded(child: _buildCurrentPage()),
+                Expanded(child: InteractiveViewer(minScale: 1.0, maxScale: 3.0, child: _buildCurrentPage())),
               ],
             ),
           ),
