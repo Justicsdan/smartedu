@@ -6,7 +6,6 @@ class DbProxy {
   DbProxy._();
 
   static const String _proxyUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co/functions/v1/db-proxy';
-  static const String _authUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co/functions/v1/auth';
   static const String _anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
 
   String? _token;
@@ -21,33 +20,6 @@ class DbProxy {
   Future<dynamic> rpc(String name, {Map<String, dynamic>? params}) async {
     final body = await _post({'action': 'rpc', 'rpcName': name, 'rpcParams': params});
     return body['data'];
-  }
-
-  Future<Map<String, dynamic>> login(String role, String username, String password) async {
-    final response = await http.post(
-      Uri.parse(_authUrl),
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $_anonKey'},
-      body: jsonEncode({'role': role, 'username': username, 'password': password}),
-    );
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode != 200) {
-      throw DbProxyException(data['error'] ?? 'Login failed');
-    }
-    _token = data['token'] as String;
-    return Map<String, dynamic>.from(data['user'] as Map);
-  }
-
-  Future<void> loginVerified(String role, String userId, {String? schoolId}) async {
-    final response = await http.post(
-      Uri.parse(_authUrl),
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $_anonKey'},
-      body: jsonEncode({'verified_id': userId, 'verified_role': role, 'verified_school_id': schoolId}),
-    );
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode != 200) {
-      throw DbProxyException(data['error'] ?? 'Verified login failed');
-    }
-    _token = data['token'] as String;
   }
 
   Future<Map<String, dynamic>> _post(Map<String, dynamic> body) async {

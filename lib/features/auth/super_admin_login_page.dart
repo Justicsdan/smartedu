@@ -1,7 +1,11 @@
-import 'package:smartedu/core/services/db_proxy.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:smartedu/core/services/db_proxy.dart';
+
+const _authUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co/functions/v1/auth';
+const _anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
 
 class SuperAdminLoginPage extends StatefulWidget {
   const SuperAdminLoginPage({super.key});
@@ -17,19 +21,17 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  /// Handles both List (RETURN QUERY) and Map (RETURN row) responses
-  Future<Map<String, dynamic>?> _rpcLogin(String fn, Map<String, dynamic> params) async {
-    final response = await Supabase.instance.client.rpc(fn, params: params);
-    if (response == null) return null;
-    if (response is List) {
-      if (response.isEmpty) return null;
-      return response.first as Map<String, dynamic>;
-    }
-    if (response is Map<String, dynamic>) {
-      if (response.isEmpty) return null;
-      return response;
-    }
-    return null;
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFD32F2F),
+        behavior: SnackBarBehavior.floating,
+        shape: const StadiumBorder(),
+        margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+      ),
+    );
   }
 
   Future<void> _login() async {
@@ -38,57 +40,48 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final r = await _rpcLogin('login_super_admin', {
-        'p_username': _usernameController.text.trim(),
-        'p_password': _passwordController.text,
-      });
+      final response = await http.post(
+        Uri.parse(_authUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_anonKey',
+        },
+        body: jsonEncode({
+          'role': 'super_admin',
+          'username': _usernameController.text.trim(),
+          'password': _passwordController.text,
+        }),
+      );
 
-      if (r == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid username or password'),
-              backgroundColor: Color(0xFFD32F2F),
-              behavior: SnackBarBehavior.floating,
-              shape: StadiumBorder(),
-              margin: EdgeInsets.only(bottom: 24, left: 16, right: 16),
-            ),
-          );
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 429) {
+        _showError(body['error'] ?? 'Account temporarily locked. Try again later.');
+        return;
+      }
+
+      if (response.statusCode != 200) {
+        final msg = body['error'] as String?;
+        if (msg != null && msg.contains('deactivated')) {
+          _showError('This account has been deactivated');
+        } else {
+          _showError('Invalid username or password');
         }
         return;
       }
 
-      if (r['is_active'] == false) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('This account has been deactivated'),
-              backgroundColor: Color(0xFFD32F2F),
-              behavior: SnackBarBehavior.floating,
-              shape: StadiumBorder(),
-              margin: EdgeInsets.only(bottom: 24, left: 16, right: 16),
-            ),
-          );
-        }
-        return;
-      }
+      DbProxy.instance.setToken(body['token'] as String);
+      final user = body['user'] as Map<String, dynamic>;
 
       if (mounted) {
-      try { await DbProxy.instance.login('super_admin', _usernameController.text.trim(), _passwordController.text); } catch (_) {}
-        context.go('/dashboard/superadmin', extra: r);
+        context.go('/dashboard/superadmin', extra: {
+          'id': user['id'],
+          'name': user['name'],
+          'username': _usernameController.text.trim(),
+        });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: $e'),
-            backgroundColor: const Color(0xFFD32F2F),
-            behavior: SnackBarBehavior.floating,
-            shape: const StadiumBorder(),
-            margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-          ),
-        );
-      }
+      _showError('Login failed. Check your internet connection.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

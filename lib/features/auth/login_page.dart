@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:smartedu/core/services/db_proxy.dart';
+
+const _authUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co/functions/v1/auth';
+const _anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
 
 class LoginPage extends StatefulWidget {
   final String selectedRole;
@@ -62,6 +66,34 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Unified auth Edge Function call — all 4 roles use this.
+  Future<Map<String, dynamic>> _callAuth(String role, String username, String password) async {
+    final response = await http.post(
+      Uri.parse(_authUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_anonKey',
+      },
+      body: jsonEncode({
+        'role': role,
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 429) {
+      throw Exception(body['error'] ?? 'Account temporarily locked. Try again later.');
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception(body['error'] ?? 'Login failed');
+    }
+
+    return body; // { token: "...", user: {...} }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -89,7 +121,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   String _friendlyError(String raw) {
-    if (raw.contains('Invalid credentials') || raw.contains('not found') || raw.contains('No rows') || raw.contains('empty')) {
+    if (raw.contains('temporarily locked')) {
+      return raw; // Pass through the server's lockout message directly
+    }
+    if (raw.contains('Invalid') || raw.contains('not found') || raw.contains('No rows') || raw.contains('empty')) {
       return 'Invalid credentials. Please check and try again.';
     }
     if (raw.contains('deactivated') || raw.contains('not active')) {
@@ -101,122 +136,85 @@ class _LoginPageState extends State<LoginPage> {
     return 'Login failed. Please try again.';
   }
 
-  /// RPC helper — calls a PostgreSQL function, returns first row or null.
-  /// Handles both List (RETURN QUERY) and single Map (RETURN row) responses.
-  Future<Map<String, dynamic>?> _rpcLogin(String functionName, Map<String, dynamic> params) async {
-    final response = await Supabase.instance.client.rpc(functionName, params: params);
-    if (response == null) return null;
-    if (response is List) {
-      if (response.isEmpty) return null;
-      return response.first as Map<String, dynamic>;
-    }
-    if (response is Map<String, dynamic>) {
-      if (response.isEmpty) return null;
-      return response;
-    }
-    return null;
-  }
-
-  // ── Student: direct .eq() query (plain text PINs) ──
+  // ── Student ──
 
   Future<void> _loginStudent() async {
     final admissionNo = _fieldOneController.text.trim();
     final pin = _fieldTwoController.text.trim();
 
-    final response = await Supabase.instance.client
-        .from('students')
-        .select('id, school_id, first_name, middle_name, last_name, class_id, passport_url, is_active')
-        .eq('admission_no', admissionNo)
-        .eq('pin', pin)
-        .maybeSingle();
-
-    if (response == null) throw Exception('Invalid credentials');
-    if (response['is_active'] == false) throw Exception('Account deactivated');
-    // Bridge: get JWT for migrated providers
-    try { await DbProxy.instance.login('student', admissionNo, pin); } catch (_) {}
+    final data = await _callAuth('student', admissionNo, pin);
+    final user = data['user'] as Map<String, dynamic>;
+    DbProxy.instance.setToken(data['token'] as String);
 
     if (mounted) {
       context.go('/dashboard/student', extra: {
-        'id': response['id'],
-        'schoolId': response['school_id'],
-        'firstName': response['first_name'],
-        'lastName': response['last_name'],
-        'middleName': response['middle_name'],
-        'classId': response['class_id'],
+        'id': user['id'],
+        'schoolId': user['school_id'],
+        'firstName': user['first_name'],
+        'lastName': user['last_name'],
+        'middleName': user['middle_name'],
+        'classId': user['class_id'],
         'admissionNo': admissionNo,
-        'passportUrl': response['passport_url'],
+        'passportUrl': user['passport_url'],
       });
     }
   }
 
-  // ── School Admin: RPC (bcrypt or plain text) ──
+  // ── School Admin ──
 
   Future<void> _loginSchoolAdmin() async {
     final username = _fieldOneController.text.trim();
     final password = _fieldTwoController.text.trim();
 
-    final r = await _rpcLogin('login_school_admin', {
-      'p_username': username,
-      'p_password': password,
-    });
-    if (r == null) throw Exception('Invalid credentials');
-
-    final schoolId = r['id'].toString();
-    // Bridge: get JWT for migrated providers (pre-verified, skip re-check)
-    try { await DbProxy.instance.loginVerified('school_admin', schoolId, schoolId: schoolId); } catch (_) {}
+    final data = await _callAuth('school_admin', username, password);
+    final user = data['user'] as Map<String, dynamic>;
+    DbProxy.instance.setToken(data['token'] as String);
 
     if (mounted) {
       context.go('/dashboard/schooladmin', extra: {
-        'id': schoolId,
-        'schoolId': schoolId,
-        'schoolName': r['name'],
-        'logoUrl': r['logo_url'],
+        'id': user['id'],
+        'schoolId': user['id'],
+        'schoolName': user['name'],
+        'logoUrl': user['logo_url'],
       });
     }
   }
 
-  // ── Teacher: RPC (bcrypt or plain text) ──
+  // ── Teacher ──
 
   Future<void> _loginTeacher() async {
     final username = _fieldOneController.text.trim();
     final password = _fieldTwoController.text.trim();
 
-    final r = await _rpcLogin('login_teacher', {
-      'p_username': username,
-      'p_password': password,
-    });
-    if (r == null) throw Exception('Invalid credentials');
-    // Bridge: get JWT for migrated providers
-    try { await DbProxy.instance.loginVerified('teacher', r['id'].toString(), schoolId: r['school_id'].toString()); } catch (_) {}
+    final data = await _callAuth('teacher', username, password);
+    final user = data['user'] as Map<String, dynamic>;
+    DbProxy.instance.setToken(data['token'] as String);
 
     if (mounted) {
       context.go('/dashboard/teacher', extra: {
-        'id': r['id'],
-        'schoolId': r['school_id'],
-        'firstName': r['first_name'],
-        'lastName': r['last_name'],
-        'passportUrl': r['passport_url'],
+        'id': user['id'],
+        'schoolId': user['school_id'],
+        'firstName': user['first_name'],
+        'lastName': user['last_name'],
+        'passportUrl': user['passport_url'],
       });
     }
   }
 
-  // ── Super Admin: RPC (bcrypt or plain text) ──
+  // ── Super Admin ──
 
   Future<void> _loginSuperAdmin() async {
     final username = _fieldOneController.text.trim();
     final password = _fieldTwoController.text.trim();
 
-    final r = await _rpcLogin('login_super_admin', {
-      'p_username': username,
-      'p_password': password,
-    });
-    if (r == null) throw Exception('Invalid credentials');
-    try { await DbProxy.instance.login('super_admin', username, password); } catch (_) {}
+    final data = await _callAuth('super_admin', username, password);
+    final user = data['user'] as Map<String, dynamic>;
+    DbProxy.instance.setToken(data['token'] as String);
 
     if (mounted) {
       context.go('/dashboard/superadmin', extra: {
-        'id': r['id'],
-        'name': r['name'],
+        'id': user['id'],
+        'name': user['name'],
         'username': username,
       });
     }
