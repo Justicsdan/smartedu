@@ -731,68 +731,80 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               ),
             )
 
-          // ── Scores table ──
+          // ── Scores table (mobile-scrollable, desktop fills width) ──
           else ...[
-            Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
-              child: Column(
-                children: [
-                  // Header row
-                  Container(
-                    height: 48,
-                    decoration: const BoxDecoration(color: navy, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Expanded(flex: 3, child: Center(child: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                        ...assessmentTypes.map((at) => Expanded(flex: 1, child: Center(child: Text(at['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs), overflow: TextOverflow.ellipsis)))),
-                        const Expanded(flex: 1, child: Center(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                        const Expanded(flex: 1, child: Center(child: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                        const Expanded(flex: 1, child: Center(child: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
-                      ],
-                    ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final needsScroll = constraints.maxWidth < 600;
+                final table = Container(
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
+                  child: Column(
+                    children: [
+                      // Header row
+                      Container(
+                        height: 48,
+                        decoration: const BoxDecoration(color: navy, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            const Expanded(flex: 3, child: Center(child: Text('Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                            ...assessmentTypes.map((at) => Expanded(flex: 1, child: Center(child: Text(at['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs), overflow: TextOverflow.ellipsis)))),
+                            const Expanded(flex: 1, child: Center(child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                            const Expanded(flex: 1, child: Center(child: Text('Grade', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                            const Expanded(flex: 1, child: Center(child: Text('Remark', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: hdrFs)))),
+                          ],
+                        ),
+                      ),
+                      // Data rows
+                      ...scores.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final score = entry.value;
+                        final total = (score['total'] ?? 0).toDouble();
+                        final isPass = total >= passMark;
+                        final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
+                        final grade = gradeInfo['grade'] as String? ?? '';
+                        final remark = gradeInfo['remark'] as String? ?? '';
+                        final scoresJson = _parseSj(score['scores_json']);
+                        final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
+                        final clr = isPass ? passClr : failClr;
+                        final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
+                        final isLast = i == scores.length - 1;
+                        return Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: i.isEven ? Colors.white : const Color(0xFFFAFBFC),
+                            border: Border(bottom: BorderSide(color: const Color(0xFFE5E7EB).withOpacity(isLast ? 0 : 1))),
+                            borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(12)) : null,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              Expanded(flex: 3, child: Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(left: 4), child: Text(((score['subjects'] as Map?)?['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs), overflow: TextOverflow.ellipsis)))),
+                              ...List.generate(assessmentTypes.length, (j) {
+                                final val = scoresJson[resolvedKeys[j]] ?? 0;
+                                final display = val is int ? '$val' : val.toString();
+                                return Expanded(flex: 1, child: Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
+                              }),
+                              Expanded(flex: 1, child: Center(child: Text(totalStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                              Expanded(flex: 1, child: Center(child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
+                              Expanded(flex: 1, child: Center(child: Text(remark, style: TextStyle(fontSize: cellFs, color: clr)))),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                   ),
-                  // Data rows
-                  ...scores.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final score = entry.value;
-                    final total = (score['total'] ?? 0).toDouble();
-                    final isPass = total >= passMark;
-                    final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
-                    final grade = gradeInfo['grade'] as String? ?? '';
-                    final remark = gradeInfo['remark'] as String? ?? '';
-                    final scoresJson = _parseSj(score['scores_json']);
-                    final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
-                    final clr = isPass ? passClr : failClr;
-                    final totalStr = total == total.roundToDouble() ? total.toInt().toString() : total.toStringAsFixed(1);
-                    final isLast = i == scores.length - 1;
-                    return Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: i.isEven ? Colors.white : const Color(0xFFFAFBFC),
-                        border: Border(bottom: BorderSide(color: const Color(0xFFE5E7EB).withOpacity(isLast ? 0 : 1))),
-                        borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(12)) : null,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Expanded(flex: 3, child: Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(left: 4), child: Text(((score['subjects'] as Map?)?['name'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827), fontSize: cellFs), overflow: TextOverflow.ellipsis)))),
-                          ...List.generate(assessmentTypes.length, (j) {
-                            final val = scoresJson[resolvedKeys[j]] ?? 0;
-                            final display = val is int ? '$val' : val.toString();
-                            return Expanded(flex: 1, child: Center(child: Text(display, style: const TextStyle(color: Color(0xFF111827), fontSize: cellFs))));
-                          }),
-                          Expanded(flex: 1, child: Center(child: Text(totalStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
-                          Expanded(flex: 1, child: Center(child: Text(grade, style: TextStyle(fontWeight: FontWeight.bold, fontSize: cellFs, color: clr)))),
-                          Expanded(flex: 1, child: Center(child: Text(remark, style: TextStyle(fontSize: cellFs, color: clr)))),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
+                );
+                if (needsScroll) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: 600, child: table),
+                  );
+                }
+                return table;
+              },
             ),
-            const SizedBox(height: 24),
+
             if (_behavioralRatings != null && _behavioralRatings!.isNotEmpty) _buildBehavioralSection(),
             const SizedBox(height: 16),
             if (_termComment != null) _buildCommentsSection(_termComment!),

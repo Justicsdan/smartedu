@@ -369,6 +369,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 fontSize: 14)),
                       ),
                 ),
+              if (!isSmall) ...[
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () => setState(() => _selectedIndex = 8),
@@ -385,13 +386,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ],
                 ),
               ),
+              ],
             ],
           );
         },
       ),
     );
   }
-
   Widget _buildCurrentPage() {
     switch (_selectedIndex) {
       case 0:
