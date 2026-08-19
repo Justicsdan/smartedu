@@ -89,7 +89,7 @@ class StudentHomePage extends StatelessWidget {
             const SizedBox(height: 12),
             const SizedBox(height: 200, child: StudentSessionComparisonChart()),
             const SizedBox(height: 12),
-            const SizedBox(height: 200, child: StudentTermPieChart()),
+            const SizedBox(height: 300, child: StudentTermPieChart()),
           ],
           ],
         ],
