@@ -443,15 +443,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: Icon(icon, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 18),
-                Expanded(
+                Flexible(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.3)),
+                        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.3), overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 5),
-                        Text(subtitle, style: TextStyle(fontSize: 12.5, color: Colors.white.withOpacity(0.4), height: 1.35)),
+                        Text(subtitle, style: TextStyle(fontSize: 12.5, color: Colors.white.withOpacity(0.4), height: 1.35), overflow: TextOverflow.ellipsis, maxLines: 2),
                       ],
                     ),
                   ),
