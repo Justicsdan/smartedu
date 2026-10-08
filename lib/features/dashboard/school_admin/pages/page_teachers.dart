@@ -261,8 +261,9 @@ class _PageTeachersState extends State<PageTeachers> {
     final displayed = _displayedTeachers;
     final hasSearch = _searchQuery.isNotEmpty;
     final totalCount = widget.teachers.length;
-    final formMasterCount = widget.teachers.where((t) => t['formTeacherClassId'] != null).length;
-    final subjectTeacherCount = widget.teachers.where((t) => (List<Map<String, dynamic>>.from(t['assignedSubjects'] ?? [])).isNotEmpty).length;
+    final provider = context.read<SchoolAdminProvider>();
+    final formMasterCount = provider.classes.where((c) => c['class_teacher_id'] != null && widget.teachers.any((t) => t['id'] == c['class_teacher_id'])).length;
+    final subjectTeacherCount = widget.teachers.where((t) => provider.classSubjects.any((cs) => cs['teacher_id'] == t['id'])).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),

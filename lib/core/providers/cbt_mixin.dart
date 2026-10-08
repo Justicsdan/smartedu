@@ -1,6 +1,7 @@
 // ==========================================
 // File: lib/core/providers/cbt_mixin.dart
 // ==========================================
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
@@ -158,10 +159,109 @@ mixin CbtMixin on BaseProvider {
     }
   }
 
+  Future<bool> resetCbtAttempts(String examId) async {
+    try {
+      await DbProxy.instance.from('cbt_attempts').eq('exam_id', examId).delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error resetting CBT attempts: $e');
+      return false;
+    }
+  }
+
+  Future<String> syncCbtToScores({
+    required String examId,
+    required String classId,
+    required String subjectId,
+    required String sessionId,
+    required String termId,
+    required String assessmentKey, // e.g., 'exam', 'ca1'
+  }) async {
+    try {
+      // 1. Fetch all student attempts for this exam
+      final attemptsRes = await DbProxy.instance.from('cbt_attempts')
+          .select('student_id, score')
+          .eq('exam_id', examId)
+          .get();
+          
+      if (attemptsRes.isEmpty) return 'No student attempts found for this exam.';
+
+      // 2. Fetch existing scores for this class/subject/term
+      final scoresRes = await DbProxy.instance.from('scores')
+          .select('id, student_id, scores_json')
+          .eq('class_id', classId)
+          .eq('subject_id', subjectId)
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .get();
+
+      // Map student_id -> score row for quick lookup
+      final scoreMap = {for (var s in scoresRes) s['student_id'] as String: s};
+
+      int updatedCount = 0;
+      for (final attempt in attemptsRes) {
+        final studentId = attempt['student_id'] as String;
+        final score = (attempt['score'] as num?)?.toDouble() ?? 0.0;
+        
+        var existing = scoreMap[studentId];
+        Map<String, dynamic> scoresJson = {};
+        if (existing != null) {
+          final rawJson = existing['scores_json'];
+          if (rawJson is String) {
+            try { scoresJson = Map<String, dynamic>.from(jsonDecode(rawJson)); } catch (_) {}
+          } else if (rawJson is Map) {
+            scoresJson = Map<String, dynamic>.from(rawJson);
+          }
+        }
+        
+        // Update the specific assessment column
+        scoresJson[assessmentKey] = score;
+        
+        // Recalculate total
+        double total = 0;
+        scoresJson.forEach((k, v) {
+          if (v is num) total += v.toDouble();
+          else if (v is String) total += double.tryParse(v) ?? 0;
+        });
+
+        if (existing != null) {
+          // Update existing score row
+          await DbProxy.instance.from('scores').eq('id', existing['id']).update({
+            'scores_json': scoresJson,
+            'total': total,
+          });
+        } else {
+          // Insert new score row if it didn't exist
+          await DbProxy.instance.from('scores').insert({
+            'school_id': schoolId,
+            'student_id': studentId,
+            'class_id': classId,
+            'subject_id': subjectId,
+            'session_id': sessionId,
+            'term_id': termId,
+            'scores_json': scoresJson,
+            'total': total,
+          });
+        }
+        updatedCount++;
+      }
+      
+      return 'SUCCESS: Synced $updatedCount scores to scorebook.';
+    } catch (e) {
+      return 'Error syncing scores: $e';
+    }
+  }
+
+
+
   /// Delete a CBT exam from the database.
   /// V4: Questions and attempts cascade via ON DELETE CASCADE.
   Future<bool> deleteCbtExamFromDb(String id) async {
     try {
+      // Delete dependent records first to avoid Foreign Key constraint errors
+      await DbProxy.instance.from('cbt_questions').eq('exam_id', id).delete();
+      await DbProxy.instance.from('cbt_attempts').eq('exam_id', id).delete();
+      // Now delete the exam
       await DbProxy.instance.from('cbt_exams').eq('id', id).delete();
       await loadCbtExams();
 

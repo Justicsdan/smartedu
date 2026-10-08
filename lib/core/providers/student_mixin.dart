@@ -329,40 +329,94 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
     if (schoolId.isEmpty || studentIds.isEmpty || toClassId.isEmpty) return false;
 
     try {
-      int count = 0;
-      for (final studentId in studentIds) {
-        final r = await supabase
-            .from('students')
-            .update({'class_id': toClassId, 'graduation_status': 'promoted'})
-            .eq('id', studentId)
-            .eq('school_id', schoolId)
-            .select('id');
+      // Use DbProxy and inFilter to bulk-update all students in one secure call
+      final r = await DbProxy.instance
+          .from('students')
+          .inFilter('id', studentIds)
+          .update({
+            'class_id': toClassId,
+            'graduation_status': 'active', // Fix: Keep them active, just change class
+          });
 
-        if (r != null && r.isNotEmpty) count++;
-
-        await supabase.from('promotions').insert({
-          'school_id': schoolId,
-          'student_id': studentId,
-          'from_class_id': '',
-          'to_class_id': toClassId,
-          'session_id': sessionId,
-          'type': 'promoted',
-          'reason': reason ?? '',
-        });
-      }
+      final count = r.length;
 
       await loadStudents();
       if (count > 0) {
         await syncClassStudentCounts(schoolId, toClassId);
         logAudit(action: 'bulk_promote', tableName: 'students', newData: {'count': count, 'to_class_id': toClassId});
       }
-      notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Error promoting students: $e');
+      print('Promotion error: $e');
       return false;
     }
   }
+
+  Future<bool> autoPromoteStudents(String sessionId, String termId) async {
+    if (schoolId.isEmpty) return false;
+    try {
+      // 1. Fetch all classes and their next_class_id mapping
+      final classesRes = await DbProxy.instance.from('classes').select('id, next_class_id').eq('school_id', schoolId).get();
+      final classMap = {for (var c in classesRes) c['id'] as String: c};
+
+      // 2. Fetch term summaries to check who passed
+      final summariesRes = await DbProxy.instance.from('student_term_summaries')
+          .select('student_id, average_score')
+          .eq('school_id', schoolId)
+          .eq('session_id', sessionId)
+          .eq('term_id', termId)
+          .get();
+          
+      final summaryMap = {for (var s in summariesRes) s['student_id'] as String: (s['average_score'] as num?)?.toDouble() ?? 0.0};
+
+      int promotedCount = 0;
+      int graduatedCount = 0;
+      int heldBackCount = 0;
+
+      // 3. Loop through active students
+      for (var student in _students) {
+        final studentId = student['id'] as String;
+        final classId = student['class_id'] as String?;
+        if (classId == null) continue;
+
+        final classInfo = classMap[classId];
+        if (classInfo == null) continue;
+
+        final nextClassId = classInfo['next_class_id'] as String?;
+        final average = summaryMap[studentId] ?? 0.0;
+
+        if (average >= promoteThreshold) {
+          if (nextClassId == null) {
+            // Graduating class (e.g., SS3) -> Graduate
+            await DbProxy.instance.from('students').eq('id', studentId).update({
+              'graduation_status': 'graduated',
+              'class_id': null,
+            });
+            graduatedCount++;
+          } else {
+            // Normal promotion -> Move to next class
+            await DbProxy.instance.from('students').eq('id', studentId).update({
+              'class_id': nextClassId,
+              'graduation_status': 'active',
+            });
+            promotedCount++;
+          }
+        } else {
+          // Failed to meet threshold -> Hold back
+          heldBackCount++;
+        }
+      }
+
+      await loadStudents(); // Reload active students list
+      logAudit(action: 'auto_promote', tableName: 'students', newData: {'promoted': promotedCount, 'graduated': graduatedCount, 'held_back': heldBackCount});
+      return true;
+    } catch (e) {
+      print('Auto promotion error: $e');
+      return false;
+    }
+  }
+
+
 
   // ==========================================
   // DELETE STUDENT

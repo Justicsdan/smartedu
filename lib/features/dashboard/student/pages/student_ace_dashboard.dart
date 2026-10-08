@@ -29,10 +29,14 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-    await Future.wait([
-      provider.loadMyAcePaceScores(sid, tid),
-      provider.loadMyAceReport(sid, tid),
-    ]);
+    try {
+      await Future.wait([
+        provider.loadMyAcePaceScores(sid, tid),
+        provider.loadMyAceReport(sid, tid),
+      ]);
+    } catch (e) {
+      debugPrint('Error loading ACE data: $e');
+    }
     final classId = provider.classId;
     if (classId.isNotEmpty) {
       try {

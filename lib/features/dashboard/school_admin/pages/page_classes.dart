@@ -829,6 +829,7 @@ class _PageClassesState extends State<PageClasses>
     String? selectedClass;
     String? selectedSubject;
     String? selectedTeacher;
+    String? selectedNextClass;
     String dialogError = '';
 
     showDialog(
@@ -978,6 +979,37 @@ class _PageClassesState extends State<PageClasses>
                     ],
                     onChanged: (v) {
                       if (v != null) selectedCategory = v;
+                      setDlg(() {});
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('Promotes To (Optional)',
+                      style: TextStyle(
+                          fontSize: 15, color: Color(0xFF111827))),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String?>(
+                    value: selectedNextClass,
+                    hint: const Text('Select next class (leave empty for graduation)'),
+                    decoration: const InputDecoration(
+                      enabledBorder: OutlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Color(0xFF1A237E)),
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                          value: null, child: Text('Graduate / Final Year')),
+                      ...widget.classes.map((c) => DropdownMenuItem(
+                            value: c['id'].toString(),
+                            child: Text("${c['name']} - ${c['section']}"),
+                          )),
+                    ],
+                    onChanged: (v) {
+                      selectedNextClass = v;
                       setDlg(() {});
                     },
                   ),
@@ -1150,6 +1182,7 @@ class _PageClassesState extends State<PageClasses>
                             : selectedCategory == 'Primary School'
                                 ? 'PRIMARY'
                                 : 'SSS',
+                    'next_class_id': selectedNextClass,
                   });
                 } else if (type == 'Subject') {
                   if (_subjectExists(name)) {

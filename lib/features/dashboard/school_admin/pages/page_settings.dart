@@ -37,6 +37,7 @@ class _PageSettingsState extends State<PageSettings>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isSaving = false;
+  final Map<String, TextEditingController> _behavioralControllers = {};
 
   late TextEditingController _nameController;
   late TextEditingController _addressController;
@@ -1095,10 +1096,9 @@ class _PageSettingsState extends State<PageSettings>
                         sub: 'WAEC \u00B7 BECE \u00B7 Primary',
                         icon: Icons.flag_rounded,
                         on: !isAm,
-                        tap: () async {
-                          final ok = await provider
-                              .updateGradingStandard('Nigerian');
-                          if (mounted && ok) setState(() {});
+                        tap: () {
+                          provider.updateGradingStandard('Nigerian');
+                          setState(() {});
                         },
                       ),
                     ),
@@ -1109,15 +1109,42 @@ class _PageSettingsState extends State<PageSettings>
                         sub: 'GPA (A to F, 4.0 scale)',
                         icon: Icons.school_rounded,
                         on: isAm,
-                        tap: () async {
-                          final ok = await provider
-                              .updateGradingStandard('American');
-                          if (mounted && ok) setState(() {});
+                        tap: () {
+                          provider.updateGradingStandard('American');
+                          setState(() {});
                         },
                       ),
                     ),
                   ],
                 ),
+                if (!isAm) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: (provider.schoolSettings?['exam_template'] ?? 'WAEC').toString(),
+                          decoration: const InputDecoration(
+                            labelText: 'Exam Template (SSS Default)',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          items: ['WAEC', 'NECO', 'IGCSE']
+                              .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                              .toList(),
+                          onChanged: (v) async {
+                            if (v == null) return;
+                            await DbProxy.instance.from('school_settings').eq('school_id', provider.schoolId).update({'exam_template': v});
+                            if (provider.schoolSettings != null) {
+                              provider.schoolSettings!['exam_template'] = v;
+                            }
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -2144,10 +2171,15 @@ class _PageSettingsState extends State<PageSettings>
   Widget _buildBehavioralTab(SchoolAdminProvider provider) {
     final customLabels = provider.behavioralLabels;
     final allLabels = GradingUtils.getAllBehavioralLabels(customLabels: customLabels);
-    final controllers = <String, TextEditingController>{};
-    for (final item in allLabels) {
-      controllers[item['key']!] = TextEditingController(text: item['label']);
+    
+    // Initialize controllers only once or if the keys have changed
+    if (_behavioralControllers.isEmpty || _behavioralControllers.length != allLabels.length) {
+      _behavioralControllers.clear();
+      for (final item in allLabels) {
+        _behavioralControllers[item['key']!] = TextEditingController(text: item['label']);
+      }
     }
+    final controllers = _behavioralControllers;
     bool isSaving = false;
     return StatefulBuilder(
       builder: (context, setInner) {

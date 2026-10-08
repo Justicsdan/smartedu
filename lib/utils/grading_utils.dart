@@ -345,7 +345,9 @@ class GradingUtils {
         if (base is List && base.isNotEmpty) {
           return List<Map<String, dynamic>>.from(base);
         }
-        return getDefaultGradingSystem('WAEC');
+        // Use the exam_template selected in settings (WAEC, NECO, IGCSE)
+        final template = (schoolSettings['exam_template'] ?? 'WAEC').toString().toUpperCase();
+        return getDefaultGradingSystem(template);
     }
   }
 

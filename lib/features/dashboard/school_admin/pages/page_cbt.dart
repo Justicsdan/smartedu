@@ -258,9 +258,13 @@ class _PageCbtState extends State<PageCbt> {
       if (upper.startsWith('C.') || upper.startsWith('C)')) { optC = trimmed.substring(2).trim(); continue; }
       if (upper.startsWith('D.') || upper.startsWith('D)')) { optD = trimmed.substring(2).trim(); continue; }
       if (upper.startsWith('ANS')) {
-        for (int i = 0; i < trimmed.length; i++) {
-          final ch = trimmed[i].toUpperCase();
-          if (ch == 'A' || ch == 'B' || ch == 'C' || ch == 'D') { correctOption = ch.toLowerCase(); break; }
+        // Strip out the "Answer:" or "Ans:" prefix so we don't accidentally read the 'A' in "Answer"
+        final ansPart = trimmed.replaceFirst(RegExp(r'^(ans(wer)?\s*:?\s*)', caseSensitive: false), '');
+        if (ansPart.isNotEmpty) {
+          final ch = ansPart[0].toUpperCase();
+          if (ch == 'A' || ch == 'B' || ch == 'C' || ch == 'D') { 
+            correctOption = ch.toLowerCase(); 
+          }
         }
         saveCurrent();
         continue;
@@ -700,6 +704,7 @@ class _PageCbtState extends State<PageCbt> {
     String classLabel,
     String? durShow,
   ) {
+    final qCount = (e['total_questions'] as num?)?.toInt() ?? questions.length;
     return Container(
       margin: EdgeInsets.only(bottom: isExpanded ? 0 : 12),
       padding: const EdgeInsets.all(16),
@@ -778,9 +783,9 @@ class _PageCbtState extends State<PageCbt> {
               ),
             ),
             const SizedBox(width: 12),
-            if (questions.isNotEmpty) ...[
+            if (qCount > 0) ...[
               Text(
-                questions.length.toString() + " Qs",
+                "$qCount Qs",
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.grey.shade500,
@@ -796,6 +801,18 @@ class _PageCbtState extends State<PageCbt> {
             ),
             const SizedBox(width: 12),
             IconButton(
+              icon: const Icon(Icons.sync_alt_rounded,
+                  size: 20, color: Colors.blue),
+              tooltip: 'Sync to Scorebook',
+              onPressed: () => _showSyncDialog(e),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded,
+                  size: 20, color: Colors.orange),
+              tooltip: 'Reset Attempts',
+              onPressed: () => _showResetConfirm(examId, e["title"]),
+            ),
+            IconButton(
               icon: const Icon(Icons.delete_outline,
                   size: 20, color: Colors.red),
               onPressed: () =>
@@ -805,6 +822,112 @@ class _PageCbtState extends State<PageCbt> {
         ),
       ),
     );
+  }
+
+  Future<void> _showSyncDialog(Map<String, dynamic> exam) async {
+    final p = context.read<SchoolAdminProvider>();
+    final examId = exam['id']?.toString() ?? '';
+    // Read IDs directly from the exam object
+    final classId = exam['class_id']?.toString() ?? '';
+    final subjectId = exam['subject_id']?.toString() ?? '';
+
+    // Look up the class tier from the provider's cached classes list
+    final classData = p.classes.firstWhere((c) => c['id']?.toString() == classId, orElse: () => {});
+    final tier = (classData['tier'] ?? 'SSS').toString();
+
+    if (classId.isEmpty || subjectId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Class or Subject missing on this exam.'), backgroundColor: Colors.red));
+      return;
+    }
+
+    final assessments = p.getEffectiveAssessmentForTier(tier);
+    String? selectedKey = assessments.isNotEmpty ? assessments.first['id'] as String? : null;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: const Text('Sync to Scorebook'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('This will overwrite the selected column with the student\'s CBT scores and recalculate their totals.\n\nSelect column to sync:'),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedKey,
+                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                  items: assessments.map((a) => DropdownMenuItem(value: a['id'] as String, child: Text(a['name'] as String))).toList(),
+                  onChanged: (v) => setSt(() => selectedKey = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: selectedKey == null ? null : () => Navigator.pop(ctx, true), 
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+              child: const Text('Sync Now'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm == true && selectedKey != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Syncing scores... Please wait.'), duration: Duration(seconds: 5)));
+      final result = await p.syncCbtToScores(
+        examId: examId,
+        classId: classId,
+        subjectId: subjectId,
+        sessionId: p.currentSession?['id']?.toString() ?? '',
+        termId: p.currentTerm?['id']?.toString() ?? '',
+        assessmentKey: selectedKey!,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result.startsWith('SUCCESS') ? result : 'Error syncing scores.'),
+          backgroundColor: result.startsWith('SUCCESS') ? const Color(0xFF2E7D32) : Colors.red,
+        ));
+        if (result.startsWith('SUCCESS')) p.loadScores(); // Reload scores table
+      }
+    }
+  }
+
+  Future<void> _showResetConfirm(String examId, String? title) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Attempts?'),
+        content: SizedBox(
+          width: 400, // Fixed width for desktop
+          child: Text('This will permanently delete all student scores and attempts for "$title". Students will be able to take this exam again. Do you want to proceed?'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      final p = context.read<SchoolAdminProvider>();
+      final success = await p.resetCbtAttempts(examId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Exam attempts reset successfully.' : 'Failed to reset attempts.'),
+            backgroundColor: success ? Colors.orange : Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildQuestionsHeader(

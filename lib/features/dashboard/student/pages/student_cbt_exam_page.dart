@@ -178,20 +178,29 @@ class _StudentCbtExamPageState extends State<StudentCbtExamPage> {
     if (!_showResultImmediately && !isError) {
       return Scaffold(backgroundColor: Colors.white, body: Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.check_circle_outline, size: 72, color: Color(0xFF2E7D32)), const SizedBox(height: 20), const Text('Exam Submitted!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))), const SizedBox(height: 12), Text('Your result will be available once published by your teacher.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.5)), const SizedBox(height: 32), ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14)), child: const Text('Back to Exams'))]))));
     }
-    final score = _result?['score'] as num?;
-    final total = _result?['total_marks'] as num?;
-    final percentage = (score != null && total != null && total > 0) ? ((score / total) * 100).toStringAsFixed(1) : null;
+    final score = _result?['score'] as num? ?? 0;
+    final total = _result?['total_marks'] as num? ?? 0;
+    final percentage = (total > 0) ? ((score / total) * 100).toStringAsFixed(1) : '0.0';
+    final correctCount = _result?['correct'] as int? ?? 0;
+    final wrongCount = _result?['wrong'] as int? ?? 0;
+    final unansweredCount = _result?['unanswered'] as int? ?? 0;
+    
     return Scaffold(backgroundColor: Colors.white, body: Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      if (isError) Icon(Icons.error_outline, size: 72, color: Colors.orange.shade300) else if (percentage != null && double.parse(percentage) >= 50) const Icon(Icons.check_circle_outline, size: 72, color: Color(0xFF2E7D32)) else Icon(Icons.sentiment_neutral, size: 72, color: Colors.orange.shade300),
+      if (isError) Icon(Icons.error_outline, size: 72, color: Colors.orange.shade300) else if (double.parse(percentage) >= 50) const Icon(Icons.check_circle_outline, size: 72, color: Color(0xFF2E7D32)) else Icon(Icons.sentiment_neutral, size: 72, color: Colors.orange.shade300),
       const SizedBox(height: 20),
       Text(isError ? (_result?['message'] ?? 'Submission failed').toString() : 'Exam Submitted!', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
-      if (!isError && score != null) ...[
+      if (!isError) ...[
         const SizedBox(height: 24),
         Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(16)), child: Column(children: [
           Text('$score / $total', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
-          if (percentage != null) ...[const SizedBox(height: 8), Text('$percentage%', style: TextStyle(fontSize: 18, color: Colors.grey.shade600))],
-          const SizedBox(height: 12),
-          Text('$_answeredCount of ${_questions.length} questions answered', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+          const SizedBox(height: 8), 
+          Text('$percentage%', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
+          const SizedBox(height: 16),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+            Column(children: [Text('$correctCount', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)), const SizedBox(height: 4), Text('Correct', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))]),
+            Column(children: [Text('$wrongCount', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)), const SizedBox(height: 4), Text('Wrong', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))]),
+            Column(children: [Text('$unansweredCount', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey)), const SizedBox(height: 4), Text('Skipped', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))]),
+          ]),
         ])),
       ],
       const SizedBox(height: 32),

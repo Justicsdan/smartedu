@@ -90,8 +90,12 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
           (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) ? ext : 'jpg';
       final pth =
           'teachers/${widget.teacher['id']}/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
-      final url = Supabase.instance.client.storage.from('school-logos').getPublicUrl(pth);
-      final uploadUrl = url.replaceAll('/object/public/', '/object/public/');
+      // Fix 1: Use the correct 'passports' bucket
+      // Fix 2: Construct the upload URL correctly to hit the POST endpoint
+      final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+      final uploadUrl = '$supabaseUrl/storage/v1/object/passports/$pth';
+      final publicUrl = '$supabaseUrl/storage/v1/object/public/passports/$pth';
+      
       final uri = Uri.parse(uploadUrl);
       final anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
       final res = await http.post(uri, headers: {
@@ -103,9 +107,9 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
         await DbProxy.instance
             .from('teachers')
             .eq('id', widget.teacher['id'])
-            .update({'passport_url': url});
+            .update({'passport_url': publicUrl});
         if (mounted) {
-          setState(() => _photo = url);
+          setState(() => _photo = publicUrl);
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Photo updated'),
             backgroundColor: Color(0xFF2E7D32),

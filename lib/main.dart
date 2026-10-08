@@ -663,7 +663,7 @@ class _AdminShellState extends State<_AdminShell> {
   Widget _buildPage(SchoolAdminProvider p) {
     switch (_selectedIndex) {
       case 0:
-        return PageDashboard(studentCount: p.students.length, teacherCount: p.teacherCount, classCount: p.classes.length, subjectCount: p.subjects.length, assignmentCount: p.assignments.length, activeCbtCount: p.cbtExams.where((e) => e['is_published'] == true).length, classes: p.classes, schoolName: p.schoolName, schoolUrl: p.schoolLogoUrl, onNavigate: (i) => setState(() => _selectedIndex = i));
+        return PageDashboard(studentCount: p.students.length, teacherCount: p.teacherCount, classCount: p.classes.length, subjectCount: p.subjects.length, assignmentCount: p.assignments.length, activeCbtCount: p.cbtExams.where((e) => e['is_active'] == true).length, classes: p.classes, schoolName: p.schoolName, schoolUrl: p.schoolLogoUrl, onNavigate: (i) => setState(() => _selectedIndex = i));
       case 1:
         return PageStudents(students: p.students, onDelete: (id) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete: $id'))); }, onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddStudentPage(classes: p.classes))).then((_) async { await p.reloadData(); if (mounted) setState(() {}); }), onRefresh: () {});
       case 2:
@@ -710,7 +710,29 @@ ThemeData _buildTheme() {
     brightness: Brightness.light,
     colorSchemeSeed: const Color(0xFF1B2A4A),
     scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-    appBarTheme: const AppBarTheme(
+    scrollbarTheme: ScrollbarThemeData(
+        thickness: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.hovered)) return 14.0; // Thicker when hovering
+          if (states.contains(MaterialState.dragged)) return 16.0; // Thickest when dragging
+          return 10.0; // Default visible thickness
+        }),
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.hovered) || states.contains(MaterialState.dragged)) {
+            return const Color(0xFF1A237E); // Dark blue when interacting for high contrast
+          }
+          return Colors.grey[500]; // Visible grey when idle
+        }),
+        radius: const Radius.circular(4.0),
+        thumbVisibility: MaterialStateProperty.all(true),
+        trackVisibility: MaterialStateProperty.all(true),
+        trackColor: MaterialStateProperty.all(Colors.black12),
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+      ),
+      appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1B2A4A),
       foregroundColor: Colors.white,
       elevation: 0,
@@ -736,10 +758,27 @@ ThemeData _buildTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 0,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        backgroundColor: const Color(0xFF1A237E), // Explicit Navy Blue
+        foregroundColor: Colors.white, // Explicit White text
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(10))),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF1A237E),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: Color(0xFF1A237E),
+      unselectedLabelColor: Colors.grey,
+      labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: TextStyle(fontSize: 14),
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: Color(0xFF1A237E), width: 3),
       ),
     ),
     cardTheme: CardThemeData(

@@ -2,6 +2,8 @@
 // File: lib/features/dashboard/school_admin/add_student_page.dart
 // ==========================================
 import 'dart:typed_data';
+import 'dart:html' as html;
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +24,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
   final Map<String, dynamic> _data = {};
 
   XFile? _pickedXFile;
+  Uint8List? _pickedBytes;
+  String _pickedExt = 'jpg';
   String? _passportUrlPreview;
   bool _isUploading = false;
   bool _isPickingImage = false;
@@ -65,19 +69,24 @@ class _AddStudentPageState extends State<AddStudentPage> {
     if (_isPickingImage) return;
     setState(() => _isPickingImage = true);
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-          source: source, maxHeight: 512, imageQuality: 75);
-      if (pickedFile != null) {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+      await input.onChange.first;
+      if (input.files!.isEmpty) return;
+      final file = input.files![0];
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoadEnd.first;
+      final bytes = reader.result as Uint8List?;
+      if (bytes != null) {
         setState(() {
-          _pickedXFile = pickedFile;
+          _pickedBytes = bytes;
+          _pickedExt = file.name.split('.').last.toLowerCase();
           _passportUrlPreview = null;
         });
       }
     } catch (e) {
-      _snack(
-          'Could not access ${source == ImageSource.camera ? 'camera' : 'gallery'}.',
-          success: false);
+      _snack('Could not access file.', success: false);
     } finally {
       if (mounted) setState(() => _isPickingImage = false);
     }
@@ -228,7 +237,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
               ),
             ),
             // Remove
-            if (_pickedXFile != null) ...[
+            if (_pickedBytes != null) ...[
               const SizedBox(height: 8),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -378,6 +387,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
     return null;
   }
 
+  String? _vOptDrop(String? v) {
+    return null;
+  }
+
   // ─── SUBMIT ──────────────────────────────────────────────────
 
   Future<void> _submit() async {
@@ -500,23 +513,28 @@ class _AddStudentPageState extends State<AddStudentPage> {
       }
 
       _data['passport_url'] = '';
-      if (_pickedXFile != null) {
+      if (_pickedBytes != null) {
         try {
-          final ts =
-              DateTime.now().millisecondsSinceEpoch;
-          final adm = (_data['admission_no'] ?? 'unknown')
-              .toString()
-              .replaceAll(' ', '_');
-          final path = '$schoolId/students/${adm}_$ts.jpg';
-          final bytes = await _pickedXFile!.readAsBytes();
-          await Supabase.instance.client.storage
-              .from('passports')
-              .uploadBinary(path, bytes,
-                  fileOptions: const FileOptions(upsert: true));
-          _data['passport_url'] =
-              Supabase.instance.client.storage
-                  .from('passports')
-                  .getPublicUrl(path);
+          final ts = DateTime.now().millisecondsSinceEpoch;
+          final adm = (_data['admission_no'] ?? 'unknown').toString().replaceAll(' ', '_');
+          final safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(_pickedExt) ? _pickedExt : 'jpg';
+          final path = '$schoolId/students/${adm}_$ts.$safeExt';
+          final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+          final uploadUrl = '$supabaseUrl/storage/v1/object/passports/$path';
+          final publicUrl = '$supabaseUrl/storage/v1/object/public/passports/$path';
+          
+          final res = await http.post(
+            Uri.parse(uploadUrl),
+            headers: {
+              'Authorization': 'Bearer sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg',
+              'Content-Type': 'image/$safeExt',
+              'x-upsert': 'true',
+            },
+            body: _pickedBytes!,
+          );
+          if (res.statusCode == 200) {
+            _data['passport_url'] = publicUrl;
+          }
         } catch (e) {
           debugPrint('IMG FAIL: $e');
         }
@@ -584,7 +602,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 800),
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
                 horizontal: 16.0, vertical: 24.0),
@@ -630,7 +648,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                                   child: ClipOval(
                                       child: _buildPhoto()),
                                 ),
-                                if (_pickedXFile != null)
+                                if (_pickedBytes != null)
                                   Positioned(
                                     bottom: 0,
                                     right: 0,
@@ -679,13 +697,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     _field('Admission No', 'admission_no',
                         icon: Icons.fingerprint_rounded,
                         validator: _vAdm),
-                    _field('PIN (4 digits)', 'pin',
-                        icon: Icons.lock_outline,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'PIN is required';
-                          if (v.trim().length < 4) return 'PIN must be at least 4 digits';
-                          return null;
-                        }),
                     Row(
                       children: [
                         Expanded(
@@ -704,7 +715,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                         validator: _vOptName),
                     _dropdown('Gender', 'gender',
                         ['Male', 'Female'],
-                        validator: _vDrop,
+                        validator: _vOptDrop,
                         icon: Icons.wc_outlined),
                     const SizedBox(height: 20),
 
@@ -858,7 +869,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           child: CircularProgressIndicator(
               strokeWidth: 2,
               color: Color(0xFF1A237E)));
-    if (_pickedXFile != null) {
+    if (_pickedBytes != null) {
       return FutureBuilder<Uint8List>(
         future: _pickedXFile!.readAsBytes(),
         builder: (_, snap) {

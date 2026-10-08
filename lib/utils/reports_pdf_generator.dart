@@ -253,7 +253,7 @@ class ReportsPdfGenerator {
         row.add((s['pace_range'] ?? '--').toString());
       } else {
         row.add(_fmt(s['total_score']));
-        row.add((s['grade'] ?? '').toString());
+        row.add(_extractGrade(s['grade']));
         row.add((s['position'] ?? '--').toString());
       }
       tData.add(row);
@@ -266,6 +266,7 @@ class ReportsPdfGenerator {
         headerDecoration: const pw.BoxDecoration(color: PdfColors.blue),
         cellStyle: const pw.TextStyle(fontSize: 8.5),
         cellAlignment: pw.Alignment.center,
+        cellAlignments: {1: pw.Alignment.centerLeft}, // Left-align the student name column
         columnWidths: {0: const pw.FixedColumnWidth(22), 1: const pw.FlexColumnWidth(3)},
       ),
     ];
@@ -291,7 +292,7 @@ class ReportsPdfGenerator {
       for (var t = 0; t < td.length; t++) {
         final tm = td[t] as Map;
         if (isAce) { row.add(_fmt(tm['avg_pt'])); row.add((tm['paces'] ?? 0).toString()); }
-        else { row.add(_fmt(tm['total'])); row.add((tm['grade'] ?? '').toString()); row.add((tm['position'] ?? '--').toString()); }
+        else { row.add(_fmt(tm['total'])); row.add(_extractGrade(tm['grade'])); row.add((tm['position'] ?? '--').toString()); }
       }
       if (isAce) { row.add((s['total_paces'] ?? 0).toString()); row.add(_fmt(s['cumulative_avg'])); }
       else { row.add(_fmt(s['cumulative_total'])); row.add(_fmt(s['cumulative_avg'])); }
@@ -412,7 +413,7 @@ class ReportsPdfGenerator {
       if (isAce) {
         w.add(pw.Table.fromTextArray(headers: ['Term', 'HACS', 'NCE', 'PACEs'], data: terms.map((t) => [t['term_name'] ?? '', _fmt(t['hacs_score']), _fmt(t['nce_score']), _fmt(t['paces_completed'])]).toList(), headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white), headerDecoration: const pw.BoxDecoration(color: PdfColors.blue700)));
       } else {
-        w.add(pw.Table.fromTextArray(headers: ['Term', 'Total', 'Average', 'Position', 'Grade'], data: terms.map((t) => [t['term_name'] ?? '', _fmt(t['total_score']), _fmt(t['average_score']), _fmt(t['position']), t['grade'] ?? '']).toList(), headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white), headerDecoration: const pw.BoxDecoration(color: PdfColors.blue700)));
+        w.add(pw.Table.fromTextArray(headers: ['Term', 'Total', 'Average', 'Position', 'Grade'], data: terms.map((t) { final g3 = t['grade']; return [t['term_name'] ?? '', _fmt(t['total_score']), _fmt(t['average_score']), _fmt(t['position']), _extractGrade(t['grade'])]; }).toList(), headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white), headerDecoration: const pw.BoxDecoration(color: PdfColors.blue700)));
       }
     }
     return w;
@@ -488,4 +489,19 @@ class _PdfCard {
   final String value;
   final PdfColor color;
   _PdfCard(this.label, this.value, this.color);
+}
+
+
+String _extractGrade(dynamic g) {
+  if (g == null) return '';
+  if (g is Map) return (g['grade'] ?? '').toString();
+  if (g is String) {
+    if (g.contains('{')) {
+      // It's a stringified map, extract the value after 'grade:'
+      final match = RegExp(r'grade[":\s]+([A-Za-z0-9]+)').firstMatch(g);
+      return match?.group(1) ?? g;
+    }
+    return g;
+  }
+  return g.toString();
 }

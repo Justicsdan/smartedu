@@ -121,6 +121,43 @@ class _PageStudentsState extends State<PageStudents> {
     }
   }
 
+  Future<void> _showAutoPromoteDialog() async {
+    final p = context.read<SchoolAdminProvider>();
+    final sid = p.currentSession?['id']?.toString() ?? '';
+    final tid = p.currentTerm?['id']?.toString() ?? '';
+    if (sid.isEmpty || tid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active session/term found.')));
+      return;
+    }
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Automated End-of-Session Promotion'),
+        content: const Text('This will automatically promote all eligible students to their next class (based on the "Promotes To" mapping in Classes).\n\nFinal year students who passed will be graduated.\n\nStudents who scored below the promotion threshold will be held back.\n\nDo you want to proceed?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+            child: const Text('Start Promotion'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Running auto-promotion... Please wait.'), duration: Duration(seconds: 5)));
+      final success = await p.autoPromoteStudents(sid, tid);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auto-promotion complete!'), backgroundColor: Color(0xFF2E7D32)));
+        widget.onRefresh?.call();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auto-promotion failed. Check logs.'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
   void _showPromoteSheet() {
     showModalBottomSheet(
       context: context,
@@ -407,6 +444,8 @@ class _PageStudentsState extends State<PageStudents> {
                       ),
                     ),
                     _actionChip(icon: Icons.trending_up_rounded, label: 'Promote', onTap: _showPromoteSheet),
+                    const SizedBox(width: 8),
+                    _actionChip(icon: Icons.auto_mode_outlined, label: 'Auto-Promote', onTap: _showAutoPromoteDialog),
                     const SizedBox(width: 8),
                     _actionChip(icon: Icons.download_rounded, label: _isExporting ? '...' : 'Export', onTap: _isExporting ? () {} : _exportCsv),
                     const SizedBox(width: 8),

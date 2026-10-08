@@ -37,12 +37,16 @@ class _PageAceReportsState extends State<PageAceReports> {
     final sts = p.students.where((s) => s['class_id']?.toString() == _selectedClassId).toList();
     _reports = {};
     _paceCounts = {};
-    for (final s in sts) {
-      final id = s['id'].toString();
-      final r = await p.getAceReport(id, sid, tid);
-      if (r != null) _reports[id] = r;
-      await p.loadAcePaceScoresForStudent(id, sid, tid);
-      _paceCounts[id] = p.acePaceScores.length;
+    try {
+      for (final s in sts) {
+        final id = s['id'].toString();
+        final r = await p.getAceReport(id, sid, tid);
+        if (r != null) _reports[id] = r;
+        await p.loadAcePaceScoresForStudent(id, sid, tid);
+        _paceCounts[id] = p.acePaceScores.length;
+      }
+    } catch (e) {
+      debugPrint('Error loading admin ACE data: $e');
     }
     if (mounted) setState(() { _students = sts; _loading = false; });
   }

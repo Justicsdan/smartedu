@@ -162,7 +162,7 @@ mixin StudentCbtMixin on StudentBase {
     try {
       final r = await DbProxy.instance
           .from('cbt_questions')
-          .select('id, question_text, option_a, option_b, option_c, option_d, marks, question_order, image_url')
+          .select('id, question_text, option_a, option_b, option_c, option_d, correct_option, marks, question_order, image_url')
           .eq('exam_id', examId)
           .order('question_order', ascending: true)
           .get();
@@ -202,16 +202,28 @@ mixin StudentCbtMixin on StudentBase {
       final questions = await _loadQuestionsDirect(examId);
       int score = 0;
       int totalMarks = 0;
+      int correctCount = 0;
+      int wrongCount = 0;
+      int unansweredCount = 0;
+
       for (final q in questions) {
         final qId = q['id'].toString();
         final correct = (q['correct_option'] as String?) ?? '';
         final marks = (q['marks'] as num?)?.toInt() ?? 1;
-        if (correct.isEmpty) continue;
+        
         totalMarks += marks;
+        
         final submitted = answers[qId] ?? '';
-        if (submitted.isEmpty) continue;
+        if (submitted.isEmpty) {
+          unansweredCount++;
+          continue;
+        }
+        
         if (submitted.toLowerCase() == correct.toLowerCase()) {
           score += marks;
+          correctCount++;
+        } else {
+          wrongCount++;
         }
       }
 
@@ -236,10 +248,10 @@ mixin StudentCbtMixin on StudentBase {
         'score': score,
         'total_marks': totalMarks,
         'total_questions': questions.length,
-        'correct': answers.entries.where((e) {
-          final q = questions.firstWhere((q) => q['id'].toString() == e.key, orElse: () => {});
-          return (e.value.toLowerCase() == ((q['correct_option'] as String?) ?? '').toLowerCase());
-        }).length,
+        'correct': correctCount,
+        'wrong': wrongCount,
+        'unanswered': unansweredCount,
+        'percentage': totalMarks > 0 ? (score / totalMarks) * 100 : 0,
       };
     } catch (e) {
       debugPrint('Error submitting CBT: $e');
@@ -282,7 +294,7 @@ mixin StudentCbtMixin on StudentBase {
       return List<Map<String, dynamic>>.from(
         await DbProxy.instance
             .from('cbt_attempts')
-            .select('id, exam_id, score, total_marks, time_started, time_submitted, is_submitted, created_at, cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark)')
+            .select('id, exam_id, score, total_marks, answers, time_started, time_submitted, is_submitted, created_at, cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark)')
             .eq('student_id', studentId)
             .order('created_at', ascending: false)
             .get(),

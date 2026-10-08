@@ -35,6 +35,8 @@ serve(async (req: Request) => {
     });
   }
   try {
+  // DEBUG ENDPOINT: List available models for this API key
+
     const { messages, schoolContext } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'messages array is required' }), {
@@ -64,7 +66,7 @@ serve(async (req: Request) => {
     const response = await fetch(GROQ_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: finalMessages, temperature: 0.7, max_tokens: 512 }),
+      body: JSON.stringify({ model: 'openai/gpt-oss-20b', messages: finalMessages, temperature: 0.7, max_tokens: 512 }),
     });
     const data = await response.json();
     if (!response.ok) {
