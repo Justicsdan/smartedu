@@ -286,9 +286,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: w ? 40 : 20),
           child: Text(
-            'Streamline admissions, scores, results, and more — built for Nigerian schools with full American GPA support.',
+            'Streamline admissions, scores, and results — supporting Traditional, American GPA, and ACE curriculums.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: w ? 14 : 13, color: Colors.white.withOpacity(0.4), height: 1.6),
+            style: TextStyle(fontSize: w ? 14 : 13, color: Colors.white.withOpacity(0.6), height: 1.6),
           ),
         ),
         const SizedBox(height: 32),
@@ -302,39 +302,42 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
 
   void _showEntryOptions() {
-    showModalBottomSheet(
-      isScrollControlled: true,
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E0E2A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(2)),
+      builder: (ctx) => Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 340, // Forces a small, fixed width
+              padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0E0E2A),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, spreadRadius: 2)],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text('Choose your preferred method', style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5))),
+                  const SizedBox(height: 12),
+                  _entryOptionCard(ctx, Icons.qr_code_rounded, 'Enter with School Code', 'Use your school code for a branded experience', const Color(0xFF6366F1), () {
+                    Navigator.pop(ctx);
+                    _showCodeSheet(ctx);
+                  }),
+                  const SizedBox(height: 8),
+                  _entryOptionCard(ctx, Icons.login_rounded, 'Continue without code', 'Go directly to role selection', const Color(0xFF10B981), () {
+                    Navigator.pop(ctx);
+                    context.go('/role-selection');
+                  }),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
-            const Text('How would you like to sign in?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-            const SizedBox(height: 6),
-            Text('Choose your preferred method', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4))),
-            const SizedBox(height: 16),
-            _entryOptionCard(ctx, Icons.qr_code_rounded, 'Enter with School Code', 'Use your school code for a branded experience', const Color(0xFF6366F1), () {
-              Navigator.pop(ctx);
-              _showCodeSheet(ctx);
-            }),
-            const SizedBox(height: 10),
-            _entryOptionCard(ctx, Icons.login_rounded, 'Continue without code', 'Go directly to role selection', const Color(0xFF10B981), () {
-              Navigator.pop(ctx);
-              context.go('/role-selection');
-            }),
-            const SizedBox(height: 14),
-          ],
+          ),
         ),
       ),
     );
@@ -342,73 +345,77 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
 
   void _showCodeSheet(BuildContext parentCtx) {
-    showModalBottomSheet(
+    showDialog(
       context: parentCtx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-          decoration: const BoxDecoration(
-            color: Color(0xFF0E0E2A),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 20),
-              const Text('Enter School Code', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-              const SizedBox(height: 6),
-              Text('Type the 4-digit code provided by your school', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.4))),
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16163A),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _codeError != null ? Colors.red.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _codeCtrl,
-                        focusNode: _codeFocus,
-                        enabled: !_codeLoading,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 4),
-                        textAlign: TextAlign.center,
-                        cursorColor: Color(0xFF6366F1),
-                        maxLength: 4,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          hintText: 'e.g. 4821',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontWeight: FontWeight.w400, letterSpacing: 0),
-                          border: InputBorder.none,
-                          counterText: '',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                        ),
-                        onSubmitted: (_) => _lookupSchoolCode(),
-                      ),
-                    ),
-                    Container(
-                      width: 56, height: 56,
-                      decoration: BoxDecoration(
-                        color: _codeLoading ? Colors.white.withOpacity(0.1) : const Color(0xFF6366F1),
-                        borderRadius: const BorderRadius.only(topRight: Radius.circular(14), bottomRight: Radius.circular(14)),
-                      ),
-                      child: _codeLoading
-                          ? const Padding(padding: EdgeInsets.all(18), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))
-                          : IconButton(icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24), onPressed: _lookupSchoolCode),
-                    ),
-                  ],
-                ),
+      builder: (ctx) => Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 340, // Forces a small, fixed width
+              padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0E0E2A),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, spreadRadius: 2)],
               ),
-              if (_codeError != null)
-                Padding(padding: const EdgeInsets.only(top: 10), child: Text(_codeError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12))),
-              const SizedBox(height: 16),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Enter School Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text('Type the 4-digit code provided by your school', style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5)), textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16163A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _codeError != null ? Colors.red.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _codeCtrl,
+                            focusNode: _codeFocus,
+                            enabled: !_codeLoading,
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 4),
+                            textAlign: TextAlign.center,
+                            cursorColor: const Color(0xFF6366F1),
+                            maxLength: 4,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.transparent,
+                              hintText: 'e.g. 4821',
+                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontWeight: FontWeight.w400, letterSpacing: 0),
+                              border: InputBorder.none,
+                              counterText: '',
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                            onSubmitted: (_) => _lookupSchoolCode(),
+                          ),
+                        ),
+                        Container(
+                          width: 48, height: 48,
+                          decoration: BoxDecoration(
+                            color: _codeLoading ? Colors.white.withOpacity(0.1) : const Color(0xFF6366F1),
+                            borderRadius: const BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                          ),
+                          child: _codeLoading
+                              ? const Padding(padding: EdgeInsets.all(14), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))
+                              : IconButton(icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20), onPressed: _lookupSchoolCode),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_codeError != null)
+                    Padding(padding: const EdgeInsets.only(top: 8), child: Text(_codeError!, style: const TextStyle(color: Colors.redAccent, fontSize: 11))),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -585,8 +592,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: w ? 48 : 36, vertical: w ? 18 : 16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0E0E2A), Color(0xFF191940)]),
+            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF97316), Color(0xFFEA580C)]),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFFF97316).withOpacity(0.4), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 6)),
+            ],
           ),
           child: Text('Get Started', style: TextStyle(fontSize: w ? 16 : 15, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 0.3)),
         ),
@@ -625,6 +635,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _features(bool w) {
     final feats = <Map<String, dynamic>>[
       {'icon': Icons.calculate_rounded, 'title': 'Smart Grading', 'desc': 'WAEC, BECE, 5-point & American GPA with auto positions.', 'color': const Color(0xFF6366F1)},
+      {'icon': Icons.menu_book_rounded, 'title': 'ACE Curriculum', 'desc': 'Full support for PACEs, HACS/NCE scoring & specialized reports.', 'color': const Color(0xFF0EA5E9)},
       {'icon': Icons.assessment_rounded, 'title': 'Result Publishing', 'desc': 'One-click publish with behavioral ratings & comments.', 'color': const Color(0xFF10B981)},
       {'icon': Icons.people_alt_rounded, 'title': 'Role-Based Access', 'desc': 'Separate dashboards for Admin, Teacher & Student.', 'color': const Color(0xFFF59E0B)},
       {'icon': Icons.quiz_rounded, 'title': 'CBT Exams', 'desc': 'Computer-based tests with auto grading & score sync.', 'color': const Color(0xFFEC4899)},
@@ -648,15 +659,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: MouseRegion(
                   onEnter: (_) => setState(() => _hoveredFeature = e.key),
                   onExit: (_) => setState(() => _hoveredFeature = -1),
-                  child: AnimatedContainer(
+                  child: AnimatedScale(
+                    scale: hov ? 1.03 : 1.0, // Scales the whole card up
                     duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: hov ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.02),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: hov ? color.withOpacity(0.3) : Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Row(
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: hov ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: hov ? color.withOpacity(0.8) : Colors.white.withOpacity(0.08), width: hov ? 1.5 : 1),
+                        boxShadow: hov ? [
+                          BoxShadow(color: color.withOpacity(0.4), blurRadius: 30, spreadRadius: 4, offset: const Offset(0, 10)),
+                          BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 5)),
+                        ] : [],
+                      ),
+                      child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
@@ -671,11 +690,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             children: [
                               Text(f['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(hov ? 1.0 : 0.85))),
                               const SizedBox(height: 4),
-                              Text(f['desc'] as String, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.4), height: 1.45)),
+                              Text(f['desc'] as String, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(hov ? 0.6 : 0.5), height: 1.45)),
                             ],
                           ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),
@@ -730,7 +750,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       padding: EdgeInsets.symmetric(horizontal: w ? 0 : 16),
       child: Column(
         children: [
-          _sectionHeader('Grading Standards', 'Nigerian and American systems, fully supported', w),
+          _sectionHeader('Grading Standards', 'Nigerian, American GPA, and ACE systems supported', w),
           const SizedBox(height: 24),
           Wrap(
             spacing: 14, runSpacing: 14,
