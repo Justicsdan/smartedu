@@ -1,3 +1,4 @@
+import "pages/teacher_live_class_page.dart";
 // ==========================================
 // File: lib/features/dashboard/teacher/teacher_dashboard.dart
 // ==========================================
@@ -80,6 +81,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       }
       items.add(const _NavItem(id: 'assignments', icon: Icons.assignment_rounded, label: 'Assignments'));
       items.add(const _NavItem(id: 'cbt', icon: Icons.quiz_rounded, label: 'CBT Exams'));
+      items.add(const _NavItem(id: 'live_class', icon: Icons.videocam_rounded, label: 'Live Class'));
     }
 
     return items;
@@ -544,6 +546,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       case 'publish_results':
         return const TeacherPublishResults();
       case 'cbt':
+      case 'live_class':
+        return const TeacherLiveClassPage();
         return const TeacherCbtPage();
       default:
         return const _TeacherHomePage();

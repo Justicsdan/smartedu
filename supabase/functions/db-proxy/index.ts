@@ -45,6 +45,8 @@ const ADMIN_ONLY_STRIP = ['admin_password'];
 // ─── Tables with school_id column ───
 
 const SCHOOL_SCOPED_TABLES = [
+  'live_classes',
+  'live_classes',
   'students', 'teachers', 'classes', 'subjects', 'class_subjects',
   'scores', 'assignments', 'attendance', 'student_term_summaries',
   'term_comments', 'student_behavioural_ratings', 'academic_sessions',
@@ -88,6 +90,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     assignment_submissions: ['select', 'insert', 'update', 'delete'],
   },
   school_admin: {
+      live_classes: ['select','insert','update'],
     schools: ['select', 'update'],
     students: ['select', 'insert', 'update'],
     teachers: ['select', 'insert', 'update'],
@@ -117,6 +120,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     cbt_attempts: ['select', 'insert', 'update', 'delete'],
   },
   teacher: {
+      live_classes: ['select','insert','update'],
     students: ['select'],
     classes: ['select'],
     subjects: ['select'],
@@ -144,6 +148,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     ace_term_reports: ['select', 'insert', 'update'],
   },
   student: {
+      live_classes: ['select'],
     classes: ['select'],
     subjects: ['select'],
     class_subjects: ['select'],

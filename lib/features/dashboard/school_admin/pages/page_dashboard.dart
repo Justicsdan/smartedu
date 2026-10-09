@@ -230,6 +230,7 @@ class _PageDashboardState extends State<PageDashboard> {
       {'icon': Icons.badge_rounded, 'title': 'Credentials', 'desc': 'Generate & print login cards', 'color': const Color(0xFFF57F17), 'bg': const Color(0xFFFFF8E1), 'index': 9},
       {'icon': Icons.account_balance_wallet_rounded, 'title': 'Fees', 'desc': 'Manage fees & payments', 'color': const Color(0xFF0277BD), 'bg': const Color(0xFFE1F5FE), 'index': 10},
       {'icon': Icons.assessment_rounded, 'title': 'Reports', 'desc': 'View analytics & reports', 'color': const Color(0xFF558B2F), 'bg': const Color(0xFFF1F8E9), 'index': 14},
+      {'icon': Icons.videocam_rounded, 'title': 'Live Class', 'desc': 'Monitor & start live classes', 'color': const Color(0xFF00695C), 'bg': const Color(0xFFE0F2F1), 'index': 15},
     ];
 
     return Wrap(

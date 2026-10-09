@@ -1,3 +1,4 @@
+import 'features/dashboard/school_admin/pages/page_live_class.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -506,6 +507,7 @@ class _AdminShellState extends State<_AdminShell> {
     _NavItem(icon: Icons.auto_stories_rounded, label: 'PACE Scores'),
     _NavItem(icon: Icons.assessment_rounded, label: 'ACE Reports'),
     _NavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
+    _NavItem(icon: Icons.videocam_rounded, label: 'Live Class'),
   ];
 
   List<_NavItem> get _visibleNavItems {
@@ -692,6 +694,8 @@ class _AdminShellState extends State<_AdminShell> {
         return const PageAceReports();
       case 14:
         return const PageReports();
+      case 15:
+        return const AdminLiveClassPage();
       default:
         return const SizedBox.shrink();
     }

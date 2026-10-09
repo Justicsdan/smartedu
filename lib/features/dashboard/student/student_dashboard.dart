@@ -1,3 +1,4 @@
+import 'pages/student_live_class_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -45,6 +46,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       const _SidebarItem(
           icon: Icons.report_problem_rounded, label: 'Complaints'),
       const _SidebarItem(icon: Icons.person_rounded, label: 'My Profile'),
+      const _SidebarItem(icon: Icons.videocam_rounded, label: 'Live Class'),
     ];
   }
 
@@ -415,6 +417,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return const StudentComplaintsPage();
       case 8:
         return const StudentProfilePage();
+      case 9:
+        return const StudentLiveClassPage();
       default:
         return const Center(child: Text("Page not found"));
     }
