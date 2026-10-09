@@ -919,7 +919,8 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        widget.onSave();
+        // Force the provider to reload students from the database so the UI updates instantly
+        context.read<SchoolAdminProvider>().reloadData();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Student updated!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           backgroundColor: Color(0xFF2E7D32),

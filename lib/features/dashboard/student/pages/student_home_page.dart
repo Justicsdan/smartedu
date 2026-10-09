@@ -189,7 +189,7 @@ class _MyStatusCardState extends State<_MyStatusCard> {
       final sessionId = p.currentSession?['id']?.toString() ?? '';
       final termId = p.currentTerm?['id']?.toString() ?? '';
       _termLabel = [p.currentTermName, p.currentSessionName].where((s) => s.isNotEmpty).join(', ');
-      if (sessionId.isEmpty || termId.isEmpty) { setState(() => _loading = false); return; }
+      if (sessionId.isEmpty || termId.isEmpty) { if (mounted) setState(() => _loading = false); return; }
       final schoolId = p.schoolId;
       final studentId = p.studentId;
       final classId = p.classId;
@@ -230,17 +230,20 @@ class _MyStatusCardState extends State<_MyStatusCard> {
       }
 
       if (!isAce) {
-        final exams = await DbProxy.instance.from('cbt_exams').select('id').eq('class_id', classId).eq('session_id', sessionId).eq('term_id', termId).eq('is_active', true).get();
+        // Removed invalid session_id and term_id filters. cbt_exams table doesn't have them.
+        final exams = await DbProxy.instance.from('cbt_exams').select('id').eq('class_id', classId).eq('is_active', true).get();
         _cbtTotal = exams.length;
         if (exams.isNotEmpty) {
           final examIds = exams.map((e) => e['id']?.toString()).where((s) => s != null).toList();
-          final attempts = await DbProxy.instance.from('cbt_attempts').select('exam_id, is_submitted').eq('student_id', studentId).in_('exam_id', examIds).get();
-          _cbtCompleted = attempts.where((a) => a['is_submitted'] == true).length;
+          if (examIds.isNotEmpty) {
+            final attempts = await DbProxy.instance.from('cbt_attempts').select('exam_id, is_submitted').eq('student_id', studentId).inFilter('exam_id', examIds).get();
+            _cbtCompleted = attempts.where((a) => a['is_submitted'] == true).length;
+          }
         }
       }
 
-      setState(() => _loading = false);
-    } catch (_) { setState(() => _loading = false); }
+      if (mounted) setState(() => _loading = false);
+    } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
   @override
