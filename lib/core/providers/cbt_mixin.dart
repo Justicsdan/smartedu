@@ -71,6 +71,7 @@ mixin CbtMixin on BaseProvider {
     bool showResultImmediately = true,
     bool allowRetake = false,
     int maxAttempts = 1,
+    bool isProctored = false,
   }) async {
     try {
       final insertData = <String, dynamic>{
@@ -87,6 +88,7 @@ mixin CbtMixin on BaseProvider {
         'show_result_immediately': showResultImmediately,
         'allow_retake': allowRetake,
         'max_attempts': maxAttempts,
+        'is_proctored': isProctored,
       };
 
       if (startTime != null) insertData['start_time'] = startTime.toUtc().toIso8601String();

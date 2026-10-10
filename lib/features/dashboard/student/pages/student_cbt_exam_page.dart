@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
+import '../../../../widgets/jitsi_embed_view.dart';
 
 class StudentCbtExamPage extends StatefulWidget {
   final Map<String, dynamic> exam;
@@ -24,6 +25,7 @@ class _StudentCbtExamPageState extends State<StudentCbtExamPage> {
   bool _showNavGrid = false;
   DateTime? _startTime;
   bool _showResultImmediately = true;
+  bool _isProctored = false;
   StudentProvider get _p => context.read<StudentProvider>();
 
   @override
@@ -39,7 +41,10 @@ class _StudentCbtExamPageState extends State<StudentCbtExamPage> {
       return;
     }
     final examData = check['exam'] as Map<String, dynamic>?;
-    if (examData != null) { _showResultImmediately = examData['show_result_immediately'] != false; }
+    if (examData != null) { 
+      _showResultImmediately = examData['show_result_immediately'] != false; 
+      _isProctored = examData['is_proctored'] == true; 
+    }
     _startTime = DateTime.now();
     final duration = (widget.exam['duration_minutes'] as num?)?.toInt() ?? 60;
     _p.startExamTimer(durationMinutes: duration);
@@ -94,10 +99,94 @@ class _StudentCbtExamPageState extends State<StudentCbtExamPage> {
     if (_loading) return Scaffold(backgroundColor: Colors.white, body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text('Loading exam...', style: TextStyle(color: Colors.grey.shade600))])));
     if (_error != null && !_submitted) return Scaffold(backgroundColor: Colors.white, body: Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.error_outline, size: 64, color: Colors.red.shade300), const SizedBox(height: 16), Text(_error!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, color: Colors.red)), const SizedBox(height: 24), ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back'))]))));
     if (_submitted) return _buildResultScreen();
-    return WillPopScope(onWillPop: () async {
-      final leave = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), title: const Text('Leave Exam?'), content: const Text('Your progress will be lost if you leave.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')), ElevatedButton(onPressed: () => Navigator.pop(ctx, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), child: const Text('Leave'))]));
-      return leave ?? false;
-    }, child: Scaffold(backgroundColor: const Color(0xFFF8F9FA), body: SafeArea(child: Column(children: [_buildTopBar(), Expanded(child: _buildQuestionArea()), _buildBottomBar()]))));
+
+    // The core exam UI (top bar, questions, bottom bar)
+    final examContent = Container(
+      color: const Color(0xFFF8F9FA),
+      child: Column(
+        children: [
+          _buildTopBar(),
+          Expanded(child: _buildQuestionArea()),
+          _buildBottomBar(),
+        ],
+      ),
+    );
+
+    final willPopScope = WillPopScope(
+      onWillPop: () async {
+        final leave = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), title: const Text('Leave Exam?'), content: const Text('Your progress will be lost if you leave.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')), ElevatedButton(onPressed: () => Navigator.pop(ctx, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), child: const Text('Leave'))]));
+        return leave ?? false;
+      },
+      child: examContent,
+    );
+
+    // If not proctored, return standard full-screen layout
+    if (!_isProctored) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(child: willPopScope),
+      );
+    }
+
+    // Proctored Layout (Split Screen)
+    final examId = widget.exam['id']?.toString() ?? 'exam';
+    final roomName = 'smartedu_proctor_${examId}_${_p.studentId}'.replaceAll('-', '');
+
+    return Scaffold(
+      backgroundColor: Colors.grey[200],
+      body: SafeArea(
+        child: Row(
+          children: [
+            // Left Side: Exam (70%)
+            Expanded(
+              flex: 7,
+              child: willPopScope,
+            ),
+            // Right Side: Proctoring Video (30%)
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E), // Navy blue background to match theme
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(-2, 0))],
+                ),
+                child: Column(
+                  children: [
+                    // Proctoring Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      width: double.infinity,
+                      child: const Text(
+                        'LIVE PROCTORING',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    // Video Feed
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.all(8),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.black,
+                        ),
+                        child: JitsiEmbedView(
+                          roomName: roomName,
+                          userDisplayName: _p.studentName,
+                          schoolName: _p.schoolName,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ]
+        )
+      )
+    );
   }
 
   Widget _buildTopBar() {

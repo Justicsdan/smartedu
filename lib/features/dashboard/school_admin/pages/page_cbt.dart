@@ -1123,6 +1123,7 @@ class _PageCbtState extends State<PageCbt> {
   void _showAddExamDialog() {
     final titleCtrl = TextEditingController();
     String? classId, subjectId;
+    bool isProctored = false;
     final durCtrl = TextEditingController(text: '60');
     showDialog(
       context: context,
@@ -1180,6 +1181,15 @@ class _PageCbtState extends State<PageCbt> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                title: const Text("Proctored Mode (Distance Learning)"),
+                subtitle: const Text("Requires student camera during the exam."),
+                value: isProctored,
+                onChanged: (v) => setSt(() => isProctored = v ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
             ],
           ),
           actions: [
@@ -1199,6 +1209,7 @@ class _PageCbtState extends State<PageCbt> {
                     "duration":
                         int.tryParse(durCtrl.text.trim()) ?? 60,
                     "isActive": false,
+                    "isProctored": isProctored,
                   });
                   Navigator.pop(ctx);
                 }

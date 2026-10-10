@@ -43,7 +43,7 @@ mixin StudentCbtMixin on StudentBase {
     try {
       final exam = await DbProxy.instance
           .from('cbt_exams')
-          .select('id, title, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, shuffle_questions, show_result_immediately')
+          .select('id, title, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, shuffle_questions, show_result_immediately, is_proctored')
           .eq('id', examId)
           .maybeSingle();
 
@@ -78,7 +78,7 @@ mixin StudentCbtMixin on StudentBase {
     try {
       final allExams = await DbProxy.instance
           .from('cbt_exams')
-          .select('id, title, subject_id, class_id, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, instructions, show_result_immediately, shuffle_questions, created_at, subjects(name, code)')
+          .select('id, title, subject_id, class_id, duration_minutes, total_questions, pass_mark, is_active, start_time, end_time, instructions, show_result_immediately, shuffle_questions, created_at, is_proctored, subjects(name, code)')
           .eq('class_id', classId)
           .eq('is_active', true)
           .get();
@@ -294,7 +294,7 @@ mixin StudentCbtMixin on StudentBase {
       return List<Map<String, dynamic>>.from(
         await DbProxy.instance
             .from('cbt_attempts')
-            .select('id, exam_id, score, total_marks, answers, time_started, time_submitted, is_submitted, created_at, cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark)')
+            .select('id, exam_id, score, total_marks, answers, time_started, time_submitted, is_submitted, created_at, cbt_exams(title, subject_id, class_id, duration_minutes, pass_mark, is_proctored)')
             .eq('student_id', studentId)
             .order('created_at', ascending: false)
             .get(),

@@ -7,7 +7,6 @@ import '../../../../widgets/jitsi_embed_view.dart';
 
 class AdminLiveClassPage extends StatefulWidget {
   const AdminLiveClassPage({Key? key}) : super(key: key);
-
   @override
   State<AdminLiveClassPage> createState() => _AdminLiveClassPageState();
 }
@@ -84,7 +83,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
     } catch (_) {}
   }
 
-  Future<void> _forceEndClass(String dbId, String roomName) async {
+  Future<void> _forceEndClass(String dbId) async {
     try {
       await DbProxy.instance.from('live_classes')
         .eq('id', dbId)
@@ -110,7 +109,8 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Start / Schedule Live Class'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Start / Schedule Live Class', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
               content: SizedBox(
                 width: 400,
                 child: SingleChildScrollView(
@@ -198,6 +198,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                         _startAdminClass(selectedAudience, selectedClassId, selectedSubjectId, scheduledDateTime);
                       } 
                     : null,
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
                   child: const Text('Save'),
                 ),
               ],
@@ -228,42 +229,68 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
     
     if (_isLive) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Admin Live Class'),
-          automaticallyImplyLeading: false,
-          actions: [
-            TextButton.icon(
-              onPressed: () async {
-                try {
-                  await DbProxy.instance.from('live_classes')
-                    .eq('room_name', _roomName)
-                    .update({'status': 'ended', 'ended_at': DateTime.now().toIso8601String()});
-                } catch (_) {}
-                setState(() => _isLive = false);
-                _fetchClasses();
-              },
-              icon: const Icon(Icons.close, color: Colors.red),
-              label: const Text('End Class', style: TextStyle(color: Colors.red)),
-            )
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(12)),
-            child: JitsiEmbedView(
-              roomName: _roomName,
-              userDisplayName: p.schoolName,
-              schoolName: p.schoolName,
-            ),
+        backgroundColor: Colors.grey[200],
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.live_tv, color: Colors.red, size: 24),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text('Monitoring Live Class', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
+                    ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DbProxy.instance.from('live_classes')
+                            .eq('room_name', _roomName)
+                            .update({'status': 'ended', 'ended_at': DateTime.now().toIso8601String()});
+                        } catch (_) {}
+                        setState(() => _isLive = false);
+                        _fetchClasses();
+                      },
+                      icon: const Icon(Icons.logout, color: Colors.red),
+                      label: const Text('Leave Monitor', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.black,
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+                  ),
+                  child: JitsiEmbedView(
+                    roomName: _roomName,
+                    userDisplayName: p.schoolName,
+                    schoolName: p.schoolName,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: const Text('Live Class Monitor'),
+        title: const Text('Live Class Monitor', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1B2A4A),
+        elevation: 1,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: () { setState(() => _loading = true); _fetchClasses(); })
         ],
@@ -272,7 +299,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         onPressed: _showStartDialog,
         icon: const Icon(Icons.videocam),
         label: const Text('Start / Schedule'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -280,16 +307,16 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
           constraints: const BoxConstraints(maxWidth: 800),
           padding: const EdgeInsets.all(24),
           child: _loading 
-            ? const CircularProgressIndicator()
+            ? const CircularProgressIndicator(color: Color(0xFF1A237E))
             : _classes.isEmpty
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.event_busy, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
                       const SizedBox(height: 8),
-                      const Text('There are no scheduled or live classes in the school right now.', textAlign: TextAlign.center),
+                      const Text('There are no scheduled or live classes in the school right now.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                     ],
                   )
                 : ListView.builder(
@@ -301,36 +328,45 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                       final dbId = live['id'] as String;
                       final title = _getMeetingTitle(live, p);
 
-                      return Card(
-                        elevation: 4,
+                      return Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(16),
-                          leading: Icon(isLive ? Icons.live_tv : Icons.event, color: isLive ? Colors.red : Colors.blue, size: 40),
-                          title: Text(isLive ? '$title is Live Now' : '$title - Scheduled', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(schedTime != null ? DateFormat('EEEE, MMM d - h:mm a').format(schedTime.toLocal()) : 'Started at: ${live['started_at'] != null ? DateFormat('h:mm a').format(DateTime.parse(live['started_at']).toLocal()) : 'Unknown'}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isLive)
-                                ElevatedButton(
-                                  onPressed: () => setState(() {
-                                    _roomName = live['room_name'];
-                                    _isLive = true;
-                                  }),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                                  child: const Text('Monitor'),
-                                )
-                              else
-                                const Chip(label: Text('Upcoming')),
-                              IconButton(
-                                icon: Icon(isLive ? Icons.stop_circle_outlined : Icons.delete_outline, color: Colors.red),
-                                tooltip: isLive ? 'Force End' : 'Delete',
-                                onPressed: () => isLive ? _forceEndClass(dbId, live['room_name']) : _deleteClass(dbId),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(isLive ? Icons.live_tv : Icons.event, color: isLive ? Colors.red : Colors.blue, size: 32),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(isLive ? '$title is Live Now' : '$title - Scheduled', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1B2A4A))),
+                                  const SizedBox(height: 4),
+                                  Text(schedTime != null ? DateFormat('EEEE, MMM d - h:mm a').format(schedTime.toLocal()) : 'Started at: ${live['started_at'] != null ? DateFormat('h:mm a').format(DateTime.parse(live['started_at']).toLocal()) : 'Unknown'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            if (isLive)
+                              ElevatedButton(
+                                onPressed: () => setState(() {
+                                  _roomName = live['room_name'];
+                                  _isLive = true;
+                                }),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                                child: const Text('Monitor'),
+                              )
+                            else
+                              const Chip(label: Text('Upcoming'), backgroundColor: Color(0xFFE3F2FD)),
+                            IconButton(
+                              icon: Icon(isLive ? Icons.stop_circle_outlined : Icons.delete_outline, color: Colors.red),
+                              tooltip: isLive ? 'Force End' : 'Delete',
+                              onPressed: () => isLive ? _forceEndClass(dbId) : _deleteClass(dbId),
+                            ),
+                          ],
                         ),
                       );
                     },
