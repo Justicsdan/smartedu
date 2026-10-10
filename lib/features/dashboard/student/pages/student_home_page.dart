@@ -46,9 +46,9 @@ class StudentHomePage extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                _statCard('Subjects', '${p.scores.length}', Icons.menu_book_rounded, const Color(0xFF1A237E)),
+                Expanded(child: _statCard('Subjects', '${p.scores.length}', Icons.menu_book_rounded, const Color(0xFF1A237E))),
                 const SizedBox(width: 12),
-                _statCard('Average', '${p.getOverallAverage().toStringAsFixed(1)}%', Icons.trending_up_rounded, const Color(0xFF2E7D32)),
+                Expanded(child: _statCard('Average', '${p.getOverallAverage().toStringAsFixed(1)}%', Icons.trending_up_rounded, const Color(0xFF2E7D32))),
               ],
             ),
             const SizedBox(height: 24),

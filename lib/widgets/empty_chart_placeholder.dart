@@ -17,7 +17,7 @@ class EmptyChartPlaceholder extends StatelessWidget {
     final clr = color ?? const Color(0xFF9CA3AF);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
