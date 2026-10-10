@@ -36,12 +36,18 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
     try {
       final res = await DbProxy.instance.from('live_classes')
         .select()
-        .eq('teacher_id', p.teacherId)
+        .eq('school_id', p.schoolId)
         .inFilter('status', ['scheduled', 'live'])
         .order('scheduled_at', ascending: true)
         .get();
+
+      final visibleClasses = res.where((live) {
+        final audience = live['audience'] as String? ?? 'class';
+        return audience == 'teachers' || audience == 'all' || live['teacher_id']?.toString() == p.teacherId;
+      }).toList();
+
       if (mounted) setState(() {
-        _myClasses = res;
+        _myClasses = visibleClasses;
         _loading = false;
       });
     } catch (_) {
@@ -61,7 +67,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
     );
 
     final timestamp = scheduledDateTime.millisecondsSinceEpoch;
-    _roomName = 'smartedu_${p.schoolId}_$_selectedClassId$_selectedSubjectId$timestamp'.replaceAll('-', '');
+    _roomName = 'smartedu_${p.schoolId}_class_$_selectedClassId$_selectedSubjectId$timestamp'.replaceAll('-', '');
     
     try {
       await DbProxy.instance.from('live_classes').insert({
@@ -69,6 +75,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
         'teacher_id': p.teacherId,
         'class_id': _selectedClassId,
         'subject_id': _selectedSubjectId,
+        'audience': 'class',
         'room_name': _roomName,
         'status': 'scheduled',
         'scheduled_at': scheduledDateTime.toIso8601String(),
@@ -91,8 +98,6 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
   }
 
   Future<void> _startScheduledClass(String roomId, String dbId) async {
-    setState(() => _isLive = true);
-    _roomName = roomId;
     try {
       await DbProxy.instance.from('live_classes')
         .eq('id', dbId)
@@ -100,20 +105,32 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
           'status': 'live',
           'started_at': DateTime.now().toIso8601String(),
         });
-      _fetchScheduledClasses();
     } catch (_) {}
+    _joinClass(roomId);
+    _fetchScheduledClasses();
   }
 
-  Future<void> _endLiveClass() async {
+  void _joinClass(String roomId) {
+    setState(() {
+      _isLive = true;
+      _roomName = roomId;
+    });
+  }
+
+  void _leaveLiveClass() {
+    setState(() => _isLive = false);
+    _fetchScheduledClasses();
+  }
+
+  Future<void> _endLiveClass(String dbId) async {
     try {
       await DbProxy.instance.from('live_classes')
-        .eq('room_name', _roomName)
+        .eq('id', dbId)
         .update({
           'status': 'ended',
           'ended_at': DateTime.now().toIso8601String(),
         });
     } catch (_) {}
-    setState(() => _isLive = false);
     _fetchScheduledClasses();
   }
 
@@ -125,7 +142,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
   }
 
   String _getSubjectName(TeacherProvider p, String? subjectId) {
-    if (subjectId == null) return 'Subject';
+    if (subjectId == null) return 'Staff Meeting';
     try {
       final subj = p.mySubjectAssignments.firstWhere((s) => s['subject_id']?.toString() == subjectId);
       return subj['subjects']?['name'] ?? 'Subject';
@@ -145,9 +162,9 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
           automaticallyImplyLeading: false,
           actions: [
             TextButton.icon(
-              onPressed: _endLiveClass,
-              icon: const Icon(Icons.close, color: Colors.red),
-              label: const Text('End Class', style: TextStyle(color: Colors.red)),
+              onPressed: _leaveLiveClass,
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text('Leave Room', style: TextStyle(color: Colors.red)),
             )
           ],
         ),
@@ -170,7 +187,6 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Schedule Form (Left)
           Expanded(
             flex: 2,
             child: SingleChildScrollView(
@@ -248,7 +264,6 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
               ),
             ),
           ),
-          // Scheduled List (Right)
           Expanded(
             flex: 3,
             child: Container(
@@ -269,32 +284,54 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
                                 final live = _myClasses[index];
                                 final isLive = live['status'] == 'live';
                                 final schedTime = live['scheduled_at'] != null ? DateTime.parse(live['scheduled_at']) : null;
-                                final subjName = _getSubjectName(p, live['subject_id']?.toString());
+                                final audience = live['audience'] as String? ?? 'class';
+                                final isOwner = live['teacher_id']?.toString() == p.teacherId;
+                                final dbId = live['id'] as String;
+                                
+                                String title = _getSubjectName(p, live['subject_id']?.toString());
+                                if (audience == 'teachers') title = 'Staff Meeting';
+                                if (audience == 'all') title = 'School-Wide Meeting';
 
                                 return Card(
                                   elevation: 2,
                                   margin: const EdgeInsets.only(bottom: 12),
                                   child: ListTile(
-                                    title: Text(subjName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                                     subtitle: Text(schedTime != null ? DateFormat('MMM d, y - h:mm a').format(schedTime.toLocal()) : 'No time set'),
                                     trailing: isLive
-                                      ? ElevatedButton.icon(
-                                          onPressed: () => _startScheduledClass(live['room_name'], live['id']),
-                                          icon: const Icon(Icons.videocam),
-                                          label: const Text('Enter Live Room'),
-                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ElevatedButton.icon(
+                                              onPressed: () => _joinClass(live['room_name']),
+                                              icon: const Icon(Icons.videocam),
+                                              label: const Text('Join Live'),
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                            ),
+                                            if (isOwner)
+                                              IconButton(
+                                                icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+                                                tooltip: 'End Class',
+                                                onPressed: () => _endLiveClass(dbId),
+                                              ),
+                                          ],
                                         )
                                       : Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.play_arrow, color: Colors.green),
-                                              onPressed: () => _startScheduledClass(live['room_name'], live['id']),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete, color: Colors.red),
-                                              onPressed: () => _deleteScheduledClass(live['id']),
-                                            ),
+                                            if (isOwner) ...[
+                                              IconButton(
+                                                icon: const Icon(Icons.play_arrow, color: Colors.green),
+                                                tooltip: 'Start Class',
+                                                onPressed: () => _startScheduledClass(live['room_name'], dbId),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                tooltip: 'Delete Class',
+                                                onPressed: () => _deleteScheduledClass(dbId),
+                                              ),
+                                            ] else 
+                                              const Chip(label: Text('Upcoming')),
                                           ],
                                         ),
                                   ),

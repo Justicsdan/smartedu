@@ -42,21 +42,22 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
     }
   }
 
-  Future<void> _startAdminClass(String classId, String subjectId, DateTime? scheduledTime) async {
+  Future<void> _startAdminClass(String audience, String? classId, String? subjectId, DateTime? scheduledTime) async {
     final p = context.read<SchoolAdminProvider>();
     Navigator.pop(context);
     
     setState(() => _loading = true);
     
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    _roomName = 'smartedu_${p.schoolId}_$classId$subjectId$timestamp'.replaceAll('-', '');
+    _roomName = 'smartedu_${p.schoolId}_${audience}_$timestamp'.replaceAll('-', '');
     
     try {
       await DbProxy.instance.from('live_classes').insert({
         'school_id': p.schoolId,
         'teacher_id': '00000000-0000-0000-0000-000000000000', 
-        'class_id': classId,
-        'subject_id': subjectId,
+        'class_id': audience == 'class' ? classId : null,
+        'subject_id': audience == 'class' ? subjectId : null,
+        'audience': audience,
         'room_name': _roomName,
         'status': scheduledTime == null ? 'live' : 'scheduled',
         'started_at': scheduledTime == null ? DateTime.now().toIso8601String() : null,
@@ -97,6 +98,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
 
   void _showStartDialog() {
     final p = context.read<SchoolAdminProvider>();
+    String selectedAudience = 'class';
     String? selectedClassId;
     String? selectedSubjectId;
     DateTime? selectedDate;
@@ -116,25 +118,43 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DropdownButtonFormField<String>(
-                        value: selectedClassId,
-                        decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
-                        items: p.classes.map((c) => DropdownMenuItem<String>(
-                          value: c['id'] as String?, 
-                          child: Text('${c['name']} ${c['section'] ?? ''}')
-                        )).toList(),
-                        onChanged: (val) => setDialogState(() => selectedClassId = val),
+                        value: selectedAudience,
+                        decoration: const InputDecoration(labelText: 'Audience', border: OutlineInputBorder()),
+                        items: const [
+                          DropdownMenuItem(value: 'class', child: Text('Specific Class')),
+                          DropdownMenuItem(value: 'students', child: Text('All Students (Assembly)')),
+                          DropdownMenuItem(value: 'teachers', child: Text('All Teachers (Staff Meeting)')),
+                          DropdownMenuItem(value: 'all', child: Text('Everyone (Students & Teachers)')),
+                        ],
+                        onChanged: (val) => setDialogState(() {
+                          selectedAudience = val!;
+                          selectedClassId = null;
+                          selectedSubjectId = null;
+                        }),
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: selectedSubjectId,
-                        decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
-                        items: p.subjects.map((s) => DropdownMenuItem<String>(
-                          value: s['id'] as String?, 
-                          child: Text(s['name'] ?? 'Unknown')
-                        )).toList(),
-                        onChanged: (val) => setDialogState(() => selectedSubjectId = val),
-                      ),
-                      const SizedBox(height: 16),
+                      if (selectedAudience == 'class') ...[
+                        DropdownButtonFormField<String>(
+                          value: selectedClassId,
+                          decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
+                          items: p.classes.map((c) => DropdownMenuItem<String>(
+                            value: c['id'] as String?, 
+                            child: Text('${c['name']} ${c['section'] ?? ''}')
+                          )).toList(),
+                          onChanged: (val) => setDialogState(() => selectedClassId = val),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedSubjectId,
+                          decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
+                          items: p.subjects.map((s) => DropdownMenuItem<String>(
+                            value: s['id'] as String?, 
+                            child: Text(s['name'] ?? 'Unknown')
+                          )).toList(),
+                          onChanged: (val) => setDialogState(() => selectedSubjectId = val),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       const Text('Leave date/time empty to start LIVE NOW', style: TextStyle(fontSize: 12, color: Colors.grey)),
                       const SizedBox(height: 8),
                       Row(
@@ -169,13 +189,13 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                 ElevatedButton(
-                  onPressed: (selectedClassId != null && selectedSubjectId != null) 
+                  onPressed: (selectedAudience != 'class' || (selectedClassId != null && selectedSubjectId != null)) 
                     ? () {
                         DateTime? scheduledDateTime;
                         if (selectedDate != null && selectedTime != null) {
                           scheduledDateTime = DateTime(selectedDate!.year, selectedDate!.month, selectedDate!.day, selectedTime!.hour, selectedTime!.minute);
                         }
-                        _startAdminClass(selectedClassId!, selectedSubjectId!, scheduledDateTime);
+                        _startAdminClass(selectedAudience, selectedClassId, selectedSubjectId, scheduledDateTime);
                       } 
                     : null,
                   child: const Text('Save'),
@@ -186,6 +206,20 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         );
       }
     );
+  }
+
+  String _getMeetingTitle(Map<String, dynamic> live, SchoolAdminProvider p) {
+    final audience = live['audience'] as String? ?? 'class';
+    if (audience == 'all') return 'Everyone (School-Wide)';
+    if (audience == 'students') return 'All Students (Assembly)';
+    if (audience == 'teachers') return 'All Teachers (Staff Meeting)';
+    
+    String className = 'Class';
+    try {
+      final c = p.classes.firstWhere((c) => c['id'] == live['class_id']);
+      className = '${c['name']} ${c['section'] ?? ''}';
+    } catch (_) {}
+    return className;
   }
 
   @override
@@ -265,12 +299,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                       final isLive = live['status'] == 'live';
                       final schedTime = live['scheduled_at'] != null ? DateTime.parse(live['scheduled_at']) : null;
                       final dbId = live['id'] as String;
-                      
-                      String className = 'Class';
-                      try {
-                        final c = p.classes.firstWhere((c) => c['id'] == live['class_id']);
-                        className = '${c['name']} ${c['section'] ?? ''}';
-                      } catch (_) {}
+                      final title = _getMeetingTitle(live, p);
 
                       return Card(
                         elevation: 4,
@@ -279,7 +308,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(16),
                           leading: Icon(isLive ? Icons.live_tv : Icons.event, color: isLive ? Colors.red : Colors.blue, size: 40),
-                          title: Text(isLive ? '$className is Live Now' : '$className - Scheduled', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(isLive ? '$title is Live Now' : '$title - Scheduled', style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(schedTime != null ? DateFormat('EEEE, MMM d - h:mm a').format(schedTime.toLocal()) : 'Started at: ${live['started_at'] != null ? DateFormat('h:mm a').format(DateTime.parse(live['started_at']).toLocal()) : 'Unknown'}'),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
