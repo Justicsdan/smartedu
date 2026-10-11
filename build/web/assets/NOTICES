@@ -2099,6 +2099,7 @@ google_fonts
 image_picker_for_web
 image_picker_macos
 image_picker_platform_interface
+path_provider
 path_provider_android
 path_provider_foundation
 shared_preferences
@@ -5761,7 +5762,6 @@ flutter_shaders
 go_router
 image_picker_linux
 image_picker_windows
-path_provider
 path_provider_linux
 path_provider_platform_interface
 path_provider_windows
