@@ -1,3 +1,6 @@
+import 'package:provider/provider.dart';
+import '../../../../core/providers/school_admin_provider.dart';
+import '../../../../core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 
 class PageClasses extends StatefulWidget {
@@ -1455,11 +1458,64 @@ class _PageClassesState extends State<PageClasses>
               const SizedBox(width: 6),
               _actionBtn(label: 'Students', icon: Icons.people_outline_rounded, accentColor: const Color(0xFF1A237E), onTap: () => _showClassDetails(c)),
               const SizedBox(width: 6),
+              _actionBtn(label: 'Edit', icon: Icons.edit_outlined, accentColor: const Color(0xFF5C6BC0), onTap: () => _showEditClassDialog(c)),
+              const SizedBox(width: 6),
               _deleteBtn(() => _confirmDelete('Class', c, () => widget.onDeleteClass(c))),
             ],
           ),
         );
       },
+    );
+  }
+
+
+  void _showEditClassDialog(Map<String, dynamic> c) {
+    final nameCtrl = TextEditingController(text: c['name'] ?? '');
+    final sectionCtrl = TextEditingController(text: c['section'] ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Class', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Class Name *', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: sectionCtrl,
+              decoration: const InputDecoration(labelText: 'Section', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+            onPressed: () async {
+              final data = {
+                'name': nameCtrl.text.trim(),
+                'section': sectionCtrl.text.trim(),
+              };
+              try {
+                await DbProxy.instance.from('classes').eq('id', c['id']).update(data);
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  context.read<SchoolAdminProvider>().reloadData();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Class updated!'), backgroundColor: Colors.green));
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
     );
   }
 
