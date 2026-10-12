@@ -5,7 +5,8 @@ import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import "package:supabase_flutter/supabase_flutter.dart";
+import "package:share_plus/share_plus.dart";
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'teacher_edit_profile_sheet.dart';
 
@@ -106,11 +107,8 @@ class _PageTeachersState extends State<PageTeachers> {
         buffer.writeln(row.join(','));
       }
       final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
-      final url = html.Url.createObjectUrlFromBlob(blob);
       final suffix = _searchQuery.isNotEmpty ? '_filtered' : '';
-      final anchor = html.AnchorElement(href: url)..setAttribute('download', 'teachers${suffix}.csv')..click();
-      html.Url.revokeObjectUrl(url);
+      Share.shareXFiles([XFile.fromData(bytes, name: 'teachers$suffix.csv', mimeType: 'text/csv')]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

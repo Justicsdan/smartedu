@@ -1,25 +1,12 @@
-import 'dart:html' as html;
+import 'dart:typed_data';
+import 'package:share_plus/share_plus.dart';
 
-void downloadCsv(List<String> headers, List<dynamic> rows, String fileName) {
-  String escape(dynamic field) {
-    final s = field?.toString() ?? '';
-    if (s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r')) {
-      return '"${s.replaceAll('"', '""')}"';
-    }
-    return s;
-  }
+void downloadCsv(List<String> headers, List<List<dynamic>> rows, [String fileName = 'report.csv']) {
   final buffer = StringBuffer();
-  buffer.writeln(headers.map(escape).join(','));
+  buffer.writeln(headers.join(','));
   for (final row in rows) {
-    if (row is List) {
-      buffer.writeln(row.map(escape).join(','));
-    }
+    buffer.writeln(row.map((e) => e?.toString() ?? '').join(','));
   }
-  final bytes = buffer.toString().codeUnits;
-  final blob = html.Blob([bytes], 'text/csv');
-  final url = html.Url.createObjectUrl(blob);
-  final anchor = html.AnchorElement(href: url)
-    ..setAttribute('download', fileName)
-    ..click();
-  html.Url.revokeObjectUrl(url);
+  final bytes = Uint8List.fromList(buffer.toString().codeUnits);
+  Share.shareXFiles([XFile.fromData(bytes, name: fileName, mimeType: 'text/csv')]);
 }

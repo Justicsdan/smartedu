@@ -69,15 +69,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
     if (_isPickingImage) return;
     setState(() => _isPickingImage = true);
     try {
-      final input = html.FileUploadInputElement()..accept = 'image/*';
-      input.click();
-      await input.onChange.first;
-      if (input.files!.isEmpty) return;
-      final file = input.files![0];
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(file);
-      await reader.onLoadEnd.first;
-      final bytes = reader.result as Uint8List?;
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+      final bytes = await image.readAsBytes();
+      final file = image;
       if (bytes != null) {
         setState(() {
           _pickedBytes = bytes;

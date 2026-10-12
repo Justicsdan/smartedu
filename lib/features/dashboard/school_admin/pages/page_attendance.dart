@@ -1,3 +1,4 @@
+import "package:share_plus/share_plus.dart";
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';

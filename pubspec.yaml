@@ -35,7 +35,7 @@ dependencies:
   supabase_flutter: ^2.12.2
   
   # Image Handling
-  image_picker: ^1.2.1
+  image_picker: ^1.2.3
   
   # AI Chatbot
   google_generative_ai: ^0.4.7
@@ -50,10 +50,13 @@ dependencies:
   cached_network_image: ^3.4.1
   
   # File export path — PDF result sheets need a save location
-  path_provider: ^2.1.4
+  path_provider: ^2.1.6
   
   # Storage permissions — Android/iOS require this for saving PDFs
   permission_handler: ^11.3.1
+  share_plus: ^13.3.1
+  file_picker: ^13.1.0
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

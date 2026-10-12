@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
@@ -781,6 +782,7 @@ class _StudentEditSheet extends StatefulWidget {
 class _StudentEditSheetState extends State<_StudentEditSheet> {
   String? _passportUrl;
   String? _selectedGender;
+  String? _selectedClassId;
   bool _saving = false;
   bool _uploading = false;
   final Map<String, String> _form = {};
@@ -802,6 +804,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
     if (g.isNotEmpty) {
       _selectedGender = g[0].toUpperCase() + g.substring(1).toLowerCase();
     }
+    _selectedClassId = _val('class_id').isNotEmpty ? _val('class_id') : null;
   }
 
   void _showErrorDialog(String title, String message) {
@@ -825,38 +828,14 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
     if (_uploading) return;
     setState(() => _uploading = true);
     try {
-      final input = html.FileUploadInputElement()..accept = 'image/*';
-      html.document.body?.append(input);
-      input.click();
-      await input.onChange.first;
-      final files = input.files;
-      input.remove();
-      if (files == null || files.isEmpty) {
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null) {
         if (mounted) setState(() => _uploading = false);
         return;
       }
-      final file = files.first;
-      debugPrint('PASSPORT UPLOAD: file picked: ' + file.name + ', size: ' + file.size.toString());
-      final reader = html.FileReader();
-      final readCompleter = Completer<Uint8List>();
-      reader.onLoadEnd.listen((_) {
-        final result = reader.result;
-        if (result is Uint8List) {
-          readCompleter.complete(result);
-        } else if (result is ByteBuffer) {
-          readCompleter.complete(Uint8List.view(result));
-        } else {
-          readCompleter.completeError('FileReader returned unexpected type: ' + result.runtimeType.toString());
-        }
-      });
-      reader.onError.listen((e) {
-        readCompleter.completeError('FileReader error: ' + e.toString());
-      });
-      reader.readAsArrayBuffer(file);
-      final bytes = await readCompleter.future;
-      debugPrint('PASSPORT UPLOAD: bytes read: ' + bytes.length.toString());
+      final bytes = await image.readAsBytes();
       final studentId = widget.student['id'].toString();
-      final ext = file.name.split('.').last.toLowerCase();
+      final ext = image.name.split('.').last.toLowerCase();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final storagePath = 'students/' + studentId + '/' + timestamp.toString() + '.' + ext;
       final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
@@ -864,6 +843,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
       final mimeMap = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'gif': 'gif', 'webp': 'webp'};
       final mime = mimeMap[ext] ?? 'jpeg';
       final uploadUrl = supabaseUrl + '/storage/v1/object/passports/' + storagePath;
+      
       final uploadRes = await http.post(
         Uri.parse(uploadUrl),
         headers: {
@@ -873,11 +853,13 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
         },
         body: bytes,
       );
+      
       if (uploadRes.statusCode != 200 && uploadRes.statusCode != 201) {
         throw Exception('Storage upload failed (' + uploadRes.statusCode.toString() + '): ' + uploadRes.body);
       }
+      
       final publicUrl = supabaseUrl + '/storage/v1/object/public/passports/' + storagePath;
-      debugPrint('PASSPORT UPLOAD: success, url: ' + publicUrl);
+      
       if (mounted) {
         setState(() {
           _passportUrl = publicUrl;
@@ -886,7 +868,6 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
       }
     } catch (e, stack) {
       debugPrint('PASSPORT UPLOAD ERROR: ' + e.toString());
-      debugPrint('PASSPORT UPLOAD STACK: ' + stack.toString());
       if (mounted) {
         setState(() => _uploading = false);
         _showErrorDialog('Upload Failed', e.toString());
@@ -912,6 +893,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
       if (_form.containsKey('parent_occupation')) data['parent_occupation'] = _form['parent_occupation'];
       if (_form.containsKey('home_address')) data['home_address'] = _form['home_address'];
       if (_passportUrl != null) data['passport_url'] = _passportUrl;
+      if (_selectedClassId != null) data['class_id'] = _selectedClassId;
 
       if (data.isNotEmpty) {
         await DbProxy.instance.from('students').eq('id', widget.student['id']).update(data);
@@ -919,8 +901,8 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        // Force the provider to reload students from the database so the UI updates instantly
         context.read<SchoolAdminProvider>().reloadData();
+        widget.onSave();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Student updated!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           backgroundColor: Color(0xFF2E7D32),
@@ -1065,6 +1047,36 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                   ),
                   const SizedBox(height: 12),
                   _field('Date of Birth', 'date_of_birth', hint: 'YYYY-MM-DD'),
+                  const SizedBox(height: 20),
+                  _sectionHeader('Class Assignment', Icons.class_rounded, const Color(0xFFF3E5F5), const Color(0xFF7B1FA2)),
+                  const SizedBox(height: 12),
+                  Consumer<SchoolAdminProvider>(
+                    builder: (context, p, _) {
+                      return DropdownButtonFormField<String>(
+                        value: _selectedClassId,
+                        decoration: InputDecoration(
+                          labelText: 'Class',
+                          labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          border: const OutlineInputBorder(),
+                          enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))),
+                          focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF1A237E), width: 2)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          isDense: true,
+                        ),
+                        items: p.classes.map((c) {
+                          final n = c['name'] ?? '';
+                          final s = c['section'] ?? '';
+                          return DropdownMenuItem<String>(
+                            value: c['id'].toString(),
+                            child: Text(n + (s.isNotEmpty ? ' ' + s : ''), style: const TextStyle(fontSize: 13)),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setState(() => _selectedClassId = v),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 20),
                   _sectionHeader('Parent / Guardian', Icons.family_restroom_rounded, const Color(0xFFF0FFF4), const Color(0xFF2E7D32)),
                   const SizedBox(height: 12),

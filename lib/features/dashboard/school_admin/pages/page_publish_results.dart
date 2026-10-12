@@ -1,5 +1,8 @@
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -735,10 +738,10 @@ class _PagePublishResultsState extends State<PagePublishResults> {
           '<div class="no-print" style="position:fixed;top:10px;right:10px;z-index:999"><button onclick="window.print()" style="padding:10px 24px;background:#1A237E;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2)">Print All Cards</button></div>'
           '${cards.join("")}'
           '</body></html>';
-      final blob = html.Blob([h], 'text/html');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.window.open(url, '_blank');
-      html.Url.revokeObjectUrl(url);
+      final dir = await getTemporaryDirectory();
+      final file = File('\${dir.path}/result_sheet.html');
+      await file.writeAsString(h);
+      await Share.shareXFiles([XFile(file.path, mimeType: 'text/html')]);
     } catch (e) {
       debugPrint('Print err: $e');
       _snack('Print error: $e', success: false);
