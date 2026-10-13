@@ -727,113 +727,17 @@ class _PageCbtState extends State<PageCbt> {
 
 
 
-  Future<List<Map<String, dynamic>>> _fetchAttempts(String examId) async {
-    final res = await DbProxy.instance.from('cbt_attempts')
-        .select('id, score, total_marks, is_submitted, student_id')
-        .eq('exam_id', examId)
-        .order('score', ascending: false)
-        .get();
-    return res;
-  }
-
-  void _showAttemptsDialog(Map<String, dynamic> e) async {
+  void _showAttemptsDialog(Map<String, dynamic> e) {
     final examId = e['id']?.toString() ?? '';
     if (examId.isEmpty) return;
     final p = context.read<SchoolAdminProvider>();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Attempts for '${e['title']}'", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: 450,
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _fetchAttempts(examId),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError || snapshot.data == null) {
-                return const Text('Failed to load attempts.');
-              }
-              final attempts = snapshot.data!;
-              if (attempts.isEmpty) {
-                return const Center(child: Text('No students have taken this exam yet.'));
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: attempts.length,
-                itemBuilder: (context, index) {
-                  final att = attempts[index];
-                  final studentId = att['student_id']?.toString() ?? '';
-                  
-                  String name = 'Unknown Student';
-                  if (studentId.isNotEmpty) {
-                    try {
-                      final student = p.students.firstWhere((s) => s['id'].toString() == studentId);
-                      final firstName = (student['first_name'] ?? '').toString().trim();
-                      final lastName = (student['last_name'] ?? '').toString().trim();
-                      name = '$firstName $lastName'.trim();
-                      if (name.isEmpty) name = 'Unknown Student';
-                    } catch (_) {
-                      name = 'Student ID: $studentId';
-                    }
-                  }
-                  
-                  final score = att['score'] ?? 0;
-                  final total = att['total_marks'] ?? 0;
-                  final isSubmitted = att['is_submitted'] == true;
-                  
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF1A237E),
-                      child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(isSubmitted ? 'Submitted' : 'In Progress', style: TextStyle(fontSize: 12, color: isSubmitted ? Colors.green : Colors.orange)),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A237E).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '$score / $total',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
-                          ),
-                        ),
-                        if (!isSubmitted)
-                          TextButton(
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 20)),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => _MonitorStudentScreen(
-                                examId: examId,
-                                studentId: studentId,
-                                studentName: name,
-                                schoolName: p.schoolName,
-                              )));
-                            },
-                            child: const Text('Monitor Video', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (ctx) => _AttemptsDialog(
+        examId: examId,
+        examTitle: e['title'] ?? 'CBT Exam',
+        provider: p,
       ),
     );
   }
