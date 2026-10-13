@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
@@ -985,7 +986,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                             color: Colors.grey.shade100,
                           ),
                           child: _passportUrl != null && _passportUrl!.isNotEmpty
-                              ? ClipOval(child: Image.network(_passportUrl!, width: 90, height: 90, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _avatarPlaceholder(isFemale)))
+                              ? ClipOval(child: CachedNetworkImage(imageUrl: '${_passportUrl!}?width=100&height=100', width: 90, height: 90, fit: BoxFit.cover, errorWidget: (_, __, ___) => _avatarPlaceholder(isFemale)))
                               : _avatarPlaceholder(isFemale),
                         ),
                         Positioned(

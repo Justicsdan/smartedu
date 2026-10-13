@@ -1,5 +1,6 @@
 import 'pages/student_live_class_page.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
@@ -111,7 +112,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             child: Column(
               children: [
                 _buildTopBar(isSmall),
-                Expanded(child: InteractiveViewer(minScale: 1.0, maxScale: 3.0, child: _buildCurrentPage())),
+                Expanded(child: _buildCurrentPage()),
               ],
             ),
           ),
@@ -142,7 +143,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: provider.schoolLogoUrl.isNotEmpty
-                            ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 36, height: 36, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 22)))
+                            ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.schoolLogoUrl}?width=80&height=80', width: 36, height: 36, fit: BoxFit.cover, errorWidget: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 22)))
                             : const Icon(Icons.school, color: Colors.white, size: 22),
                       ),
                       const SizedBox(width: 12),
@@ -359,7 +360,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               GestureDetector(
                 onTap: () => setState(() => _selectedIndex = 8),
                 child: provider.passportUrl.isNotEmpty
-                    ? ClipOval(child: Image.network(provider.passportUrl, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()))
+                    ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.passportUrl}?width=80&height=80', width: 48, height: 48, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox()))
                     : CircleAvatar(
                         radius: 24,
                         backgroundColor:
@@ -439,7 +440,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     return Row(
                       children: [
                         provider.schoolLogoUrl.isNotEmpty
-                            ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 36, height: 36, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 24)))
+                            ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.schoolLogoUrl}?width=80&height=80', width: 36, height: 36, fit: BoxFit.cover, errorWidget: (_, __, ___) => const Icon(Icons.school, color: Colors.white, size: 24)))
                             : const Icon(Icons.school, color: Colors.white, size: 24),
                         const SizedBox(width: 12),
                         Expanded(

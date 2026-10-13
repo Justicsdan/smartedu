@@ -22,7 +22,7 @@ mixin AdminAuthMixin on BaseProvider {
 
       return true;
     } catch (e) {
-      print('Error changing admin password: $e');
+      //print('Error changing admin password: $e');
       return false;
     }
   }
@@ -44,7 +44,7 @@ mixin AdminAuthMixin on BaseProvider {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error resetting teacher password: $e');
+      //print('Error resetting teacher password: $e');
       return false;
     }
   }
@@ -66,7 +66,7 @@ mixin AdminAuthMixin on BaseProvider {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error resetting student PIN: $e');
+      //print('Error resetting student PIN: $e');
       return false;
     }
   }

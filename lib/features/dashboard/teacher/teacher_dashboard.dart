@@ -3,6 +3,7 @@ import "pages/teacher_live_class_page.dart";
 // File: lib/features/dashboard/teacher/teacher_dashboard.dart
 // ==========================================
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -137,7 +138,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             child: Column(
               children: [
                 _buildTopBar(provider, navItems, isSmall),
-                Expanded(child: InteractiveViewer(minScale: 1.0, maxScale: 3.0, child: _buildCurrentPage())),
+                Expanded(child: _buildCurrentPage()),
               ],
             ),
           ),
@@ -187,7 +188,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               child: Row(
                 children: [
                   provider.schoolLogoUrl.isNotEmpty
-                      ? ClipOval(child: Image.network(provider.schoolLogoUrl, width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()))
+                      ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.schoolLogoUrl}?width=80&height=80', width: 40, height: 40, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox()))
                       : Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
@@ -751,7 +752,7 @@ class _TeacherHomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 provider.passportUrl.isNotEmpty
-                    ? ClipOval(child: Image.network(provider.passportUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(width: 64, height: 64)))
+                    ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.passportUrl}?width=80&height=80', width: 64, height: 64, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox(width: 64, height: 64)))
                     : CircleAvatar(
                         radius: 32,
                         backgroundColor: Colors.white.withOpacity(0.15),

@@ -18,7 +18,7 @@ mixin TeacherCbtMixin on TeacherBase {
       _myCbtExams = List<Map<String, dynamic>>.from(r);
       notifyListeners();
     } catch (e) {
-      print('Error loading CBT exams: $e');
+      //print('Error loading CBT exams: $e');
     }
   }
 
@@ -33,7 +33,7 @@ mixin TeacherCbtMixin on TeacherBase {
         a['class_id']?.toString() == classId &&
         a['subject_id']?.toString() == subjectId);
     if (!isAssigned) {
-      print('CBT blocked: teacher not assigned to class $classId subject $subjectId');
+      //print('CBT blocked: teacher not assigned to class $classId subject $subjectId');
       return null;
     }
     try {
@@ -50,7 +50,7 @@ mixin TeacherCbtMixin on TeacherBase {
       await loadMyCbtExams();
       return _myCbtExams.isNotEmpty ? _myCbtExams.first : null;
     } catch (e) {
-      print('Error creating CBT exam: $e');
+      //print('Error creating CBT exam: $e');
       return null;
     }
   }
@@ -130,7 +130,7 @@ mixin TeacherCbtMixin on TeacherBase {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error adding question: $e');
+      //print('Error adding question: $e');
       return false;
     }
   }
@@ -175,7 +175,7 @@ mixin TeacherCbtMixin on TeacherBase {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error updating question: $e');
+      //print('Error updating question: $e');
       return false;
     }
   }
@@ -217,7 +217,7 @@ mixin TeacherCbtMixin on TeacherBase {
       await loadQuestions(examId);
       return true;
     } catch (e) {
-      print('Error bulk importing: $e');
+      //print('Error bulk importing: $e');
       return false;
     }
   }

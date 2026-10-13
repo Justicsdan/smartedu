@@ -347,7 +347,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
       }
       return true;
     } catch (e) {
-      print('Promotion error: $e');
+      //print('Promotion error: $e');
       return false;
     }
   }
@@ -411,7 +411,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
       logAudit(action: 'auto_promote', tableName: 'students', newData: {'promoted': promotedCount, 'graduated': graduatedCount, 'held_back': heldBackCount});
       return true;
     } catch (e) {
-      print('Auto promotion error: $e');
+      //print('Auto promotion error: $e');
       return false;
     }
   }

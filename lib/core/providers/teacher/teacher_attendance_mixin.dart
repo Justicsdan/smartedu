@@ -15,7 +15,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
   }) async {
     if (currentSession == null || currentTerm == null) return false;
     if (!_canAccessClass(classId)) {
-      print('Attendance blocked: teacher not assigned to class $classId');
+      //print('Attendance blocked: teacher not assigned to class $classId');
       return false;
     }
     const valid = {'present', 'absent', 'late', 'excused'};
@@ -41,7 +41,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
           .upsert(rows, onConflict: 'student_id,class_id,session_id,term_id,date');
       return true;
     } catch (e) {
-      print('Error marking attendance: $e');
+      //print('Error marking attendance: $e');
       return false;
     }
   }
@@ -63,7 +63,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
           .eq('date', date)
           .get();
     } catch (e) {
-      print('Error fetching attendance: $e');
+      //print('Error fetching attendance: $e');
       return [];
     }
   }
@@ -109,7 +109,7 @@ mixin TeacherAttendanceMixin on TeacherBase {
       return m.values.toList()
         ..sort((a, b) => (a['last_name'] as String).compareTo(b['last_name'] as String));
     } catch (e) {
-      print('Error fetching attendance summary: $e');
+      //print('Error fetching attendance summary: $e');
       return [];
     }
   }

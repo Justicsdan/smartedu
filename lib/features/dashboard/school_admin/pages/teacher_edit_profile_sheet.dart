@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
@@ -119,7 +120,7 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
       }
     } catch (e) {
       if (mounted) {
-        print('TEACHER EDIT ERROR: $e');
+        //print('TEACHER EDIT ERROR: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
@@ -167,7 +168,7 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
       }
     } catch (e) {
       if (mounted) {
-        print('TEACHER SAVE ERROR: $e');
+        //print('TEACHER SAVE ERROR: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
@@ -230,11 +231,11 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
                     children: [
                       ClipOval(
                         child: _photo.isNotEmpty
-                            ? Image.network(_photo,
+                            ? CachedNetworkImage(imageUrl: '$_photo?width=100&height=100',
                                 width: 88,
                                 height: 88,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorWidget: (_, __, ___) => Container(
                                     width: 88,
                                     height: 88,
                                     color: Colors.grey.shade100,

@@ -6,6 +6,7 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/db_proxy.dart';
@@ -791,10 +792,10 @@ class _PageSettingsState extends State<PageSettings>
                   child: provider.schoolLogoUrl.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Image.network(
+                          child: CachedNetworkImage(imageUrl: 
                             provider.schoolLogoUrl,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) =>
+                            errorWidget: (_, __, ___) =>
                                 _logoPlaceholder(),
                           ),
                         )

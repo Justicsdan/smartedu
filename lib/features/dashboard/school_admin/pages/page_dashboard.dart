@@ -2,6 +2,7 @@
 // File: lib/features/dashboard/school_admin/pages/page_dashboard.dart
 // ==========================================
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/db_proxy.dart';
 import '../../../../core/providers/school_admin_provider.dart';
@@ -126,10 +127,10 @@ class _PageDashboardState extends State<PageDashboard> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
-                        child: Image.network(
+                        child: CachedNetworkImage(imageUrl: 
                           widget.schoolUrl,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.school, size: 60, color: Color(0xFF1A237E)),
+                          errorWidget: (context, error, stackTrace) => const Icon(Icons.school, size: 60, color: Color(0xFF1A237E)),
                         ),
                       ),
                     ),

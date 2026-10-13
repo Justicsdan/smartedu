@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -880,9 +881,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
       );
     }
     if (_passportUrlPreview != null)
-      return Image.network(_passportUrlPreview!,
+      return CachedNetworkImage(imageUrl: '${_passportUrlPreview!}?width=100&height=100',
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
+          errorWidget: (_, __, ___) =>
               _photoPlaceholder());
     return _photoPlaceholder();
   }

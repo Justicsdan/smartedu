@@ -735,7 +735,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
           '.gk th{background:#1E293B;color:white;font-size:9px;padding:5px 8px}.gk td{padding:4px 8px;font-size:10px;border-bottom:1px solid #F3F4F6;text-align:center}'
           '.sg2{display:flex;justify-content:space-between;margin-top:30px;padding:0 40px}.s{text-align:center;width:150px}.sl2{border-top:1px solid #111;margin-top:40px}.s div:last-child{font-size:10px;margin-top:4px;color:#374151}'
           '.si2{height:40px;margin-bottom:4px}</style></head><body>'
-          '<div class="no-print" style="position:fixed;top:10px;right:10px;z-index:999"><button onclick="window.print()" style="padding:10px 24px;background:#1A237E;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2)">Print All Cards</button></div>'
+          '<div class="no-print" style="position:fixed;top:10px;right:10px;z-index:999"><button onclick="window.//print()" style="padding:10px 24px;background:#1A237E;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2)">Print All Cards</button></div>'
           '${cards.join("")}'
           '</body></html>';
       final dir = await getTemporaryDirectory();

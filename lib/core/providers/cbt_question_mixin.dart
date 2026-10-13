@@ -12,7 +12,7 @@ mixin CbtQuestionMixin on BaseProvider {
       notifyListeners();
       return _cbtQuestions;
     } catch (e) {
-      print('Error loading CBT questions: $e');
+      //print('Error loading CBT questions: $e');
       return [];
     }
   }
@@ -52,7 +52,7 @@ mixin CbtQuestionMixin on BaseProvider {
       notifyListeners();
       return null;
     } catch (e) {
-      print('Error adding CBT question: $e');
+      //print('Error adding CBT question: $e');
       return null;
     }
   }
@@ -69,7 +69,7 @@ mixin CbtQuestionMixin on BaseProvider {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error updating CBT question: $e');
+      //print('Error updating CBT question: $e');
       return false;
     }
   }
@@ -82,7 +82,7 @@ mixin CbtQuestionMixin on BaseProvider {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error deleting CBT question: $e');
+      //print('Error deleting CBT question: $e');
       return false;
     }
   }
@@ -94,7 +94,7 @@ mixin CbtQuestionMixin on BaseProvider {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error deleting all CBT questions: $e');
+      //print('Error deleting all CBT questions: $e');
       return false;
     }
   }
@@ -110,13 +110,13 @@ mixin CbtQuestionMixin on BaseProvider {
       int inserted = 0;
       for (int i = 0; i < rows.length; i++) {
         try { rows[i]['question_order'] = i + 1; await DbProxy.instance.from('cbt_questions').insert(rows[i]); inserted++; }
-        catch (e) { print('Bulk insert failed at row ' + i.toString() + ': ' + e.toString()); }
+        catch (e) { /* print removed */ }
       }
       await loadCbtQuestions(examId);
       logAudit(action: 'bulk_import', tableName: 'cbt_questions', newData: {'exam_id': examId, 'count': data.length});
       return true;
     } catch (e) {
-      print('Error bulk importing CBT questions: $e');
+      //print('Error bulk importing CBT questions: $e');
       return false;
     }
   }

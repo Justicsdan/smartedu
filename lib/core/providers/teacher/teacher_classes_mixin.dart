@@ -96,7 +96,7 @@ mixin TeacherClassesMixin on TeacherBase {
             }
             _isSubjectTeacher = _mySubjectAssignments.isNotEmpty;
           } catch (e) {
-            print('Error loading PRIMARY subjects: $e');
+            //print('Error loading PRIMARY subjects: $e');
           }
         }
       }
@@ -129,7 +129,7 @@ mixin TeacherClassesMixin on TeacherBase {
 
       _myClasses = classMap.values.toList();
     } catch (e) {
-      print('Error detecting roles: $e');
+      //print('Error detecting roles: $e');
       _isFormMaster = false;
       _isSubjectTeacher = false;
       _formTeacherClass = null;
@@ -156,7 +156,7 @@ mixin TeacherClassesMixin on TeacherBase {
           .get();
       _studentsInMyClasses = r;
     } catch (e) {
-      print('Error loading my students: $e');
+      //print('Error loading my students: $e');
       _studentsInMyClasses = [];
     }
   }

@@ -3,6 +3,7 @@
 // ==========================================
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -106,7 +107,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                       child: _logoBase64.isNotEmpty
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(55),
-                              child: Image.network(_logoBase64, fit: BoxFit.cover),
+                              child: CachedNetworkImage(imageUrl: _logoBase64, fit: BoxFit.cover),
                             )
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,

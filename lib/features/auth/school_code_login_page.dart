@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 class SchoolCodeLoginPage extends StatefulWidget {
@@ -63,7 +64,7 @@ class _SchoolCodeLoginPageState extends State<SchoolCodeLoginPage>
           Positioned(top: sz.height * 0.3, left: sz.width * 0.1, child: _orb(160, _primary, 0.06)),
           if (logoUrl.isNotEmpty)
             Positioned.fill(
-              child: Opacity(opacity: 0.03, child: Center(child: Image.network(logoUrl, width: 350, height: 350, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink()))),
+              child: Opacity(opacity: 0.03, child: Center(child: CachedNetworkImage(imageUrl: logoUrl, width: 350, height: 350, fit: BoxFit.contain, errorWidget: (_, __, ___) => const SizedBox.shrink()))),
             ),
           Positioned.fill(
             child: SafeArea(
@@ -159,7 +160,7 @@ class _SchoolCodeLoginPageState extends State<SchoolCodeLoginPage>
       ),
       clipBehavior: Clip.antiAlias,
       child: url.isNotEmpty
-          ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover))
+          ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, errorWidget: (_, __, ___) => Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover))
           : Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover),
     );
   }

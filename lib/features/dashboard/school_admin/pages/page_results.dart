@@ -381,7 +381,7 @@ tr:nth-child(even) td{background:#F9FAFB}
 .no-print{margin-bottom:10px}
 @media print{.no-print{display:none}}
 </style></head><body>
-<div class="no-print"><button onclick="window.print()" style="padding:8px 20px;background:#1A237E;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer">Print This Sheet</button></div>
+<div class="no-print"><button onclick="window.//print()" style="padding:8px 20px;background:#1A237E;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer">Print This Sheet</button></div>
 <div class="header"><div class="school-name">$schoolName</div>${schoolLogo.isNotEmpty ? '<img class="logo" src="$schoolLogo"/>' : ''}</div>
 <div class="info"><div>Class: <span>$className</span>${tier.isNotEmpty ? ' [$tier]' : ''}</div><div>Subject: <span>$subjectName</span></div><div>Session: <span>$sessionName</span></div><div>Term: <span>$termName</span></div><div>Total: <span>$_totalMaxScore</span></div></div>
 <table><thead><tr><th style="width:35px">#</th><th style="width:180px;text-align:left">Student Name</th>$thCells<th style="width:65px">Total</th><th style="width:55px">Grade</th></tr></thead>

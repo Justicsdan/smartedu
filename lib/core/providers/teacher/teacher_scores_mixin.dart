@@ -40,7 +40,7 @@ mixin TeacherScoresMixin on TeacherBase {
       _myScores = r;
       notifyListeners();
     } catch (e) {
-      print('Error loading scores: $e');
+      //print('Error loading scores: $e');
       _myScores = [];
     }
   }
@@ -54,7 +54,7 @@ mixin TeacherScoresMixin on TeacherBase {
       await loadMyScores();
       return true;
     } catch (e) {
-      print('Error saving score: $e');
+      //print('Error saving score: $e');
       return false;
     }
   }
