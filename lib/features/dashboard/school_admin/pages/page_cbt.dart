@@ -1,6 +1,8 @@
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:smartedu/core/providers/school_admin_provider.dart";
+import "../../../../core/services/db_proxy.dart";
+import "../../../../widgets/jitsi_embed_view.dart";
 
 class PageCbt extends StatefulWidget {
   final List<Map<String, dynamic>> classes, subjects;
@@ -44,6 +46,35 @@ class _PageCbtState extends State<PageCbt> {
     final secs = seconds % 60;
     if (secs == 0) return "${mins}min";
     return "${mins}m ${secs}s";
+  }
+
+  Map<String, int> _attemptCounts = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAttemptCounts();
+  }
+
+  Future<void> _loadAttemptCounts() async {
+    final p = context.read<SchoolAdminProvider>();
+    if (p.cbtExams.isEmpty) return;
+    try {
+      final examIds = p.cbtExams.map((e) => e['id'].toString()).toList();
+      final res = await DbProxy.instance.from('cbt_attempts')
+          .select('exam_id')
+          .inFilter('exam_id', examIds)
+          .get();
+      
+      final counts = <String, int>{};
+      for (var row in res) {
+        final id = row['exam_id']?.toString();
+        if (id != null) {
+          counts[id] = (counts[id] ?? 0) + 1;
+        }
+      }
+      if (mounted) setState(() => _attemptCounts = counts);
+    } catch (_) {}
   }
 
   SchoolAdminProvider get _p => context.read<SchoolAdminProvider>();
@@ -694,6 +725,119 @@ class _PageCbtState extends State<PageCbt> {
     );
   }
 
+
+
+  Future<List<Map<String, dynamic>>> _fetchAttempts(String examId) async {
+    final res = await DbProxy.instance.from('cbt_attempts')
+        .select('id, score, total_marks, is_submitted, student_id')
+        .eq('exam_id', examId)
+        .order('score', ascending: false)
+        .get();
+    return res;
+  }
+
+  void _showAttemptsDialog(Map<String, dynamic> e) async {
+    final examId = e['id']?.toString() ?? '';
+    if (examId.isEmpty) return;
+    final p = context.read<SchoolAdminProvider>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Attempts for '${e['title']}'", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 450,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _fetchAttempts(examId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError || snapshot.data == null) {
+                return const Text('Failed to load attempts.');
+              }
+              final attempts = snapshot.data!;
+              if (attempts.isEmpty) {
+                return const Center(child: Text('No students have taken this exam yet.'));
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: attempts.length,
+                itemBuilder: (context, index) {
+                  final att = attempts[index];
+                  final studentId = att['student_id']?.toString() ?? '';
+                  
+                  String name = 'Unknown Student';
+                  if (studentId.isNotEmpty) {
+                    try {
+                      final student = p.students.firstWhere((s) => s['id'].toString() == studentId);
+                      final firstName = (student['first_name'] ?? '').toString().trim();
+                      final lastName = (student['last_name'] ?? '').toString().trim();
+                      name = '$firstName $lastName'.trim();
+                      if (name.isEmpty) name = 'Unknown Student';
+                    } catch (_) {
+                      name = 'Student ID: $studentId';
+                    }
+                  }
+                  
+                  final score = att['score'] ?? 0;
+                  final total = att['total_marks'] ?? 0;
+                  final isSubmitted = att['is_submitted'] == true;
+                  
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFF1A237E),
+                      child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(isSubmitted ? 'Submitted' : 'In Progress', style: TextStyle(fontSize: 12, color: isSubmitted ? Colors.green : Colors.orange)),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A237E).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$score / $total',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
+                          ),
+                        ),
+                        if (!isSubmitted)
+                          TextButton(
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 20)),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => _MonitorStudentScreen(
+                                examId: examId,
+                                studentId: studentId,
+                                studentName: name,
+                                schoolName: p.schoolName,
+                              )));
+                            },
+                            child: const Text('Monitor Video', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildExamCard(
     Map<String, dynamic> e,
     String examId,
@@ -794,12 +938,36 @@ class _PageCbtState extends State<PageCbt> {
               ),
               const SizedBox(width: 8),
             ],
+            if (_attemptCounts.containsKey(examId)) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "${_attemptCounts[examId]} Attempts",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             Icon(
               isExpanded ? Icons.expand_less : Icons.expand_more,
               size: 20,
               color: Colors.grey.shade600,
             ),
             const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.people_alt_outlined,
+                  size: 20, color: const Color(0xFF1A237E)),
+              tooltip: 'View Attempts',
+              onPressed: () => _showAttemptsDialog(e),
+            ),
             IconButton(
               icon: const Icon(Icons.sync_alt_rounded,
                   size: 20, color: Colors.blue),
@@ -1304,6 +1472,38 @@ class _PageCbtState extends State<PageCbt> {
             child: const Text("Delete"),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MonitorStudentScreen extends StatelessWidget {
+  final String examId;
+  final String studentId;
+  final String studentName;
+  final String schoolName;
+
+  const _MonitorStudentScreen({
+    required this.examId,
+    required this.studentId,
+    required this.studentName,
+    required this.schoolName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final roomName = 'smartedu_proctor_${examId}_$studentId'.replaceAll('-', '');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Monitoring: $studentName', style: const TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A237E),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: JitsiEmbedView(
+        roomName: roomName,
+        userDisplayName: 'Proctor',
+        schoolName: schoolName,
+        isProctoring: true, // Disable chat/screenshare for proctor too
       ),
     );
   }

@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-Widget buildJitsiView(String roomName, String userDisplayName, String schoolName) {
-  final String jitsiUrl = 
+Widget buildJitsiView(String roomName, String userDisplayName, String schoolName, bool isProctoring) {
+  String jitsiUrl = 
       'https://meet.jit.si/$roomName'
       '?userInfo.displayName="$userDisplayName"'
       '&config.prejoinPageEnabled=false'
+      '&config.disableDeepLinking=true'
       '&interfaceConfig.SHOW_JITSI_WATERMARK=false'
-      '&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false'
-      '&interfaceConfig.TOOLBAR_BUTTONS=["microphone","camera","desktop","chat","raisehand","tileview"]';
+      '&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false';
+
+    if (isProctoring) {
+      // Exam Mode: Student mic muted (to prevent talking), camera on, chat enabled for technical issues.
+      // The Teacher's mic is NOT muted, so they can speak to the student directly!
+      jitsiUrl += '&config.startWithVideoMuted=false'
+                  '&config.startWithAudioMuted=true'
+                  '&interfaceConfig.TOOLBAR_BUTTONS=["microphone","camera","chat"]';
+    } else {
+      // Class Mode: Tile view, raise hand, normal controls
+      jitsiUrl += '&interfaceConfig.TOOLBAR_BUTTONS=["microphone","camera","desktop","chat","raisehand","tileview"]'
+                  '&config.startWithVideoMuted=false'
+                  '&config.startWithAudioMuted=false';
+    }
 
   final controller = WebViewController()
     ..setJavaScriptMode(JavaScriptMode.unrestricted)

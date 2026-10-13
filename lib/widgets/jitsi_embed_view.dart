@@ -6,12 +6,14 @@ class JitsiEmbedView extends StatelessWidget {
   final String roomName;
   final String userDisplayName;
   final String schoolName;
+  final bool isProctoring;
 
   const JitsiEmbedView({
     Key? key,
     required this.roomName,
     required this.userDisplayName,
     required this.schoolName,
+    this.isProctoring = false,
   }) : super(key: key);
 
   @override
