@@ -11,11 +11,11 @@ Widget buildJitsiView(String roomName, String userDisplayName, String schoolName
       '&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false';
 
     if (isProctoring) {
-      // Exam Mode: Student mic muted (to prevent talking), camera on, chat enabled for technical issues.
-      // The Teacher's mic is NOT muted, so they can speak to the student directly!
+      // Exam Mode: Student mic muted, camera on. Chat removed to prevent full-screen overlay covering the exam.
+      // "Raise Hand" is enabled so the student can signal the teacher for help.
       jitsiUrl += '&config.startWithVideoMuted=false'
                   '&config.startWithAudioMuted=true'
-                  '&interfaceConfig.TOOLBAR_BUTTONS=["microphone","camera","chat"]';
+                  '&interfaceConfig.TOOLBAR_BUTTONS=["camera","raisehand"]';
     } else {
       // Class Mode: Tile view, raise hand, normal controls
       jitsiUrl += '&interfaceConfig.TOOLBAR_BUTTONS=["microphone","camera","desktop","chat","raisehand","tileview"]'

@@ -134,11 +134,40 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
     _fetchScheduledClasses();
   }
 
-  Future<void> _deleteScheduledClass(String dbId) async {
+  Future<void> _deleteScheduledClass(String dbId, String title) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Scheduled Class?'),
+        content: Text('Are you sure you want to delete "$title"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Delete')
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       await DbProxy.instance.from('live_classes').eq('id', dbId).delete();
       _fetchScheduledClasses();
-    } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Class deleted successfully'), backgroundColor: Colors.green)
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red)
+        );
+      }
+    }
   }
 
   String _getSubjectName(TeacherProvider p, String? subjectId) {
@@ -328,7 +357,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
                                               IconButton(
                                                 icon: const Icon(Icons.delete, color: Colors.red),
                                                 tooltip: 'Delete Class',
-                                                onPressed: () => _deleteScheduledClass(dbId),
+                                                onPressed: () => _deleteScheduledClass(dbId, title),
                                               ),
                                             ] else 
                                               const Chip(label: Text('Upcoming')),

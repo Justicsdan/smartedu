@@ -1508,3 +1508,144 @@ class _MonitorStudentScreen extends StatelessWidget {
     );
   }
 }
+
+class _AttemptsDialog extends StatefulWidget {
+  final String examId;
+  final String examTitle;
+  final SchoolAdminProvider provider;
+  const _AttemptsDialog({
+    required this.examId,
+    required this.examTitle,
+    required this.provider,
+  });
+
+  @override
+  State<_AttemptsDialog> createState() => _AttemptsDialogState();
+}
+
+class _AttemptsDialogState extends State<_AttemptsDialog> {
+  late Future<List<Map<String, dynamic>>> _attemptsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _attemptsFuture = _fetchAttempts();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAttempts() async {
+    final res = await DbProxy.instance.from('cbt_attempts')
+        .select('id, score, total_marks, is_submitted, student_id')
+        .eq('exam_id', widget.examId)
+        .order('score', ascending: false)
+        .get();
+    return res;
+  }
+
+  Future<void> _deleteAttempt(String attemptId) async {
+    try {
+      await DbProxy.instance.from('cbt_attempts').eq('id', attemptId).delete();
+      setState(() {
+        _attemptsFuture = _fetchAttempts();
+      });
+      widget.provider.reloadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Attempt reset successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Attempts for '${widget.examTitle}'", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      content: SizedBox(
+        width: 450,
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _attemptsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError || snapshot.data == null) {
+              return const Text('Failed to load attempts.');
+            }
+            final attempts = snapshot.data!;
+            if (attempts.isEmpty) {
+              return const Center(child: Text('No students have taken this exam yet.'));
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: attempts.length,
+              itemBuilder: (context, index) {
+                final att = attempts[index];
+                final attemptId = att['id']?.toString() ?? '';
+                final studentId = att['student_id']?.toString() ?? '';
+                
+                String name = 'Unknown Student';
+                if (studentId.isNotEmpty) {
+                  try {
+                    final student = widget.provider.students.firstWhere((s) => s['id'].toString() == studentId);
+                    final firstName = (student['first_name'] ?? '').toString().trim();
+                    final lastName = (student['last_name'] ?? '').toString().trim();
+                    name = '$firstName $lastName'.trim();
+                    if (name.isEmpty) name = 'Unknown Student';
+                  } catch (_) {
+                    name = 'Student ID: $studentId';
+                  }
+                }
+                
+                final score = att['score'] ?? 0;
+                final total = att['total_marks'] ?? 0;
+                final isSubmitted = att['is_submitted'] == true;
+                
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFF1A237E),
+                    child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(isSubmitted ? 'Submitted' : 'In Progress', style: TextStyle(fontSize: 12, color: isSubmitted ? Colors.green : Colors.orange)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A237E).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$score / $total',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                        tooltip: 'Reset Attempt',
+                        onPressed: () => _deleteAttempt(attemptId),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}

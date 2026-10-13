@@ -90,7 +90,7 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     assignment_submissions: ['select', 'insert', 'update', 'delete'],
   },
   school_admin: {
-      live_classes: ['select','insert','update'],
+      live_classes: ['select','insert','update','delete'],
     schools: ['select', 'update'],
     students: ['select', 'insert', 'update'],
     teachers: ['select', 'insert', 'update'],
@@ -120,7 +120,8 @@ const WHITELIST: Record<string, Record<string, string[]>> = {
     cbt_attempts: ['select', 'insert', 'update', 'delete'],
   },
   teacher: {
-      live_classes: ['select','insert','update'],
+      live_classes: ['select','insert','update','delete'],
+      live_classes: ['select','insert','update','delete'],
     students: ['select'],
     classes: ['select'],
     subjects: ['select'],

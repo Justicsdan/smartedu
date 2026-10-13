@@ -76,11 +76,40 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
     }
   }
 
-  Future<void> _deleteClass(String dbId) async {
+  Future<void> _deleteClass(String dbId, String title) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Class?'),
+        content: Text('Are you sure you want to delete "$title"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Delete')
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       await DbProxy.instance.from('live_classes').eq('id', dbId).delete();
       _fetchClasses();
-    } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Class deleted successfully'), backgroundColor: Colors.green)
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red)
+        );
+      }
+    }
   }
 
   Future<void> _forceEndClass(String dbId) async {
@@ -156,6 +185,24 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                         const SizedBox(height: 16),
                       ],
                       const Text('Leave date/time empty to start LIVE NOW', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Note: The host (Admin/Teacher) will be asked to log in to Jitsi once to authorize the room. Students join as guests without logging in.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFFE65100)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -361,11 +408,12 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                               )
                             else
                               const Chip(label: Text('Upcoming'), backgroundColor: Color(0xFFE3F2FD)),
-                            IconButton(
-                              icon: Icon(isLive ? Icons.stop_circle_outlined : Icons.delete_outline, color: Colors.red),
-                              tooltip: isLive ? 'Force End' : 'Delete',
-                              onPressed: () => isLive ? _forceEndClass(dbId) : _deleteClass(dbId),
-                            ),
+                            if (!isLive)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                tooltip: 'Delete Class',
+                                onPressed: () => _deleteClass(dbId, title),
+                              ),
                           ],
                         ),
                       );
