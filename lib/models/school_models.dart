@@ -916,7 +916,7 @@ class Student {
   });
 
   String get fullName {
-    final parts = [firstName, middleName, lastName].where((s) => s != null && s.isNotEmpty);
+    final parts = [firstName, middleName, lastName].where((s) => s.isNotEmpty);
     return parts.join(' ');
   }
 

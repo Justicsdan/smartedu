@@ -6,7 +6,6 @@ import '../services/db_proxy.dart';
 import 'base_provider.dart';
 import 'comment_mixin.dart';
 import 'session_mixin.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Student management mixin for school admin.
 /// Handles CRUD operations for students within a school.
@@ -45,6 +44,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
   // LOAD STUDENTS
   // ==========================================
 
+  @override
   Future<void> loadStudents() async {
     if (schoolId.isEmpty) {
       _students = [];
@@ -665,6 +665,7 @@ mixin StudentMixin on BaseProvider, CommentMixin, SessionMixin {
 
   Future<bool> updateSchoolBranding({bool? showGradeOnly}) async => updateDisplaySettings(showGradeOnly: showGradeOnly);
 
+  @override
   Future<Map<String, dynamic>?> getExistingBehavioral(String studentId, String? termId) async {
     final comments = await getTermCommentsForTerm(
       studentId: studentId,

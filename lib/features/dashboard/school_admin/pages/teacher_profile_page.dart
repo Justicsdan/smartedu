@@ -72,7 +72,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
       final url = Supabase.instance.client.storage.from('passports').getPublicUrl(path);
       final uploadUrl = url.replaceAll('/object/public/', '/object/');
       final uri = Uri.parse(uploadUrl);
-      final anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
+      const anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
       final res = await http.post(uri, headers: {
         'Authorization': 'Bearer $anonKey',
         'Content-Type': 'image/$ext',
@@ -89,7 +89,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e'), backgroundColor: Color(0xFFD32F2F)));
+          SnackBar(content: Text('Upload error: $e'), backgroundColor: const Color(0xFFD32F2F)));
       }
     }
     if (mounted) setState(() => _uploading = false);

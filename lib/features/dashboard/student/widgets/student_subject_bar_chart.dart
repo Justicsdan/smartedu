@@ -56,17 +56,17 @@ class StudentSubjectBarChart extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     final display = sorted.length > 15 ? sorted.sublist(0, 15) : sorted;
     final maxScale = provider.subjectMaxScore.toDouble();
-    final passMark = 40.0;
+    const passMark = 40.0;
 
     return ChartTheme.card(
       title: 'Students Performance Chart',
       icon: Icons.bar_chart,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final labelW = 110.0;
-          final scoreW = 48.0;
-          final gap = 8.0;
-          final barLeft = labelW + gap;
+          const labelW = 110.0;
+          const scoreW = 48.0;
+          const gap = 8.0;
+          const barLeft = labelW + gap;
           final barRight = constraints.maxWidth - scoreW - gap;
           final barWidth = (barRight - barLeft).clamp(0.0, double.infinity);
 
@@ -91,7 +91,7 @@ class StudentSubjectBarChart extends StatelessWidget {
                             maxLines: 1,
                           ),
                         ),
-                        SizedBox(width: gap),
+                        const SizedBox(width: gap),
                         SizedBox(
                           width: barWidth,
                           child: Stack(
@@ -114,7 +114,7 @@ class StudentSubjectBarChart extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(width: gap),
+                        const SizedBox(width: gap),
                         SizedBox(
                           width: scoreW,
                           child: Text(

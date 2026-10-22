@@ -45,6 +45,7 @@ mixin TeacherScoresMixin on TeacherBase {
     }
   }
 
+  @override
   Future<bool> saveScore(Map<String, dynamic> data) async {
     try {
       final row = Map<String, dynamic>.from(data);

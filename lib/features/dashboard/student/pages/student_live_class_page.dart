@@ -6,7 +6,7 @@ import '../../../../core/services/db_proxy.dart';
 import '../../../../widgets/jitsi_embed_view.dart';
 
 class StudentLiveClassPage extends StatefulWidget {
-  const StudentLiveClassPage({Key? key}) : super(key: key);
+  const StudentLiveClassPage({super.key});
 
   @override
   State<StudentLiveClassPage> createState() => _StudentLiveClassPageState();
@@ -35,10 +35,12 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
         .inFilter('status', ['scheduled', 'live'])
         .order('scheduled_at', ascending: true)
         .get();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _classes = res;
         _loading = false;
       });
+      }
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,14 +91,14 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
           child: _loading 
             ? const CircularProgressIndicator()
             : _classes.isEmpty
-                ? Column(
+                ? const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.event_busy, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      const Text('Your teachers have not scheduled any live classes yet.', textAlign: TextAlign.center),
+                      Icon(Icons.event_busy, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 8),
+                      Text('Your teachers have not scheduled any live classes yet.', textAlign: TextAlign.center),
                     ],
                   )
                 : ListView.builder(

@@ -296,7 +296,7 @@ class _PageDashboardState extends State<PageDashboard> {
               Switch(
                 value: _hideEmptyClasses,
                 onChanged: (val) => setState(() => _hideEmptyClasses = val),
-                activeColor: const Color(0xFF1A237E),
+                activeThumbColor: const Color(0xFF1A237E),
               ),
             ],
           ),

@@ -3,6 +3,7 @@
 ///
 /// Supports both static templates (WAEC, BECE, etc.) and dynamic
 /// grading systems loaded from school_settings.grading_system JSONB.
+library;
 
 class GradingUtils {
 

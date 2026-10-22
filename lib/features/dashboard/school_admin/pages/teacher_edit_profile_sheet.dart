@@ -4,7 +4,6 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 
 class TeacherEditProfileSheet extends StatefulWidget {
@@ -93,12 +92,12 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
           'teachers/${widget.teacher['id']}/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
       // Fix 1: Use the correct 'passports' bucket
       // Fix 2: Construct the upload URL correctly to hit the POST endpoint
-      final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+      const supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
       final uploadUrl = '$supabaseUrl/storage/v1/object/passports/$pth';
       final publicUrl = '$supabaseUrl/storage/v1/object/public/passports/$pth';
       
       final uri = Uri.parse(uploadUrl);
-      final anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
+      const anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
       final res = await http.post(uri, headers: {
         'Authorization': 'Bearer $anonKey',
         'Content-Type': 'image/$safeExt',
@@ -125,7 +124,7 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 10),
+          duration: const Duration(seconds: 10),
         ));
       }
     }
@@ -172,7 +171,7 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 10),
+          duration: const Duration(seconds: 10),
         ));
       }
     }
@@ -311,7 +310,7 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
                     ],
                   ),
                   DropdownButtonFormField<String>(
-                    value: _gender,
+                    initialValue: _gender,
                     decoration:
                         _dec(label: 'Gender', icon: Icons.wc_rounded),
                     items: const [

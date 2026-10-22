@@ -9,7 +9,6 @@ import 'core/providers/school_admin_provider.dart';
 import 'core/super_admin_provider.dart';
 import 'core/providers/teacher/teacher_provider.dart';
 import 'core/providers/student/student_provider.dart';
-import 'features/dashboard/student/pages/student_ace_dashboard.dart';
 
 import 'features/home/home_page.dart';
 import 'features/auth/login_page.dart';
@@ -128,7 +127,7 @@ final _router = GoRouter(
               return const Scaffold(backgroundColor: Color(0xFFF7F8FA), body: Center(child: CircularProgressIndicator(color: Color(0xFF1A237E))));
             }
             if (snap.data == null) {
-              return Scaffold(backgroundColor: const Color(0xFF080C22), body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.error_outline, size: 48, color: Colors.white24), const SizedBox(height: 16), Text('School code not found', style: TextStyle(color: Colors.white54, fontSize: 16)), const SizedBox(height: 20), ElevatedButton(onPressed: () => ctx.go('/'), child: const Text('Go Home'))])));
+              return Scaffold(backgroundColor: const Color(0xFF080C22), body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.error_outline, size: 48, color: Colors.white24), const SizedBox(height: 16), const Text('School code not found', style: TextStyle(color: Colors.white54, fontSize: 16)), const SizedBox(height: 20), ElevatedButton(onPressed: () => ctx.go('/'), child: const Text('Go Home'))])));
             }
             return SchoolCodeLoginPage(school: snap.data!);
           },
@@ -523,7 +522,7 @@ class _AdminShellState extends State<_AdminShell> {
     if (!isAce) {
       return _allNavItems.asMap().entries.where((e) => e.value.label != 'PACE Scores' && e.value.label != 'ACE Reports').map((e) => e.key).toList();
     }
-    return _allNavItems.asMap().entries.where((e) => e.value.label != 'Scores' && e.value != null && e.value.label != 'Publish').map((e) => e.key).toList();
+    return _allNavItems.asMap().entries.where((e) => e.value.label != 'Scores' && e.value.label != 'Publish').map((e) => e.key).toList();
   }
 
   void _openAiChat() {
@@ -685,7 +684,7 @@ class _AdminShellState extends State<_AdminShell> {
       case 9:
         return const PageCredentials();
       case 10:
-        return PageFees();
+        return const PageFees();
       case 11:
         return const PageAnnouncements();
       case 12:
@@ -715,21 +714,21 @@ ThemeData _buildTheme() {
     colorSchemeSeed: const Color(0xFF1B2A4A),
     scaffoldBackgroundColor: const Color(0xFFF5F6FA),
     scrollbarTheme: ScrollbarThemeData(
-        thickness: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.hovered)) return 14.0; // Thicker when hovering
-          if (states.contains(MaterialState.dragged)) return 16.0; // Thickest when dragging
+        thickness: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.hovered)) return 14.0; // Thicker when hovering
+          if (states.contains(WidgetState.dragged)) return 16.0; // Thickest when dragging
           return 10.0; // Default visible thickness
         }),
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.hovered) || states.contains(MaterialState.dragged)) {
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.hovered) || states.contains(WidgetState.dragged)) {
             return const Color(0xFF1A237E); // Dark blue when interacting for high contrast
           }
           return Colors.grey[500]; // Visible grey when idle
         }),
         radius: const Radius.circular(4.0),
-        thumbVisibility: MaterialStateProperty.all(true),
-        trackVisibility: MaterialStateProperty.all(true),
-        trackColor: MaterialStateProperty.all(Colors.black12),
+        thumbVisibility: WidgetStateProperty.all(true),
+        trackVisibility: WidgetStateProperty.all(true),
+        trackColor: WidgetStateProperty.all(Colors.black12),
       ),
       dialogTheme: const DialogThemeData(
         backgroundColor: Colors.white,

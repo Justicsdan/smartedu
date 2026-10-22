@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -888,10 +887,11 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    if (selected)
+                    if (selected) {
                       _attendanceStatus.remove(sid);
-                    else
+                    } else {
                       _attendanceStatus[sid] = status;
+                    }
                   });
                   _animateProgress();
                 },

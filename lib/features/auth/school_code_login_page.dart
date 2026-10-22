@@ -160,8 +160,8 @@ class _SchoolCodeLoginPageState extends State<SchoolCodeLoginPage>
       ),
       clipBehavior: Clip.antiAlias,
       child: url.isNotEmpty
-          ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, errorWidget: (_, __, ___) => Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover))
-          : Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.cover),
+          ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, errorWidget: (_, __, ___) => Image.asset('assets/images/smartedu_logo.webp', fit: BoxFit.cover))
+          : Image.asset('assets/images/smartedu_logo.webp', fit: BoxFit.cover),
     );
   }
 
@@ -192,7 +192,7 @@ class _SchoolCodeLoginPageState extends State<SchoolCodeLoginPage>
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(begin: Alignment(-0.3, -0.3), end: Alignment(1.0, 1.0), colors: [accent, accent.withOpacity(0.6)]),
+                  gradient: LinearGradient(begin: const Alignment(-0.3, -0.3), end: const Alignment(1.0, 1.0), colors: [accent, accent.withOpacity(0.6)]),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: accent.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
                 ),

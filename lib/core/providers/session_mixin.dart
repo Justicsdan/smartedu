@@ -3,7 +3,6 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for academic session and term management.
 /// Handles loading, creating, switching, and deleting sessions/terms.
@@ -25,7 +24,9 @@ mixin SessionMixin on BaseProvider {
   List<Map<String, dynamic>> _academicSessions = [];
   List<Map<String, dynamic>> _terms = [];
 
+  @override
   List<Map<String, dynamic>> get academicSessions => _academicSessions;
+  @override
   List<Map<String, dynamic>> get terms => _terms;
 
   /// Convenience: current session name for UI display.

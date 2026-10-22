@@ -15,7 +15,7 @@ class _PageReportsState extends State<PageReports> {
   String? _selectedClassId;
   String? _selectedTermId;
   bool _isCumulative = false;
-  List<String> _selectedTermIds = [];
+  final List<String> _selectedTermIds = [];
   String _classLevel = '';
   int _topLimit = 10;
   double _promoThreshold = 50;
@@ -193,8 +193,11 @@ class _PageReportsState extends State<PageReports> {
           for (var t = 0; t < csvTd.length; t++) {
             csvHdrs.add('TERM ${t + 1}');
           }
-          if (isAce) csvHdrs.addAll(['TOTAL PACEs', 'CUM. AVG', 'POSITION']);
-          else csvHdrs.addAll(['TOTAL', 'AVERAGE', 'POSITION']);
+          if (isAce) {
+            csvHdrs.addAll(['TOTAL PACEs', 'CUM. AVG', 'POSITION']);
+          } else {
+            csvHdrs.addAll(['TOTAL', 'AVERAGE', 'POSITION']);
+          }
           downloadCsv(csvHdrs, _listData.asMap().entries.map((e) {
             final s = e.value;
             final stdTd = s['term_data'] as List;
@@ -462,7 +465,7 @@ class _PageReportsState extends State<PageReports> {
     return Container(
       decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD1D5DB)), borderRadius: BorderRadius.circular(10)),
       child: DropdownButtonFormField<String>(
-        value: _filteredReports.contains(_selectedReport) ? _selectedReport : null,
+        initialValue: _filteredReports.contains(_selectedReport) ? _selectedReport : null,
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), hintText: 'Choose report type', hintStyle: TextStyle(fontSize: 13, color: Colors.grey)),
         items: _filteredReports.map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 13)))).toList(),
         onChanged: (v) { if (v != null) { setState(() => _selectedReport = v); _clearResults(); } },
@@ -475,7 +478,7 @@ class _PageReportsState extends State<PageReports> {
     return Container(
       decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD1D5DB)), borderRadius: BorderRadius.circular(10)),
       child: DropdownButtonFormField<String>(
-        value: _selectedClassId,
+        initialValue: _selectedClassId,
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), prefixIcon: Icon(Icons.class_rounded, size: 18, color: Color(0xFF6B7280)), hintText: 'Select class', hintStyle: TextStyle(fontSize: 13, color: Colors.grey), prefixIconConstraints: BoxConstraints(minWidth: 36)),
         items: classes.map((c) {
           final sec = (c['section'] ?? '').toString();
@@ -491,7 +494,7 @@ class _PageReportsState extends State<PageReports> {
     return Container(
       decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD1D5DB)), borderRadius: BorderRadius.circular(10)),
       child: DropdownButtonFormField<String>(
-        value: _selectedStudentId,
+        initialValue: _selectedStudentId,
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), prefixIcon: Icon(Icons.person_rounded, size: 18, color: Color(0xFF6B7280)), hintText: 'Select student', hintStyle: TextStyle(fontSize: 13, color: Colors.grey), prefixIconConstraints: BoxConstraints(minWidth: 36)),
         items: _classStudents.map((s) {
           final fn = (s['first_name'] ?? '').toString();
@@ -508,7 +511,7 @@ class _PageReportsState extends State<PageReports> {
     return Container(
       decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD1D5DB)), borderRadius: BorderRadius.circular(10)),
       child: DropdownButtonFormField<String>(
-        value: _selectedSubjectId,
+        initialValue: _selectedSubjectId,
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), prefixIcon: Icon(Icons.menu_book_rounded, size: 18, color: Color(0xFF6B7280)), hintText: 'Select subject', hintStyle: TextStyle(fontSize: 13, color: Colors.grey), prefixIconConstraints: BoxConstraints(minWidth: 36)),
         items: subjects.map((s) => DropdownMenuItem(value: s['id']?.toString(), child: Text('${s['name']} (${s['code'] ?? ''})', style: const TextStyle(fontSize: 13)))).toList(),
         onChanged: (v) => setState(() => _selectedSubjectId = v),
@@ -556,7 +559,7 @@ class _PageReportsState extends State<PageReports> {
     return Container(
       decoration: BoxDecoration(border: Border.all(color: const Color(0xFFD1D5DB)), borderRadius: BorderRadius.circular(10)),
       child: DropdownButtonFormField<String>(
-        value: _selectedTermId,
+        initialValue: _selectedTermId,
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), prefixIcon: Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF6B7280)), hintText: 'Select term', hintStyle: TextStyle(fontSize: 13, color: Colors.grey), prefixIconConstraints: BoxConstraints(minWidth: 36)),
         items: _terms.map((t) => DropdownMenuItem(value: t['id']?.toString(), child: Text(t['name']?.toString() ?? '', style: const TextStyle(fontSize: 13)))).toList(),
         onChanged: (v) => setState(() => _selectedTermId = v),
@@ -577,7 +580,11 @@ class _PageReportsState extends State<PageReports> {
             dense: true,
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
-            onChanged: (v) => setState(() { if (v == true) _selectedTermIds.add(tid); else _selectedTermIds.remove(tid); }),
+            onChanged: (v) => setState(() { if (v == true) {
+              _selectedTermIds.add(tid);
+            } else {
+              _selectedTermIds.remove(tid);
+            } }),
           );
         }).toList(),
       ),
@@ -677,7 +684,7 @@ class _PageReportsState extends State<PageReports> {
         children: [
           const Icon(Icons.download_rounded, size: 18, color: Color(0xFF1A237E)),
           const SizedBox(width: 8),
-          const Text('Download:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF555))),
+          const Text('Download:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0x000ff555))),
           const SizedBox(width: 6),
           Material(
             color: Colors.transparent,
@@ -771,12 +778,12 @@ class _PageReportsState extends State<PageReports> {
       return _resultCard(Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Row(children: [
-              const Icon(Icons.fact_check_rounded, size: 20, color: Color(0xFF1A237E)),
-              const SizedBox(width: 8),
-              const Text('Attendance Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+              Icon(Icons.fact_check_rounded, size: 20, color: Color(0xFF1A237E)),
+              SizedBox(width: 8),
+              Text('Attendance Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
             ]),
           ),
           Padding(
@@ -816,9 +823,9 @@ class _PageReportsState extends State<PageReports> {
             ),
           ),
           const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-            child: const Text('Per-Subject Performance', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF6B7280))),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
+            child: Text('Per-Subject Performance', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF6B7280))),
           ),
           _dataTbl(
             isAce ? ['Subject', 'PACEs', 'Avg PT', 'Highest', 'Lowest'] : ['Subject', 'Terms', 'Avg Score', 'Highest', 'Lowest'],
@@ -828,9 +835,9 @@ class _PageReportsState extends State<PageReports> {
           ),
           if ((d['terms'] as List).isNotEmpty) ...[
             const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-              child: const Text('Term-by-Term', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF6B7280))),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Text('Term-by-Term', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF6B7280))),
             ),
             _dataTbl(
               isAce ? ['Term', 'HACS', 'NCE', 'PACEs'] : ['Term', 'Total', 'Average', 'Position', 'Grade'],
@@ -1054,7 +1061,7 @@ class _PageReportsState extends State<PageReports> {
       return DataRow(cells: cells);
     }).toList();
     return _resultCard(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (subName.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8), child: Text('SUBJECT: ' + subName.toUpperCase(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
+      if (subName.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8), child: Text('SUBJECT: ${subName.toUpperCase()}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A237E)))),
       SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(12), child: DataTable(headingRowColor: const WidgetStatePropertyAll(Color(0xFFF0F4FF)), headingTextStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF1A237E)), dataRowMinHeight: 44, columns: cols, rows: rows)),
     ]));
   }

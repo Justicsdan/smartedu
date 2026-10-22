@@ -309,6 +309,7 @@ class SchoolAdminProvider extends BaseProvider
   // ==========================================
 
   /// Thin wrapper for page_settings.dart backward compat.
+  @override
   Future<bool> updateSchoolSettings(String name, String address, String phone, String email) async {
     return updateSchoolSettingsInDb(
       name: name,
@@ -383,7 +384,7 @@ class SchoolAdminProvider extends BaseProvider
     }
   }
 
-  Map<String, Map<String, dynamic>> _termCommentsCache = {};
+  final Map<String, Map<String, dynamic>> _termCommentsCache = {};
 
   Future<void> loadTermCommentsForClass(String classId) async {
     final comments = await getTermCommentsForClass(classId: classId);

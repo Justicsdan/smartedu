@@ -1,5 +1,3 @@
-import "package:share_plus/share_plus.dart";
-import 'dart:typed_data';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -115,8 +113,9 @@ class _PageAttendanceState extends State<PageAttendance> {
         final studentId = (row['student_id'] ?? '').toString();
         final status = (row['status'] ?? '').toString().toLowerCase();
         if (counts.containsKey(studentId)) {
-          if (status == 'present') counts[studentId]!['present'] = counts[studentId]!['present']! + 1;
-          else if (status == 'absent') counts[studentId]!['absent'] = counts[studentId]!['absent']! + 1;
+          if (status == 'present') {
+            counts[studentId]!['present'] = counts[studentId]!['present']! + 1;
+          } else if (status == 'absent') counts[studentId]!['absent'] = counts[studentId]!['absent']! + 1;
           else if (status == 'late') counts[studentId]!['late'] = counts[studentId]!['late']! + 1;
           else if (status == 'excused') counts[studentId]!['excused'] = counts[studentId]!['excused']! + 1;
         }
@@ -152,7 +151,7 @@ class _PageAttendanceState extends State<PageAttendance> {
       final buf = StringBuffer();
       buf.writeln('Attendance Summary - $className');
       buf.writeln('Session: $sessionName | Term: $termName');
-      buf.writeln('Threshold: ${_thresholdPercent}%');
+      buf.writeln('Threshold: $_thresholdPercent%');
       buf.writeln();
       buf.writeln(['#,Student Name,Admission No,Present,Absent,Late,Excused,Total Days,Attended,Percentage,Status'].join(','));
       for (var i = 0; i < _summaryData.length; i++) {
@@ -391,7 +390,7 @@ class _PageAttendanceState extends State<PageAttendance> {
         child: Row(children: [
           const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF00838F)),
           const SizedBox(width: 8),
-          Expanded(child: Text('$sessionName - $termName  |  ${_summaryData.length} students  |  $belowThreshold below ${_thresholdPercent}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF00838F)))),
+          Expanded(child: Text('$sessionName - $termName  |  ${_summaryData.length} students  |  $belowThreshold below $_thresholdPercent%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF00838F)))),
           const SizedBox(width: 8),
           Text('Threshold:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           const SizedBox(width: 6),

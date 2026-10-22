@@ -4,6 +4,7 @@
 /// MASTER PLAN: This model carries ALL school identity fields needed
 /// for UI display, export, and print. Zero platform branding.
 /// Every printed document uses exportIdentity — never shows SmartEdu.
+library;
 
 class School {
   // =========================================================

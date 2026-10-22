@@ -62,7 +62,7 @@ class TeacherResultsPage extends StatelessWidget {
                 border: Border.all(color: Colors.grey.shade100),
               ),
               child: DataTable(
-                headingRowColor: MaterialStateProperty.all(
+                headingRowColor: WidgetStateProperty.all(
                   const Color(0xFF0D47A1).withOpacity(0.05),
                 ),
                 columns: const [

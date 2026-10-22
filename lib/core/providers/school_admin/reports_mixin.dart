@@ -46,12 +46,12 @@ mixin ReportsMixin on BaseProvider {
   String _ordinal(int n) {
     if (n <= 0) return n.toString();
     final lastTwo = n % 100;
-    if (lastTwo >= 11 && lastTwo <= 13) return n.toString() + 'th';
+    if (lastTwo >= 11 && lastTwo <= 13) return '${n}th';
     switch (n % 10) {
-      case 1: return n.toString() + 'st';
-      case 2: return n.toString() + 'nd';
-      case 3: return n.toString() + 'rd';
-      default: return n.toString() + 'th';
+      case 1: return '${n}st';
+      case 2: return '${n}nd';
+      case 3: return '${n}rd';
+      default: return '${n}th';
     }
   }
 
@@ -60,7 +60,7 @@ mixin ReportsMixin on BaseProvider {
     final tier = (cls['tier'] ?? '').toString();
     final system = GradingUtils.getGradingSystemForTier(tier, schoolSettings ?? {});
     final g = GradingUtils.getGradeFromSystem(score, system);
-    return g?.toString() ?? '';
+    return g.toString() ?? '';
   }
 
   Future<List<Map<String, dynamic>>> _loadStudentCumulatives(String classId, String sessionId, List<String> termIds) async {
@@ -128,10 +128,10 @@ mixin ReportsMixin on BaseProvider {
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       final pos = _numVal(r['position']).toInt();
       return {
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'total_score': _r1(_numVal(r['total_score'])),
         'average_score': _r1(_numVal(r['average_score'])),
-        'position': _ordinal(pos) + ' / ' + (r['position_out_of'] ?? '-').toString(),
+        'position': '${_ordinal(pos)} / ${r['position_out_of'] ?? '-'}',
       };
     }).toList();
     return {
@@ -158,7 +158,7 @@ mixin ReportsMixin on BaseProvider {
       final sid = r['student_id']?.toString() ?? '';
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       return {
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'hacs_score': _r1(_numVal(r['hacs_score'])),
         'nce_score': _r1(_numVal(r['nce_score'])),
         'paces_completed': _numVal(r['paces_completed']).toInt(),
@@ -196,7 +196,7 @@ mixin ReportsMixin on BaseProvider {
       final total = _numVal(s['total']);
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'total_score': _r1(total), 'grade': _getGrade(total, classId), 'is_student_format': true,
       });
     }
@@ -226,7 +226,7 @@ mixin ReportsMixin on BaseProvider {
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'paces_completed': stuScores.length, 'term_average': _r1(avg), 'pace_range': paceRange,
         'is_student_format': true,
       });
@@ -299,7 +299,7 @@ mixin ReportsMixin on BaseProvider {
     for (final item in cumData) {
       final sid = item['student_id']?.toString() ?? '';
       final stu = students.firstWhere((x) => x['id']?.toString() == sid, orElse: () => <String, dynamic>{});
-      item['student_name'] = ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim();
+      item['student_name'] = ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim();
     }
     if (_isAce) {
       cumData.sort((a, b) => _numVal(b['cumulative_hacs']).compareTo(_numVal(a['cumulative_hacs'])));
@@ -380,7 +380,7 @@ mixin ReportsMixin on BaseProvider {
       final cumAvg = scoredTerms > 0 ? cumTotal / scoredTerms : 0.0;
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'term_data': termData, 'cumulative_total': _r1(cumTotal), 'cumulative_avg': _r1(cumAvg),
         'is_student_format': true, 'is_cumulative': true,
       });
@@ -425,7 +425,7 @@ mixin ReportsMixin on BaseProvider {
       final cumAvg = ptCount > 0 ? totalPts / ptCount : 0.0;
       results.add({
         'student_id': sid,
-        'student_name': ((stu['first_name'] ?? '').toString() + ' ' + (stu['middle_name'] ?? '').toString() + ' ' + (stu['last_name'] ?? '').toString()).trim(),
+        'student_name': ('${stu['first_name'] ?? ''} ${stu['middle_name'] ?? ''} ${stu['last_name'] ?? ''}').trim(),
         'term_data': termData, 'total_paces': totalPaces, 'cumulative_avg': _r1(cumAvg),
         'is_student_format': true, 'is_cumulative': true,
       });
@@ -446,7 +446,7 @@ mixin ReportsMixin on BaseProvider {
     }
     final bySub = <String, List<double>>{};
     for (final entry in bySubStu.entries) {
-      final subId = (entry.key as String).split('_')[0];
+      final subId = (entry.key).split('_')[0];
       final avg = entry.value.reduce((a, b) => a + b) / entry.value.length;
       bySub.putIfAbsent(subId, () => []).add(avg);
     }
@@ -479,7 +479,7 @@ mixin ReportsMixin on BaseProvider {
     }
     final bySub = <String, List<double>>{};
     for (final entry in bySubStu.entries) {
-      final subId = (entry.key as String).split('_')[0];
+      final subId = (entry.key).split('_')[0];
       final avg = entry.value.reduce((a, b) => a + b) / entry.value.length;
       bySub.putIfAbsent(subId, () => []).add(avg);
     }
@@ -715,7 +715,9 @@ mixin ReportsMixin on BaseProvider {
       final totalExpected = pays.map((p) => _numVal(p['amount'])).reduce((a, b) => a + b);
       final balance = totalExpected - totalPaid;
       String status;
-      if (balance <= 0) status = 'Paid'; else if (totalPaid > 0) status = 'Partial'; else status = 'Unpaid';
+      if (balance <= 0) {
+        status = 'Paid';
+      } else if (totalPaid > 0) status = 'Partial'; else status = 'Unpaid';
       results.add({'student_id': entry.key, 'student_name': names[entry.key] ?? 'Unknown', 'total_expected': _r1(totalExpected), 'total_paid': _r1(totalPaid), 'balance': _r1(balance), 'status': status});
     }
     results.sort((a, b) => (a['student_name'] as String).compareTo(b['student_name'] as String));
@@ -821,8 +823,9 @@ mixin ReportsMixin on BaseProvider {
         final avg = vals.isNotEmpty ? vals.reduce((a, b) => a + b) / vals.length : 0.0;
         final passC = vals.where((v) => v >= 80).length;
         String trend;
-        if (prevAvg < 0) trend = '';
-        else if (avg > prevAvg + 1) trend = '↑ Improving';
+        if (prevAvg < 0) {
+          trend = '';
+        } else if (avg > prevAvg + 1) trend = '↑ Improving';
         else if (avg < prevAvg - 1) trend = '↓ Declining';
         else trend = '→ Stable';
         final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});
@@ -842,8 +845,9 @@ mixin ReportsMixin on BaseProvider {
         final pm = _passMark.toDouble();
         final passC = vals.where((v) => v >= pm).length;
         String trend;
-        if (prevAvg < 0) trend = '';
-        else if (avg > prevAvg + 1) trend = '↑ Improving';
+        if (prevAvg < 0) {
+          trend = '';
+        } else if (avg > prevAvg + 1) trend = '↑ Improving';
         else if (avg < prevAvg - 1) trend = '↓ Declining';
         else trend = '→ Stable';
         final term = termsList.firstWhere((t) => t['id']?.toString() == tid, orElse: () => <String, dynamic>{});

@@ -126,7 +126,7 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: selectedClassId,
+                  initialValue: selectedClassId,
                   decoration: InputDecoration(
                     labelText: 'Class *',
                     prefixIcon: const Icon(Icons.class_outlined, color: Colors.grey),
@@ -147,7 +147,7 @@ class _TeacherAssignmentsPageState extends State<TeacherAssignmentsPage> {
                 const SizedBox(height: 14),
                 if (selectedClassId != null)
                   DropdownButtonFormField<String>(
-                    value: selectedSubjectId,
+                    initialValue: selectedSubjectId,
                     decoration: InputDecoration(
                       labelText: 'Subject *',
                       prefixIcon: const Icon(Icons.book_outlined, color: Colors.grey),

@@ -162,7 +162,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: _schoolType,
+                    initialValue: _schoolType,
                     decoration: InputDecoration(
                       labelText: "School Type",
                       labelStyle: TextStyle(color: Colors.grey.shade600),
@@ -856,7 +856,7 @@ class _SchoolCardState extends State<_SchoolCard> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.chat_rounded, size: 12, color: const Color(0xFF25D366)),
+                                const Icon(Icons.chat_rounded, size: 12, color: Color(0xFF25D366)),
                                 const SizedBox(width: 3),
                                 Text(whatsapp, style: const TextStyle(fontSize: 12, color: Color(0xFF25D366), fontWeight: FontWeight.w500)),
                               ],

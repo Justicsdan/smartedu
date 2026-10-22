@@ -2,7 +2,6 @@
 // File: lib/features/dashboard/school_admin/add_student_page.dart
 // ==========================================
 import 'dart:typed_data';
-import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -74,14 +73,12 @@ class _AddStudentPageState extends State<AddStudentPage> {
       if (image == null) return;
       final bytes = await image.readAsBytes();
       final file = image;
-      if (bytes != null) {
-        setState(() {
-          _pickedBytes = bytes;
-          _pickedExt = file.name.split('.').last.toLowerCase();
-          _passportUrlPreview = null;
-        });
-      }
-    } catch (e) {
+      setState(() {
+        _pickedBytes = bytes;
+        _pickedExt = file.name.split('.').last.toLowerCase();
+        _passportUrlPreview = null;
+      });
+        } catch (e) {
       _snack('Could not access file.', success: false);
     } finally {
       if (mounted) setState(() => _isPickingImage = false);
@@ -171,7 +168,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Choose from Gallery',
+                        const Text('Choose from Gallery',
                             style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -217,7 +214,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Take a Photo',
+                        const Text('Take a Photo',
                             style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -267,7 +264,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Remove Photo',
+                          const Text('Remove Photo',
                               style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -366,7 +363,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
   String? _vEmail(String? v) {
     if (v == null || v.trim().isEmpty) return null;
     if (!RegExp(r'^[\w\.\-\+]+@[\w\.\-]+\.\w+$')
-        .hasMatch(v.trim())) return 'Invalid email';
+        .hasMatch(v.trim())) {
+      return 'Invalid email';
+    }
     return null;
   }
 
@@ -515,7 +514,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           final adm = (_data['admission_no'] ?? 'unknown').toString().replaceAll(' ', '_');
           final safeExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(_pickedExt) ? _pickedExt : 'jpg';
           final path = '$schoolId/students/${adm}_$ts.$safeExt';
-          final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+          const supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
           final uploadUrl = '$supabaseUrl/storage/v1/object/passports/$path';
           final publicUrl = '$supabaseUrl/storage/v1/object/public/passports/$path';
           
@@ -860,19 +859,21 @@ class _AddStudentPageState extends State<AddStudentPage> {
   // ─── PHOTO DISPLAY ───────────────────────────────────────────
 
   Widget _buildPhoto() {
-    if (_isPickingImage)
+    if (_isPickingImage) {
       return const Center(
           child: CircularProgressIndicator(
               strokeWidth: 2,
               color: Color(0xFF1A237E)));
+    }
     if (_pickedBytes != null) {
       return FutureBuilder<Uint8List>(
         future: _pickedXFile!.readAsBytes(),
         builder: (_, snap) {
           if (snap.connectionState == ConnectionState.done &&
-              snap.hasData)
+              snap.hasData) {
             return Image.memory(snap.data!,
                 fit: BoxFit.cover);
+          }
           return const Center(
               child: CircularProgressIndicator(
                   strokeWidth: 2,
@@ -880,11 +881,12 @@ class _AddStudentPageState extends State<AddStudentPage> {
         },
       );
     }
-    if (_passportUrlPreview != null)
+    if (_passportUrlPreview != null) {
       return CachedNetworkImage(imageUrl: '${_passportUrlPreview!}?width=100&height=100',
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) =>
               _photoPlaceholder());
+    }
     return _photoPlaceholder();
   }
 
@@ -994,8 +996,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
         ),
         validator: validator,
         onSaved: (v) {
-          if (v != null && v.trim().isNotEmpty)
+          if (v != null && v.trim().isNotEmpty) {
             _data[key] = v.trim();
+          }
         },
       ),
     );
@@ -1086,7 +1089,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           contentPadding: const EdgeInsets.symmetric(
               horizontal: 16, vertical: 4),
         ),
-        value: _data[key] ?? def,
+        initialValue: _data[key] ?? def,
         items: items
             .map((e) => DropdownMenuItem(
                 value: e,
@@ -1135,7 +1138,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           contentPadding: const EdgeInsets.symmetric(
               horizontal: 16, vertical: 4),
         ),
-        value: _data['class_id'],
+        initialValue: _data['class_id'],
         hint: widget.classes.isEmpty
             ? const Text('No classes created yet',
                 style: TextStyle(
@@ -1159,8 +1162,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
         onChanged: widget.classes.isEmpty
             ? null
             : (v) {
-                if (v != null)
+                if (v != null) {
                   setState(() => _data['class_id'] = v);
+                }
               },
         onSaved: (v) {
           if (v != null) _data['class_id'] = v;

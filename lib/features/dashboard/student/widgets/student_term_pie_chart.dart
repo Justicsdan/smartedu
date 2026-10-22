@@ -134,10 +134,10 @@ class StudentTermPieChart extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     '${slice.label}: $totalStr (${pct.toStringAsFixed(1)}%)',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF111827),
+                      color: Color(0xFF111827),
                     ),
                   ),
                 ],

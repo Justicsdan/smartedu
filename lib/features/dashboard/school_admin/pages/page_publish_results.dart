@@ -1,10 +1,8 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
@@ -63,10 +61,10 @@ class _PagePublishResultsState extends State<PagePublishResults> {
       }
       if (mounted) {
         setState(() => _isLocked = !wasLocked);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(!wasLocked ? 'Scores locked for this term' : 'Scores unlocked for this term'), backgroundColor: !wasLocked ? Color(0xFFE65100) : Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(!wasLocked ? 'Scores locked for this term' : 'Scores unlocked for this term'), backgroundColor: !wasLocked ? const Color(0xFFE65100) : const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: const StadiumBorder()));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ' + e.toString()), backgroundColor: Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: const StadiumBorder()));
     }
   }
   String get _sessionId => _provider.currentSession?['id']?.toString() ?? '';
@@ -637,8 +635,8 @@ class _PagePublishResultsState extends State<PagePublishResults> {
       final ah = atypes.map((a) => {'n': a['name'].toString(), 'm': a['max'].toString()}).toList();
       final ath = ah.map((a) => "<th>${a['n']}<br/>(${a['m']})</th>").join('');
       final grow = grading.map((g) => "<tr><td>${g['grade']}</td><td>${g['min']}-${g['max']}</td><td>${g['remark'] ?? ''}</td></tr>").join('');
-      final bkeys = GradingUtils.behavioralFieldKeys;
-      final blabelsRaw = GradingUtils.behavioralFieldLabels;
+      const bkeys = GradingUtils.behavioralFieldKeys;
+      const blabelsRaw = GradingUtils.behavioralFieldLabels;
       final customBL = _provider.behavioralLabels;
       final blabels = <String, String>{};
       for (final k in bkeys) {
@@ -813,7 +811,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                 border: Border.all(color: const Color(0xFFE8EAED)),
               ),
               child: DropdownButtonFormField<String>(
-                value: _selectedClassId,
+                initialValue: _selectedClassId,
                 decoration: InputDecoration(
                   labelText: 'Select Class',
                   labelStyle: TextStyle(
@@ -990,7 +988,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                               onPressed: _isPublishing ? null : _toggleLock,
                               icon: const Icon(Icons.lock_rounded, size: 18),
                               label: const Text('Locked', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                              style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFE65100), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             )
                           : OutlinedButton.icon(
                               onPressed: _isPublishing ? null : _toggleLock,
@@ -1008,9 +1006,9 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(color: const Color(0xFFFFF3E0), border: Border.all(color: const Color(0xFFFFE082)), borderRadius: BorderRadius.circular(8)),
-                  child: Row(children: [
+                  child: const Row(children: [
                     Icon(Icons.lock_rounded, size: 16, color: Color(0xFFE65100)),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(child: Text('Scores are locked — teachers cannot edit scores for this class this term', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFE65100)))),
                   ]),
                 ),
@@ -1353,7 +1351,7 @@ class _PagePublishResultsState extends State<PagePublishResults> {
                                           ),
                                         ),
                                       )
-                                    : Text(
+                                    : const Text(
                                         '-',
                                         style: TextStyle(
                                             color:
@@ -1689,7 +1687,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
   Widget _ratingDropdown(
       String label, String value, Function(String) onChanged) {
     return DropdownButtonFormField<String>(
-      value: GradingUtils.defaultBehavioralOptions
+      initialValue: GradingUtils.defaultBehavioralOptions
               .any((o) => o['value'] == value)
           ? value
           : 'Good',
@@ -1809,7 +1807,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
               const SizedBox(height: 20),
               if (widget.showAttendance) ...[
                 _sectionTitle('Attendance',
-                    Icons.calendar_today_rounded, Color(0xFFE65100)),
+                    Icons.calendar_today_rounded, const Color(0xFFE65100)),
                 Row(
                   children: [
                     Expanded(
@@ -1833,7 +1831,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
               if (widget.showConduct) ...[
                 _sectionTitle(
                     'Behavioral Ratings (Nigerian Standard)',
-                    Icons.star_rounded, Color(0xFF2E7D32)),
+                    Icons.star_rounded, const Color(0xFF2E7D32)),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
@@ -1883,7 +1881,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
               if (widget.showTeacherComment) ...[
                 _sectionTitle('Teacher Comment',
                     Icons.chat_bubble_outline_rounded,
-                    Color(0xFF1A237E)),
+                    const Color(0xFF1A237E)),
                 _inputField(_teacherCommentCtrl, '',
                     maxLines: 3),
                 const SizedBox(height: 20),
@@ -1892,7 +1890,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                 _sectionTitle(
                     'Principal Comment',
                     Icons.admin_panel_settings_rounded,
-                    Color(0xFF1A237E)),
+                    const Color(0xFF1A237E)),
                 _inputField(_principalCommentCtrl, '',
                     maxLines: 3),
                 const SizedBox(height: 24),

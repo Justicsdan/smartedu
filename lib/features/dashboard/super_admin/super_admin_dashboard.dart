@@ -158,7 +158,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with TickerPr
     return Container(
       height: 54,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [const Color(0xFF0F172A), const Color(0xFF1E293B)]),
+        gradient: const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Color(0xFF0F172A), Color(0xFF1E293B)]),
         boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -227,7 +227,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with TickerPr
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: const [Color(0xFFFFFFFF), Color(0xFFFAFBFF)]),
+          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFFFFFF), Color(0xFFFAFBFF)]),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [BoxShadow(color: const Color(0xFF1A237E).withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4))],
@@ -502,7 +502,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with TickerPr
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(gradient: const LinearGradient(colors: [const Color(0xFF1A237E), const Color(0xFF3949AB)]), borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)]), borderRadius: BorderRadius.circular(6)),
                   child: Text('${schools.length}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
                 const Spacer(),

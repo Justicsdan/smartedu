@@ -154,7 +154,9 @@ class _CbtResultDetailPageState extends State<_CbtResultDetailPage> {
     final thr = (pm != null && pm > 0) ? pm : 50.0;
     final passed = double.parse(pct) >= thr;
     int cc = 0, wc = 0, sc = 0;
-    for (final q in _questions) { final qId = q['id']?.toString() ?? ''; final a = _getAns(qId); if (a == null || a.isEmpty) sc++; else if (_isOk(qId)) cc++; else wc++; }
+    for (final q in _questions) { final qId = q['id']?.toString() ?? ''; final a = _getAns(qId); if (a == null || a.isEmpty) {
+      sc++;
+    } else if (_isOk(qId)) cc++; else wc++; }
     return Scaffold(backgroundColor: Colors.white, appBar: AppBar(backgroundColor: Colors.white, elevation: 0, foregroundColor: const Color(0xFF1B2A4A), title: Text(widget.exam['title'] ?? 'CBT Results', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))), leading: IconButton(icon: const Icon(Icons.arrow_back, color: Color(0xFF1B2A4A)), onPressed: () => Navigator.pop(context))),
       body: _loading ? const Center(child: CircularProgressIndicator(color: Color(0xFF0D47A1))) : _error != null ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.error_outline, size: 48, color: Colors.red.shade300), const SizedBox(height: 12), Text(_error!, style: const TextStyle(color: Colors.red)), const SizedBox(height: 16), ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back'))])) : SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(gradient: LinearGradient(colors: passed ? [const Color(0xFF2E7D32), const Color(0xFF43A047)] : [const Color(0xFFE65100), const Color(0xFFFF8F00)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(16)), child: Column(children: [
@@ -188,7 +190,7 @@ class _CbtResultDetailPageState extends State<_CbtResultDetailPage> {
             const SizedBox(height: 6),
             Row(children: [
               if (skip) Text('Not answered', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontStyle: FontStyle.italic))
-              else Text('Your answer: ${sa?.toUpperCase() ?? '-'}', style: TextStyle(fontSize: 11, color: ok ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w600)),
+              else Text('Your answer: ${sa.toUpperCase() ?? '-'}', style: TextStyle(fontSize: 11, color: ok ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w600)),
               if (!ok && !skip) ...[const SizedBox(width: 12), Text('Correct: ${co.toUpperCase()}', style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w600))],
               const Spacer(), Text('$mk mark${mk > 1 ? 's' : ''}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
             ]),

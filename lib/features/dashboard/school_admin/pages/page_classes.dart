@@ -45,9 +45,9 @@ class PageClasses extends StatefulWidget {
 class _PageClassesState extends State<PageClasses>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _hoveredClass = -1;
-  int _hoveredSubject = -1;
-  int _hoveredAssignment = -1;
+  final int _hoveredClass = -1;
+  final int _hoveredSubject = -1;
+  final int _hoveredAssignment = -1;
 
   @override
   void initState() {
@@ -503,7 +503,7 @@ class _PageClassesState extends State<PageClasses>
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String?>(
-                              value: null,
+                              initialValue: null,
                               hint: const Text(
                                 'Add a subject...',
                                 style: TextStyle(
@@ -529,7 +529,9 @@ class _PageClassesState extends State<PageClasses>
                                   .toList(),
                               onChanged: (val) async {
                                 if (val == null ||
-                                    widget.onAddClassSubject == null) return;
+                                    widget.onAddClassSubject == null) {
+                                  return;
+                                }
                                 final ok = await widget
                                     .onAddClassSubject!(classId, val);
                                 if (!ctx.mounted) return;
@@ -958,7 +960,7 @@ class _PageClassesState extends State<PageClasses>
                           fontSize: 15, color: Color(0xFF111827))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       enabledBorder: OutlineInputBorder(
                         borderSide:
@@ -991,7 +993,7 @@ class _PageClassesState extends State<PageClasses>
                           fontSize: 15, color: Color(0xFF111827))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String?>(
-                    value: selectedNextClass,
+                    initialValue: selectedNextClass,
                     hint: const Text('Select next class (leave empty for graduation)'),
                     decoration: const InputDecoration(
                       enabledBorder: OutlineInputBorder(
@@ -1062,7 +1064,7 @@ class _PageClassesState extends State<PageClasses>
                           fontSize: 15, color: Color(0xFF111827))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String?>(
-                    value: selectedClass,
+                    initialValue: selectedClass,
                     hint: const Text('Select class'),
                     decoration: const InputDecoration(
                       enabledBorder: OutlineInputBorder(
@@ -1092,7 +1094,7 @@ class _PageClassesState extends State<PageClasses>
                           fontSize: 15, color: Color(0xFF111827))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String?>(
-                    value: selectedSubject,
+                    initialValue: selectedSubject,
                     hint: const Text('Select subject'),
                     decoration: const InputDecoration(
                       enabledBorder: OutlineInputBorder(
@@ -1121,7 +1123,7 @@ class _PageClassesState extends State<PageClasses>
                           fontSize: 15, color: Color(0xFF111827))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String?>(
-                    value: selectedTeacher,
+                    initialValue: selectedTeacher,
                     hint: const Text('Select teacher'),
                     decoration: const InputDecoration(
                       enabledBorder: OutlineInputBorder(

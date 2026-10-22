@@ -12,7 +12,7 @@ class TeacherCbtPage extends StatefulWidget {
 class _TeacherCbtPageState extends State<TeacherCbtPage> {
   final Set<String> _expandedExamIds = {};
   final Set<String> _loadingExamIds = {};
-  Map<String, List<Map<String, dynamic>>> _questions = {};
+  final Map<String, List<Map<String, dynamic>>> _questions = {};
 
   static const List<MapEntry<int, String>> _timeOptions = [
     MapEntry(0, "Not set"),
@@ -90,7 +90,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                 const SizedBox(height: 8),
                 TextField(controller: optD, decoration: const InputDecoration(labelText: 'Option D *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(value: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
+                DropdownButtonFormField<String>(initialValue: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -100,7 +100,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: selectedTime,
+                        initialValue: selectedTime,
                         decoration: const InputDecoration(labelText: 'Time Limit', border: OutlineInputBorder()),
                         items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(),
                         onChanged: (v) => setSt(() => selectedTime = v ?? 0),
@@ -157,7 +157,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                 const SizedBox(height: 8),
                 TextField(controller: optD, decoration: const InputDecoration(labelText: 'Option D *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(value: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
+                DropdownButtonFormField<String>(initialValue: correctOpt, decoration: const InputDecoration(labelText: 'Correct Answer *', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'a', child: Text('A')), DropdownMenuItem(value: 'b', child: Text('B')), DropdownMenuItem(value: 'c', child: Text('C')), DropdownMenuItem(value: 'd', child: Text('D'))], onChanged: (v) => setSt(() => correctOpt = v!)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -167,7 +167,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: selectedTime,
+                        initialValue: selectedTime,
                         decoration: const InputDecoration(labelText: 'Time Limit', border: OutlineInputBorder()),
                         items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(),
                         onChanged: (v) => setSt(() => selectedTime = v ?? 0),
@@ -212,8 +212,9 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
             final letter = firstChar.toLowerCase();
             final afterLetter = trimmed.replaceFirst(RegExp(r'[^a-zA-Z]*[a-d][^a-zA-Z0-9]*', caseSensitive: false), '');
             final value = afterLetter.trim();
-            if (letter == 'a') optA = value;
-            else if (letter == 'b') optB = value;
+            if (letter == 'a') {
+              optA = value;
+            } else if (letter == 'b') optB = value;
             else if (letter == 'c') optC = value;
             else if (letter == 'd') optD = value;
             continue;
@@ -251,7 +252,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     Row(children: [
                       Expanded(child: TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Marks per question *', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)))),
                       const SizedBox(width: 12),
-                      Expanded(child: DropdownButtonFormField<int>(value: selectedTime, decoration: const InputDecoration(labelText: 'Time per question', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(), onChanged: (v) => setSt(() => selectedTime = v ?? 0))),
+                      Expanded(child: DropdownButtonFormField<int>(initialValue: selectedTime, decoration: const InputDecoration(labelText: 'Time per question', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), items: _timeOptions.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 13)))).toList(), onChanged: (v) => setSt(() => selectedTime = v ?? 0))),
                     ]),
                     const SizedBox(height: 12),
                     Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)), child: const Text('What is 2+2?\nA. 3\nB. 4\nC. 5\nD. 6\nAns: B\n\nCapital of Nigeria?\nA. Lagos\nB. Abuja\nC. Kano\nD. Ibadan\nAns: B', style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.grey))),
@@ -371,9 +372,9 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
                     if (questions.isNotEmpty) Text('${questions.length} Qs \u2022 Total: $totalMarks marks', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                     if (totalTimeLabel.isNotEmpty) ...[
                       const SizedBox(width: 12),
-                      Icon(Icons.timer_outlined, size: 13, color: Color(0xFFE65100)),
+                      const Icon(Icons.timer_outlined, size: 13, color: Color(0xFFE65100)),
                       const SizedBox(width: 2),
-                      Text(totalTimeLabel, style: TextStyle(fontSize: 11, color: Color(0xFFE65100), fontWeight: FontWeight.w600)),
+                      Text(totalTimeLabel, style: const TextStyle(fontSize: 11, color: Color(0xFFE65100), fontWeight: FontWeight.w600)),
                     ],
                   ]),
                 ])),
@@ -464,7 +465,7 @@ class _TeacherCbtPageState extends State<TeacherCbtPage> {
           content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Exam Title *', border: OutlineInputBorder())),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(value: selectedAssignmentId, decoration: const InputDecoration(labelText: 'Class & Subject *', border: OutlineInputBorder()), items: assignments.map((a) {
+            DropdownButtonFormField<String>(initialValue: selectedAssignmentId, decoration: const InputDecoration(labelText: 'Class & Subject *', border: OutlineInputBorder()), items: assignments.map((a) {
               final subj = a['subjects'] as Map<String, dynamic>? ?? {};
               final cls = a['classes'] as Map<String, dynamic>? ?? {};
               final label = '${cls['name'] ?? ''} ${cls['section'] ?? ''} \u2022 ${subj['name'] ?? ''}'.trim();

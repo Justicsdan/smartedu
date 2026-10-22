@@ -3,7 +3,6 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for term_comments CRUD operations.
 /// Handles behavioral ratings (conduct, attitude, interest, punctuality)

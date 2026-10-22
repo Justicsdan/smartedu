@@ -77,7 +77,7 @@ class _ChangePasswordSectionState extends State<ChangePasswordSection> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: StadiumBorder()));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F), behavior: SnackBarBehavior.floating, shape: const StadiumBorder()));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

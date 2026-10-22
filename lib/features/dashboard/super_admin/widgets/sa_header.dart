@@ -15,7 +15,7 @@ class SaHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           "Dashboard",
           style: TextStyle(
             fontSize: 26,

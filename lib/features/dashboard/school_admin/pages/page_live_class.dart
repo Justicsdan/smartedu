@@ -6,7 +6,7 @@ import '../../../../core/services/db_proxy.dart';
 import '../../../../widgets/jitsi_embed_view.dart';
 
 class AdminLiveClassPage extends StatefulWidget {
-  const AdminLiveClassPage({Key? key}) : super(key: key);
+  const AdminLiveClassPage({super.key});
   @override
   State<AdminLiveClassPage> createState() => _AdminLiveClassPageState();
 }
@@ -32,10 +32,12 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         .inFilter('status', ['scheduled', 'live'])
         .order('scheduled_at', ascending: true)
         .get();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _classes = res;
         _loading = false;
       });
+      }
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -63,10 +65,12 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         'scheduled_at': scheduledTime?.toIso8601String(),
       });
       
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isLive = scheduledTime == null;
         _loading = false;
       });
+      }
       _fetchClasses();
     } catch (e) {
       if (mounted) {
@@ -147,7 +151,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DropdownButtonFormField<String>(
-                        value: selectedAudience,
+                        initialValue: selectedAudience,
                         decoration: const InputDecoration(labelText: 'Audience', border: OutlineInputBorder()),
                         items: const [
                           DropdownMenuItem(value: 'class', child: Text('Specific Class')),
@@ -164,7 +168,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                       const SizedBox(height: 16),
                       if (selectedAudience == 'class') ...[
                         DropdownButtonFormField<String>(
-                          value: selectedClassId,
+                          initialValue: selectedClassId,
                           decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
                           items: p.classes.map((c) => DropdownMenuItem<String>(
                             value: c['id'] as String?, 
@@ -174,7 +178,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: selectedSubjectId,
+                          initialValue: selectedSubjectId,
                           decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
                           items: p.subjects.map((s) => DropdownMenuItem<String>(
                             value: s['id'] as String?, 
@@ -189,12 +193,12 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
-                        child: Row(
+                        child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.info_outline, size: 16, color: Colors.orange),
-                            const SizedBox(width: 8),
-                            const Expanded(
+                            Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Expanded(
                               child: Text(
                                 'Note: The host (Admin/Teacher) will be asked to log in to Jitsi once to authorize the room. Students join as guests without logging in.',
                                 style: TextStyle(fontSize: 11, color: Color(0xFFE65100)),
@@ -356,14 +360,14 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
           child: _loading 
             ? const CircularProgressIndicator(color: Color(0xFF1A237E))
             : _classes.isEmpty
-                ? Column(
+                ? const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.event_busy, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
-                      const SizedBox(height: 8),
-                      const Text('There are no scheduled or live classes in the school right now.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                      Icon(Icons.event_busy, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('No Classes Scheduled', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1B2A4A))),
+                      SizedBox(height: 8),
+                      Text('There are no scheduled or live classes in the school right now.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                     ],
                   )
                 : ListView.builder(

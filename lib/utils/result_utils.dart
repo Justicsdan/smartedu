@@ -4,6 +4,7 @@
 /// MASTER PLAN: Every computation returns isolated school data.
 /// Zero platform branding. All outputs carry school identity only.
 /// Optimized for global scale (O(N log N) sorting, strict type safety).
+library;
 
 class ResultUtils {
 
@@ -542,7 +543,7 @@ class ResultUtils {
       'total_students': rows.length,
       'pass_count': passCount,
       'fail_count': failCount,
-      'pass_percentage': rows.length > 0 ? (passCount / rows.length) * 100 : 0.0,
+      'pass_percentage': rows.isNotEmpty ? (passCount / rows.length) * 100 : 0.0,
     };
   }
 }

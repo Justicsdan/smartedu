@@ -6,7 +6,7 @@ import '../../../../core/services/db_proxy.dart';
 import '../../../../widgets/jitsi_embed_view.dart';
 
 class TeacherLiveClassPage extends StatefulWidget {
-  const TeacherLiveClassPage({Key? key}) : super(key: key);
+  const TeacherLiveClassPage({super.key});
 
   @override
   State<TeacherLiveClassPage> createState() => _TeacherLiveClassPageState();
@@ -46,10 +46,12 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
         return audience == 'teachers' || audience == 'all' || live['teacher_id']?.toString() == p.teacherId;
       }).toList();
 
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _myClasses = visibleClasses;
         _loading = false;
       });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -228,7 +230,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
                     const Text('Schedule a Live Class', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 24),
                     DropdownButtonFormField<String>(
-                      value: _selectedClassId,
+                      initialValue: _selectedClassId,
                       decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
                       items: p.myClasses.map((c) => DropdownMenuItem<String>(
                         value: c['id'] as String?, 
@@ -241,7 +243,7 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedSubjectId,
+                      initialValue: _selectedSubjectId,
                       decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
                       items: p.mySubjectAssignments.where((s) => s['class_id']?.toString() == _selectedClassId).map((s) {
                         final subjName = s['subjects']?['name'] ?? 'Subject';

@@ -470,7 +470,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       children: [
                         Text(
                           _getStudentName(provider),
-                          style: TextStyle(
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.w500),

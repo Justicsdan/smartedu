@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../auth/school_code_login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -269,14 +268,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               color: Colors.white,
               border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
               boxShadow: [
-                BoxShadow(color: Color(0xFF3B82F6).withOpacity(0.5), blurRadius: 50, spreadRadius: 2, offset: const Offset(0, 14)),
-                BoxShadow(color: Color(0xFF6366F1).withOpacity(0.3), blurRadius: 40, spreadRadius: 0, offset: const Offset(0, 0)),
+                BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.5), blurRadius: 50, spreadRadius: 2, offset: const Offset(0, 14)),
+                BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), blurRadius: 40, spreadRadius: 0, offset: const Offset(0, 0)),
                 BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
               ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(10),
-              child: Image.asset('assets/images/smartedu_logo.png', fit: BoxFit.contain),
+              child: Image.asset('assets/images/smartedu_logo.webp', fit: BoxFit.contain),
           ),
           ),
         ),
@@ -443,7 +442,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Container(
                   width: 64, height: 64,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(begin: Alignment(-0.3, -0.3), end: Alignment(1.0, 1.0), colors: [color, color.withOpacity(0.6)]),
+                    gradient: LinearGradient(begin: const Alignment(-0.3, -0.3), end: const Alignment(1.0, 1.0), colors: [color, color.withOpacity(0.6)]),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 6))],
                   ),
@@ -542,9 +541,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         final t = _gradientAnim.value;
         return ShaderMask(
           shaderCallback: (b) {
-            final c1 = const Color(0xFF6366F1);
-            final c2 = const Color(0xFFA78BFA);
-            final c3 = const Color(0xFFF472B6);
+            const c1 = Color(0xFF6366F1);
+            const c2 = Color(0xFFA78BFA);
+            const c3 = Color(0xFFF472B6);
             return LinearGradient(
               colors: [
                 c1,
@@ -709,39 +708,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _gradingShowcase(bool w) {
     final systems = [
-      _GSystem(
-        title: 'SSS', subtitle: 'WAEC · NECO · IGCSE', icon: Icons.school_rounded, color: const Color(0xFF6366F1),
+      const _GSystem(
+        title: 'SSS', subtitle: 'WAEC · NECO · IGCSE', icon: Icons.school_rounded, color: Color(0xFF6366F1),
         grades: [
-          ('A1', const Color(0xFF22C55E)), ('B2', const Color(0xFF4ADE80)), ('B3', const Color(0xFF86EFAC)),
-          ('C4', const Color(0xFFFBBF24)), ('C5', const Color(0xFFFCD34D)), ('C6', const Color(0xFFFDE68A)),
-          ('D7', const Color(0xFFFB923C)), ('E8', const Color(0xFFFDBA74)), ('F9', const Color(0xFFEF4444)),
+          ('A1', Color(0xFF22C55E)), ('B2', Color(0xFF4ADE80)), ('B3', Color(0xFF86EFAC)),
+          ('C4', Color(0xFFFBBF24)), ('C5', Color(0xFFFCD34D)), ('C6', Color(0xFFFDE68A)),
+          ('D7', Color(0xFFFB923C)), ('E8', Color(0xFFFDBA74)), ('F9', Color(0xFFEF4444)),
         ],
         desc: 'Five assessment columns with auto position computation',
       ),
-      _GSystem(
-        title: 'JSS', subtitle: 'BECE Standard', icon: Icons.menu_book_rounded, color: const Color(0xFF10B981),
+      const _GSystem(
+        title: 'JSS', subtitle: 'BECE Standard', icon: Icons.menu_book_rounded, color: Color(0xFF10B981),
         grades: [
-          ('A', const Color(0xFF22C55E)), ('B', const Color(0xFF14B8A6)),
-          ('C', const Color(0xFFFBBF24)), ('P', const Color(0xFFFB923C)), ('F', const Color(0xFFEF4444)),
+          ('A', Color(0xFF22C55E)), ('B', Color(0xFF14B8A6)),
+          ('C', Color(0xFFFBBF24)), ('P', Color(0xFFFB923C)), ('F', Color(0xFFEF4444)),
         ],
         desc: 'Continuous Assessment and Exam — two columns',
       ),
-      _GSystem(
-        title: 'Primary', subtitle: '5-Point Scale', icon: Icons.child_care_rounded, color: const Color(0xFFF59E0B),
+      const _GSystem(
+        title: 'Primary', subtitle: '5-Point Scale', icon: Icons.child_care_rounded, color: Color(0xFFF59E0B),
         grades: [
-          ('5', const Color(0xFF22C55E)), ('4', const Color(0xFF14B8A6)),
-          ('3', const Color(0xFFFBBF24)), ('2', const Color(0xFFFB923C)), ('1', const Color(0xFFEF4444)),
+          ('5', Color(0xFF22C55E)), ('4', Color(0xFF14B8A6)),
+          ('3', Color(0xFFFBBF24)), ('2', Color(0xFFFB923C)), ('1', Color(0xFFEF4444)),
         ],
         desc: 'Three assessment columns with simple grading',
       ),
-      _GSystem(
-        title: 'American', subtitle: 'US GPA System', icon: Icons.star_rounded, color: const Color(0xFFEC4899),
+      const _GSystem(
+        title: 'American', subtitle: 'US GPA System', icon: Icons.star_rounded, color: Color(0xFFEC4899),
         grades: [
-          ('A', const Color(0xFF22C55E)), ('A-', const Color(0xFF4ADE80)),
-          ('B+', const Color(0xFF14B8A6)), ('B', const Color(0xFF2DD4BF)), ('B-', const Color(0xFF5EEAD4)),
-          ('C+', const Color(0xFFFBBF24)), ('C', const Color(0xFFFCD34D)), ('C-', const Color(0xFFFDE68A)),
-          ('D+', const Color(0xFFFB923C)), ('D', const Color(0xFFFDBA74)), ('D-', const Color(0xFFFED7AA)),
-          ('F', const Color(0xFFEF4444)),
+          ('A', Color(0xFF22C55E)), ('A-', Color(0xFF4ADE80)),
+          ('B+', Color(0xFF14B8A6)), ('B', Color(0xFF2DD4BF)), ('B-', Color(0xFF5EEAD4)),
+          ('C+', Color(0xFFFBBF24)), ('C', Color(0xFFFCD34D)), ('C-', Color(0xFFFDE68A)),
+          ('D+', Color(0xFFFB923C)), ('D', Color(0xFFFDBA74)), ('D-', Color(0xFFFED7AA)),
+          ('F', Color(0xFFEF4444)),
         ],
         desc: 'Five assessment columns with 4.0 GPA points',
       ),

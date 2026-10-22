@@ -3,7 +3,6 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for subject management.
 /// Handles loading, creating, updating, and deleting subjects.
@@ -22,6 +21,7 @@ mixin SubjectMixin on BaseProvider {
 
   /// Class-subject link records (which subjects belong to which class).
   /// Used by page_result.dart to filter subjects by selected class.
+  @override
   List<Map<String, dynamic>> get classSubjects => _classSubjects;
 
   /// All subjects — for dropdowns and assignments
@@ -52,6 +52,7 @@ mixin SubjectMixin on BaseProvider {
 
   /// Load class_subjects for the school.
   /// Called during core data loading alongside loadSubjects().
+  @override
   Future<void> loadClassSubjects() async {
     if (schoolId.isEmpty) {
       _classSubjects = [];

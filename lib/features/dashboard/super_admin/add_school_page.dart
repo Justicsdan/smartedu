@@ -179,7 +179,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     if (_logoFile == null) return null;
     try {
       final safeName = _schoolNameController.text.trim().replaceAll(' ', '_').toLowerCase();
-      final path = '$schoolId/school_logo_${safeName}.jpg';
+      final path = '$schoolId/school_logo_$safeName.jpg';
       await Supabase.instance.client.storage.from('passports').upload(path, _logoFile!, fileOptions: const FileOptions(upsert: true));
       return Supabase.instance.client.storage.from('passports').getPublicUrl(path);
     } catch (e) {
@@ -200,7 +200,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSchoolType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Please select a school type'), backgroundColor: const Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
       return;
     }
 
@@ -295,7 +295,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
           msg = 'Admin username "$username" already exists.';
         } else if (e.code == '23514') {
           msg = 'Invalid school type value. Please contact support.';
-        } else if (e.message?.contains('admin_username') == true) {
+        } else if (e.message.contains('admin_username') == true) {
           msg = 'Admin username already taken.';
         } else {
           msg = 'Error: ${e.message ?? e.code}';
@@ -632,7 +632,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
               if (_formKey.currentState!.validate() && _selectedSchoolType != null) {
                 setState(() => _currentStep = 1);
               } else if (_selectedSchoolType == null) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a school type'), backgroundColor: Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Please select a school type'), backgroundColor: const Color(0xFFE65100), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
@@ -761,7 +761,7 @@ class _AddSchoolPageState extends State<AddSchoolPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: DropdownButtonFormField<String>(
-        value: currentValue,
+        initialValue: currentValue,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: Colors.grey.shade600),

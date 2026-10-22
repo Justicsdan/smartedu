@@ -25,7 +25,7 @@ class PageCbt extends StatefulWidget {
 
 class _PageCbtState extends State<PageCbt> {
   final Set<String> _expandedExamIds = {};
-  Map<String, List<Map<String, dynamic>>> _questions = {};
+  final Map<String, List<Map<String, dynamic>>> _questions = {};
 
   static const List<MapEntry<int, String>> _timeOptions = [
     MapEntry(0, "Not set"),
@@ -162,7 +162,7 @@ class _PageCbtState extends State<PageCbt> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: correctOpt,
+                  initialValue: correctOpt,
                   decoration: const InputDecoration(
                     labelText: "Correct Answer *",
                     border: OutlineInputBorder(),
@@ -191,7 +191,7 @@ class _PageCbtState extends State<PageCbt> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: selectedTime,
+                        initialValue: selectedTime,
                         decoration: const InputDecoration(
                           labelText: "Time Limit",
                           border: OutlineInputBorder(),
@@ -304,7 +304,7 @@ class _PageCbtState extends State<PageCbt> {
       if (qPart.isNotEmpty && qPart.codeUnitAt(0) >= 48 && qPart.codeUnitAt(0) <= 57) {
         qPart = qPart.replaceFirst(RegExp(r'^\d+[.)\s]+'), '');
       }
-      if (questionText == null) { questionText = qPart; } else { questionText = questionText! + ' ' + qPart; }
+      if (questionText == null) { questionText = qPart; } else { questionText = '${questionText!} $qPart'; }
     }
     saveCurrent();
     return results;
@@ -324,7 +324,7 @@ class _PageCbtState extends State<PageCbt> {
           title: Text(
             step == 0
                 ? "Bulk Import Questions"
-                : "Preview (" + parsed.length.toString() + " questions)",
+                : "Preview (${parsed.length} questions)",
           ),
           content: SizedBox(
             width: 520,
@@ -359,7 +359,7 @@ class _PageCbtState extends State<PageCbt> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButtonFormField<int>(
-                                value: selectedTime,
+                                initialValue: selectedTime,
                                 decoration: const InputDecoration(
                                   labelText: "Time per question",
                                   border: OutlineInputBorder(),
@@ -414,14 +414,9 @@ class _PageCbtState extends State<PageCbt> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        parsed.length.toString() +
-                            " questions parsed. Each worth " +
-                            marksCtrl.text.trim() +
-                            " marks" +
-                            (selectedTime > 0
-                                ? ", " + _formatTimeAllocation(selectedTime) + " each"
-                                : "") +
-                            ".",
+                        "${parsed.length} questions parsed. Each worth ${marksCtrl.text.trim()} marks${selectedTime > 0
+                                ? ", ${_formatTimeAllocation(selectedTime)} each"
+                                : ""}.",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF2E7D32),
@@ -440,15 +435,14 @@ class _PageCbtState extends State<PageCbt> {
                             final cText = "C. " + (q["option_c"] ?? "-");
                             final dText = "D. " + (q["option_d"] ?? "-");
                             final ansText =
-                                "Answer: " +
-                                (q["correct_option"] ?? "")
+                                "Answer: ${(q["correct_option"] ?? "")
                                     .toString()
-                                    .toUpperCase();
+                                    .toUpperCase()}";
                             final marksText =
-                                "  |  Marks: " + (q["marks"] ?? 1).toString();
+                                "  |  Marks: ${q["marks"] ?? 1}";
                             final timeText = (q["time_allocation"] as int?) != null &&
                                     (q["time_allocation"] as int?)! > 0
-                                ? "  |  " + _formatTimeAllocation(q["time_allocation"] as int?)
+                                ? "  |  ${_formatTimeAllocation(q["time_allocation"] as int?)}"
                                 : "";
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
@@ -465,8 +459,7 @@ class _PageCbtState extends State<PageCbt> {
                                       CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      (i + 1).toString() +
-                                          ". " +
+                                      "${i + 1}. " +
                                           (q["question_text"] ?? ""),
                                       style: const TextStyle(
                                         fontSize: 12,
@@ -475,14 +468,14 @@ class _PageCbtState extends State<PageCbt> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      aText + "   " + bText,
+                                      "$aText   $bText",
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey,
                                       ),
                                     ),
                                     Text(
-                                      cText + "   " + dText,
+                                      "$cText   $dText",
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey,
@@ -648,7 +641,7 @@ class _PageCbtState extends State<PageCbt> {
           final classLabel = className + sec;
           final durText = (e["duration_minutes"] ?? "").toString();
           final durShow =
-              durText.isNotEmpty ? durText + "min" : null;
+              durText.isNotEmpty ? "${durText}min" : null;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -868,7 +861,7 @@ class _PageCbtState extends State<PageCbt> {
             const SizedBox(width: 12),
             IconButton(
               icon: const Icon(Icons.people_alt_outlined,
-                  size: 20, color: const Color(0xFF1A237E)),
+                  size: 20, color: Color(0xFF1A237E)),
               tooltip: 'View Attempts',
               onPressed: () => _showAttemptsDialog(e),
             ),
@@ -929,7 +922,7 @@ class _PageCbtState extends State<PageCbt> {
                 const Text('This will overwrite the selected column with the student\'s CBT scores and recalculate their totals.\n\nSelect column to sync:'),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedKey,
+                  initialValue: selectedKey,
                   decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
                   items: assessments.map((a) => DropdownMenuItem(value: a['id'] as String, child: Text(a['name'] as String))).toList(),
                   onChanged: (v) => setSt(() => selectedKey = v),
@@ -1009,7 +1002,7 @@ class _PageCbtState extends State<PageCbt> {
       child: Row(
         children: [
           Text(
-            "Questions (" + questions.length.toString() + ")",
+            "Questions (${questions.length})",
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -1133,7 +1126,7 @@ class _PageCbtState extends State<PageCbt> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  "Ans: " + _correctOptionLabel(correctOpt),
+                  "Ans: ${_correctOptionLabel(correctOpt)}",
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -1150,7 +1143,7 @@ class _PageCbtState extends State<PageCbt> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  marks.toString() + " marks",
+                  "$marks marks",
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -1214,7 +1207,7 @@ class _PageCbtState extends State<PageCbt> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: classId,
+                initialValue: classId,
                 decoration: const InputDecoration(
                   labelText: "Class *",
                   border: OutlineInputBorder(),
@@ -1231,7 +1224,7 @@ class _PageCbtState extends State<PageCbt> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: subjectId,
+                initialValue: subjectId,
                 decoration: const InputDecoration(
                   labelText: "Subject *",
                   border: OutlineInputBorder(),
@@ -1312,9 +1305,7 @@ class _PageCbtState extends State<PageCbt> {
           ],
         ),
         content: Text(
-          'Delete "' +
-              (title ?? "this exam") +
-              '"? This will also delete all its questions.',
+          'Delete "${title ?? "this exam"}"? This will also delete all its questions.',
         ),
         actions: [
           TextButton(
@@ -1343,7 +1334,7 @@ class _PageCbtState extends State<PageCbt> {
     String? questionText,
   ) {
     final preview = questionText != null && questionText.length > 50
-        ? questionText.substring(0, 50) + "..."
+        ? "${questionText.substring(0, 50)}..."
         : questionText ?? "this question";
     showDialog(
       context: context,
@@ -1357,7 +1348,7 @@ class _PageCbtState extends State<PageCbt> {
             Text("Delete Question"),
           ],
         ),
-        content: Text('Delete "' + preview + '"?'),
+        content: Text('Delete "$preview"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

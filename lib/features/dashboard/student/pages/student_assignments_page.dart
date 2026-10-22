@@ -184,7 +184,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                       }
                     } catch (e) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Submission failed: $e'), backgroundColor: Color(0xFFD32F2F)),
+                        SnackBar(content: Text('Submission failed: $e'), backgroundColor: const Color(0xFFD32F2F)),
                       );
                     }
                   },
@@ -294,7 +294,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(6)),
-                            child: Text('${sub?['score'] ?? ''}/${a['total_marks'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32))),
+                            child: Text('${sub['score'] ?? ''}/${a['total_marks'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32))),
                           )
                         else if (isSubmitted)
                           Container(
@@ -340,7 +340,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                               child: const Text('Submit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A237E))),
                             ),
                           ),
-                        if (isGraded && sub?['teacher_remark'] != null && (sub!['teacher_remark'] as String).isNotEmpty)
+                        if (isGraded && sub['teacher_remark'] != null && (sub['teacher_remark'] as String).isNotEmpty)
                           const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -351,7 +351,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                           ),
                       ],
                     ),
-                    if (isGraded && sub?['teacher_remark'] != null && (sub!['teacher_remark'] as String).isNotEmpty) ...[
+                    if (isGraded && sub['teacher_remark'] != null && (sub['teacher_remark'] as String).isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -361,7 +361,7 @@ class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
                           children: [
                             const Icon(Icons.rate_review_outlined, size: 16, color: Color(0xFF2E7D32)),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(sub!['teacher_remark'], style: const TextStyle(fontSize: 12, color: Color(0xFF2E7D32), height: 1.4))),
+                            Expanded(child: Text(sub['teacher_remark'], style: const TextStyle(fontSize: 12, color: Color(0xFF2E7D32), height: 1.4))),
                           ],
                         ),
                       ),

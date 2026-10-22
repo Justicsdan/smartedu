@@ -59,17 +59,17 @@ class AdminSubjectAveragesChart extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final display = entries.length > 15 ? entries.sublist(0, 15) : entries;
-    final maxScale = 100.0;
+    const maxScale = 100.0;
 
     return ChartTheme.card(
       title: 'Subject Performance',
       icon: Icons.bar_chart,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final labelW = 110.0;
-          final scoreW = 48.0;
-          final gap = 8.0;
-          final barLeft = labelW + gap;
+          const labelW = 110.0;
+          const scoreW = 48.0;
+          const gap = 8.0;
+          const barLeft = labelW + gap;
           final barRight = constraints.maxWidth - scoreW - gap;
           final barWidth = (barRight - barLeft).clamp(0.0, double.infinity);
 
@@ -93,7 +93,7 @@ class AdminSubjectAveragesChart extends StatelessWidget {
                             maxLines: 1,
                           ),
                         ),
-                        SizedBox(width: gap),
+                        const SizedBox(width: gap),
                         SizedBox(
                           width: barWidth,
                           child: Stack(
@@ -116,7 +116,7 @@ class AdminSubjectAveragesChart extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(width: gap),
+                        const SizedBox(width: gap),
                         SizedBox(
                           width: scoreW,
                           child: Text(

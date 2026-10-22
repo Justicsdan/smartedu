@@ -68,9 +68,9 @@ class AcePdfGenerator {
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
             pw.Text(schoolInfo['name'] ?? '', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
-            pw.Text(schoolInfo['motto'] ?? '', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+            pw.Text(schoolInfo['motto'] ?? '', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
             if (schoolInfo['address'] != null && (schoolInfo['address'] as String).isNotEmpty)
-              pw.Text(schoolInfo['address'], style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+              pw.Text(schoolInfo['address'], style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
           ],
         ),
       ),
@@ -81,7 +81,7 @@ class AcePdfGenerator {
     ];
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 6),
-      decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.blue800, width: 2))),
+      decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.blue800, width: 2))),
       child: pw.Row(children: ch),
     );
   }
@@ -107,7 +107,7 @@ class AcePdfGenerator {
       decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400, width: 1.5)),
       child: passportImg != null
           ? pw.ClipRRect(horizontalRadius: 4, verticalRadius: 4, child: pw.Image(passportImg, fit: pw.BoxFit.cover))
-          : pw.Center(child: pw.Text('Photo', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey300))),
+          : pw.Center(child: pw.Text('Photo', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey300))),
     );
 
     return pw.Container(
@@ -147,13 +147,13 @@ class AcePdfGenerator {
       if (list.length > maxP) maxP = list.length;
     }
     if (maxP == 0) {
-      return pw.Center(child: pw.Text('No PACE scores recorded.', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)));
+      return pw.Center(child: pw.Text('No PACE scores recorded.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)));
     }
 
     // A4 with 20pt margins = 555pt usable
-    final subjectW = 75.0;
-    final totalW = 32.0;
-    final remaining = 555.0 - subjectW - totalW;
+    const subjectW = 75.0;
+    const totalW = 32.0;
+    const remaining = 555.0 - subjectW - totalW;
     final colW = remaining / (maxP * 2);
 
     final hdr = <pw.Widget>[_hc('Subject')];
@@ -185,7 +185,7 @@ class AcePdfGenerator {
       final validPts = scores.where((s) => s['pt_score'] != null).map((s) => (s['pt_score'] as num).toDouble()).toList();
       final total = validPts.isNotEmpty ? validPts.reduce((a, b) => a + b) : 0.0;
       final totalColor = total < 80 ? PdfColors.red800 : PdfColors.green800;
-      final rowBg = rows.length.isEven ? PdfColors.white : PdfColor(0.93, 0.96, 1.0);
+      final rowBg = rows.length.isEven ? PdfColors.white : const PdfColor(0.93, 0.96, 1.0);
 
       final cells = <pw.Widget>[_dc(subj['name'] ?? '', weight: pw.FontWeight.bold)];
       final sorted = List<Map<String, dynamic>>.from(scores)
@@ -206,13 +206,13 @@ class AcePdfGenerator {
     }
 
     final cw = <int, pw.TableColumnWidth>{
-      0: pw.FixedColumnWidth(subjectW),
+      0: const pw.FixedColumnWidth(subjectW),
     };
     for (int i = 0; i < maxP; i++) {
       cw[1 + i * 2] = pw.FixedColumnWidth(colW);
       cw[2 + i * 2] = pw.FixedColumnWidth(colW);
     }
-    cw[1 + maxP * 2] = pw.FixedColumnWidth(totalW);
+    cw[1 + maxP * 2] = const pw.FixedColumnWidth(totalW);
 
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey500, width: 0.5),
@@ -232,7 +232,7 @@ class AcePdfGenerator {
   static pw.Widget _rpValue(String t) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      child: pw.Text(t, style: pw.TextStyle(fontSize: 7)),
+      child: pw.Text(t, style: const pw.TextStyle(fontSize: 7)),
     );
   }
 
@@ -299,7 +299,7 @@ class AcePdfGenerator {
           // Data table (no outer border — outer container provides it)
           pw.Table(
             columnWidths: dataColWidths,
-            border: pw.TableBorder(
+            border: const pw.TableBorder(
               horizontalInside: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
               verticalInside: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
             ),
@@ -338,7 +338,7 @@ class AcePdfGenerator {
         else
           pw.SizedBox(height: 16),
         pw.SizedBox(height: 4),
-        pw.Text('Signature: ___________________', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+        pw.Text('Signature: ___________________', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
       ],
     );
   }
@@ -362,7 +362,7 @@ class AcePdfGenerator {
 
   static pw.Widget _footerItem(String label, String value, PdfColor color) {
     return pw.Column(children: [
-      pw.Text(label, style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+      pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
       pw.SizedBox(height: 2),
       pw.Text(value, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: color)),
     ]);

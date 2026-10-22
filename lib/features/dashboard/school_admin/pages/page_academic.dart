@@ -133,7 +133,7 @@ class _PageAcademicState extends State<PageAcademic>
                 children: [
                   if (type == 'Term')
                     DropdownButtonFormField<String>(
-                      value: selectedSessionId,
+                      initialValue: selectedSessionId,
                       hint: const Text('Select Session'),
                       items: _sessions
                           .map((s) => DropdownMenuItem(

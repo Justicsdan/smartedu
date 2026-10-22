@@ -3,7 +3,6 @@ import 'package:smartedu/core/services/db_proxy.dart';
 // File: lib/features/dashboard/teacher/pages/teacher_enter_scores.dart
 // ==========================================
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
@@ -318,13 +317,13 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                   size: 32, color: Colors.grey.shade400),
             ),
             const SizedBox(height: 20),
-            Text('Score entry requires subject assignment',
+            const Text('Score entry requires subject assignment',
                 style: TextStyle(
                     fontSize: 16,
-                    color: const Color(0xFF111827),
+                    color: Color(0xFF111827),
                     fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text('Contact your admin to get assigned to a subject.',
+            const Text('Contact your admin to get assigned to a subject.',
                 style: TextStyle(fontSize: 13, color: Colors.grey)),
           ],
         ),
@@ -348,10 +347,10 @@ class _TeacherEnterScoresPageState extends State<TeacherEnterScoresPage> {
                   Icon(Icons.class_rounded, size: 32, color: Colors.grey.shade400),
             ),
             const SizedBox(height: 20),
-            Text('No classes assigned yet',
+            const Text('No classes assigned yet',
                 style: TextStyle(
                     fontSize: 16,
-                    color: const Color(0xFF111827),
+                    color: Color(0xFF111827),
                     fontWeight: FontWeight.w600)),
           ],
         ),

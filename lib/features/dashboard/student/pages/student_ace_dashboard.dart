@@ -74,10 +74,10 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
     final scoresBySubject = provider.getMyPaceScoresBySubject();
 
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF7F8FA),
+      return const Scaffold(
+        backgroundColor: Color(0xFFF7F8FA),
         body: Center(
-          child: CircularProgressIndicator(color: const Color(0xFF1A237E)),
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
         ),
       );
     }
@@ -239,7 +239,7 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
           Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 1),
           if (isReadOnly)
-            Text(display, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1A2377E)))
+            Text(display, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xff1a2377e)))
           else
             Container(
               width: double.infinity,
@@ -326,8 +326,8 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
                   columns: [
                     const DataColumn(label: Text('Subject')),
                     for (int i = 0; i < maxPaces; i++) ...[
-                      DataColumn(label: SizedBox(width: 52, child: const Center(child: Text('PACE No.', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))))),
-                      DataColumn(label: SizedBox(width: 36, child: const Center(child: Text('PT', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))))),
+                      const DataColumn(label: SizedBox(width: 52, child: Center(child: Text('PACE No.', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))))),
+                      const DataColumn(label: SizedBox(width: 36, child: Center(child: Text('PT', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))))),
                     ],
                     const DataColumn(label: SizedBox(width: 52, child: Center(child: Text('Total', textAlign: TextAlign.center, style: TextStyle(fontSize: 10))))),
                   ],

@@ -114,7 +114,7 @@ class _PageAceReportsState extends State<PageAceReports> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: DropdownButtonFormField<String>(
-              value: _classes.any((c) => c['id'].toString() == _selectedClassId) ? _selectedClassId : null,
+              initialValue: _classes.any((c) => c['id'].toString() == _selectedClassId) ? _selectedClassId : null,
               decoration: const InputDecoration(
                 labelText: 'Select Class',
                 prefixIcon: Icon(Icons.class_rounded),
@@ -366,7 +366,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                           Container(width: 1, height: 40, color: const Color(0xFFD0D7FF)),
                           _sCol('NCE', (nce as num).toStringAsFixed(1), const Color(0xFFE65100)),
                           Container(width: 1, height: 40, color: const Color(0xFFD0D7FF)),
-                          _sCol('Total', (hacs as num).toStringAsFixed(1), const Color(0xFF2E7D32)),
+                          _sCol('Total', (hacs).toStringAsFixed(1), const Color(0xFF2E7D32)),
                         ],
                       ),
                     ),

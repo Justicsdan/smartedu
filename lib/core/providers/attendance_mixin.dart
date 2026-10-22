@@ -3,7 +3,6 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for attendance marking and reporting.
 /// Handles marking, querying summaries, and history retrieval.

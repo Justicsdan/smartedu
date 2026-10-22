@@ -44,7 +44,7 @@ mixin CbtMixin on BaseProvider {
           .order('created_at', ascending: false)
           .get();
       _cbtExams = List<Map<String, dynamic>>.from(r);
-      debugPrint('CBT EXAMS LOADED: ' + _cbtExams.length.toString());
+      debugPrint('CBT EXAMS LOADED: ${_cbtExams.length}');
     } catch (e) {
       debugPrint('Error loading CBT exams: $e');
     }
@@ -108,6 +108,7 @@ mixin CbtMixin on BaseProvider {
       debugPrint('Error adding CBT exam: $e');
       return null;
     }
+    return null;
   }
 
   /// Update a CBT exam in the database.
@@ -222,8 +223,9 @@ mixin CbtMixin on BaseProvider {
         // Recalculate total
         double total = 0;
         scoresJson.forEach((k, v) {
-          if (v is num) total += v.toDouble();
-          else if (v is String) total += double.tryParse(v) ?? 0;
+          if (v is num) {
+            total += v.toDouble();
+          } else if (v is String) total += double.tryParse(v) ?? 0;
         });
 
         if (existing != null) {

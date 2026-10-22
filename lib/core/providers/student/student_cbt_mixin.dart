@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'student_base.dart';
@@ -6,6 +5,7 @@ import 'student_base.dart';
 mixin StudentCbtMixin on StudentBase {
 
   List<Map<String, dynamic>> _cbtExams = [];
+  @override
   List<Map<String, dynamic>> get cbtExams => _cbtExams;
 
   @override

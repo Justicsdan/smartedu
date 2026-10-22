@@ -6,7 +6,6 @@ import 'package:smartedu/utils/grading_utils.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/foundation.dart';
 import 'student_base.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 mixin StudentResultsMixin on StudentBase {
 

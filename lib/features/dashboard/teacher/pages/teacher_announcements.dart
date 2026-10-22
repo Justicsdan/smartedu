@@ -14,7 +14,7 @@ class _TeacherAnnouncementsPageState
   final _titleController = TextEditingController();
   final _msgController = TextEditingController();
   String? _selectedClassId;
-  List<Map<String, String>> _announcements = [
+  final List<Map<String, String>> _announcements = [
     {
       "title": "Mid-term Test",
       "msg":

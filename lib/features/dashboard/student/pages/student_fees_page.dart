@@ -206,10 +206,10 @@ class _StudentFeesPageState extends State<StudentFeesPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Paid: ${c}${totalPaid.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                      Text('Total: ${c}${totalOwed.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+                      Text('Paid: $c${totalPaid.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text('Total: $c${totalOwed.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                       if (!isPaid)
-                        Text('Balance: ${c}${balance.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFD32F2F))),
+                        Text('Balance: $c${balance.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFD32F2F))),
                     ],
                   ),
                 ],
@@ -296,7 +296,7 @@ class _StudentFeesPageState extends State<StudentFeesPage> {
                       ],
                     ),
                   ),
-                  Text('${c}${amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                  Text('$c${amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
                 ],
               ),
             );

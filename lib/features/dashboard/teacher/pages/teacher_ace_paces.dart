@@ -427,7 +427,7 @@ class _TeacherAcePacesPageState extends State<TeacherAcePacesPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: Color(0xFFD32F2F),
+          backgroundColor: const Color(0xFFD32F2F),
         ));
       }
     } finally {
@@ -483,7 +483,7 @@ class _TeacherAcePacesPageState extends State<TeacherAcePacesPage> {
                             fontSize: 13, color: Color(0xFF9CA3AF)))
                   else
                     DropdownButtonFormField<String>(
-                      value: _selectedClassId,
+                      initialValue: _selectedClassId,
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(

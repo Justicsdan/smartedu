@@ -492,7 +492,7 @@ class _PageSettingsState extends State<PageSettings>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: activeColor,
+            activeThumbColor: activeColor,
             inactiveTrackColor: Colors.grey.shade300,
           ),
         ],
@@ -1124,7 +1124,7 @@ class _PageSettingsState extends State<PageSettings>
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: (provider.schoolSettings?['exam_template'] ?? 'WAEC').toString(),
+                          initialValue: (provider.schoolSettings?['exam_template'] ?? 'WAEC').toString(),
                           decoration: const InputDecoration(
                             labelText: 'Exam Template (SSS Default)',
                             border: OutlineInputBorder(),
@@ -1998,8 +1998,9 @@ class _PageSettingsState extends State<PageSettings>
       final ext = name.contains('.')
           ? name.split('.').last.toLowerCase()
           : 'png';
-      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext))
+      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
         throw Exception('Invalid file type.');
+      }
       final path = '$sid/logo.$ext';
       await Supabase.instance.client.storage
           .from('school-logos')

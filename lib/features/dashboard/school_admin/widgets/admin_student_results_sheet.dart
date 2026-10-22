@@ -9,7 +9,6 @@ import 'package:smartedu/utils/chart_theme.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:http/http.dart' as http;
-import 'package:smartedu/utils/grading_utils.dart';
 import 'package:smartedu/utils/pdf_download_utils.dart';
 
 class AdminStudentResultsPage extends StatefulWidget {
@@ -24,7 +23,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
   bool _isDownloading = false;
   List<Map<String, dynamic>> _scores = [];
   Map<String, dynamic>? _summary;
-  Map<String, String> _behavioralRatings = {};
+  final Map<String, String> _behavioralRatings = {};
   Map<String, dynamic>? _termComment;
   List<Map<String, dynamic>> _assessmentTypes = [];
   Map<String, dynamic>? _positionData;
@@ -90,8 +89,8 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
         });
       }
     } catch (e) {
-      debugPrint('AdminStudentResultsPage error: ' + e.toString());
-      if (mounted) setState(() { _loading = false; _error = 'Failed: ' + e.toString(); });
+      debugPrint('AdminStudentResultsPage error: $e');
+      if (mounted) setState(() { _loading = false; _error = 'Failed: $e'; });
     }
   }
 
@@ -303,7 +302,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
         final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
         final scoresJson = _parseSj(score['scores_json']);
         final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
-        final rowColor = idx.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+        final rowColor = idx.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
         final txtColor = isPass ? PdfColors.green800 : PdfColors.red800;
 
         scoreRows.add(pw.TableRow(
@@ -328,7 +327,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
         final g = gradingSystem[i];
         final grade = (g['grade'] ?? '').toString();
         final isFail = !GradingUtils.isPassingGrade(grade, gradingSystem);
-        final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+        final rowColor = i.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
         gkRows.add(pw.TableRow(decoration: pw.BoxDecoration(color: rowColor), children: [
           _pdfCell(grade, align: pw.TextAlign.center, weight: pw.FontWeight.bold, color: isFail ? PdfColors.red800 : PdfColors.black),
           _pdfCell('${g['min']} - ${g['max']}', align: pw.TextAlign.center),
@@ -346,10 +345,10 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
             pageWidgets.add(pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
               pw.Expanded(child: pw.Column(mainAxisSize: pw.MainAxisSize.min, crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
                 pw.Text(provider.schoolName.toUpperCase(), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                if (schoolAddress.isNotEmpty) pw.Text(schoolAddress, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                if (schoolAddress.isNotEmpty) pw.Text(schoolAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                 if (schoolMotto.isNotEmpty) pw.Text('"$schoolMotto"', style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600)),
                 if (schoolPhone.isNotEmpty || schoolEmail.isNotEmpty)
-                  pw.Text([if (schoolPhone.isNotEmpty) 'Tel: $schoolPhone', if (schoolEmail.isNotEmpty) 'Email: $schoolEmail'].join('  |  '), style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text([if (schoolPhone.isNotEmpty) 'Tel: $schoolPhone', if (schoolEmail.isNotEmpty) 'Email: $schoolEmail'].join('  |  '), style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
               ])),
               if (logoImg != null) pw.Container(width: 85, height: 85, child: pw.Image(logoImg, fit: pw.BoxFit.contain)) else pw.SizedBox(width: 85, height: 85),
             ]));
@@ -367,7 +366,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
                 pw.Container(
                   width: 82, height: 104,
                   decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey600, width: 1)),
-                  child: passportImg != null ? pw.Image(passportImg, fit: pw.BoxFit.cover) : pw.Center(child: pw.Text('No Photo', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
+                  child: passportImg != null ? pw.Image(passportImg, fit: pw.BoxFit.cover) : pw.Center(child: pw.Text('No Photo', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
                 ),
                 pw.SizedBox(width: 10),
                 pw.Expanded(
@@ -429,14 +428,14 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
             ));
 
             // 6. BEHAVIORAL RATINGS
-            if (behavioralRatings != null && behavioralRatings!.isNotEmpty) {
+            if (behavioralRatings != null && behavioralRatings.isNotEmpty) {
               final behavRows = <pw.TableRow>[];
               behavRows.add(pw.TableRow(decoration: const pw.BoxDecoration(color: PdfColors.blue800), children: [_pdfHdr('BEHAVIORAL TRAIT'), _pdfHdr('RATING')]));
               final bKeys = ['punctuality', 'relationship_with_others', 'attendance_in_class', 'games_sports', 'attentiveness_in_class', 'handling_tools_lab_workshops', 'carrying_out_assignments', 'participation_in_school_activities', 'neatness', 'honesty', 'self_control'];
               for (int i = 0; i < bKeys.length; i++) {
                 final key = bKeys[i];
-                final value = (behavioralRatings?[key] ?? '').toString();
-                final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+                final value = (behavioralRatings[key] ?? '').toString();
+                final rowColor = i.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
                 behavRows.add(pw.TableRow(decoration: pw.BoxDecoration(color: rowColor), children: [
                   _pdfCell(key.replaceAll('_', ' ').split(' ').map((w) => w[0].toUpperCase() + w.substring(1)).join(' ')),
                   _pdfCell(value.isEmpty ? '-' : value, align: pw.TextAlign.center, weight: value.isEmpty ? null : pw.FontWeight.bold, color: value.isEmpty ? PdfColors.grey400 : PdfColors.blue800),
@@ -448,16 +447,16 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
 
             // 7. COMMENTS
             if (termComment != null) {
-              final tc = (termComment!['teacher_comment'] ?? '').toString();
-              final pc = (termComment!['principal_comment'] ?? '').toString();
+              final tc = (termComment['teacher_comment'] ?? '').toString();
+              final pc = (termComment['principal_comment'] ?? '').toString();
               if (tc.isNotEmpty || pc.isNotEmpty) {
                 pageWidgets.add(pw.SizedBox(height: 10));
                 pageWidgets.add(pw.Container(
                   padding: const pw.EdgeInsets.all(6),
                   decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey500, width: 0.8)),
                   child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                    if (tc.isNotEmpty) ...[pw.Text("Class Teacher's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)), pw.SizedBox(height: 2), pw.Text(tc, style: pw.TextStyle(fontSize: 8)), pw.SizedBox(height: 6)],
-                    if (pc.isNotEmpty) ...[pw.Text("Principal's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)), pw.SizedBox(height: 2), pw.Text(pc, style: pw.TextStyle(fontSize: 8))],
+                    if (tc.isNotEmpty) ...[pw.Text("Class Teacher's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)), pw.SizedBox(height: 2), pw.Text(tc, style: const pw.TextStyle(fontSize: 8)), pw.SizedBox(height: 6)],
+                    if (pc.isNotEmpty) ...[pw.Text("Principal's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)), pw.SizedBox(height: 2), pw.Text(pc, style: const pw.TextStyle(fontSize: 8))],
                   ])
                 ));
               }
@@ -465,8 +464,8 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
 
             pageWidgets.add(pw.SizedBox(height: 28));
             pageWidgets.add(pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-              pw.Column(children: [pw.Text('Class Teacher', style: pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
-              pw.Column(children: [pw.Text('Principal', style: pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
+              pw.Column(children: [pw.Text('Class Teacher', style: const pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
+              pw.Column(children: [pw.Text('Principal', style: const pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
             ]));
 
             return pageWidgets;
@@ -518,8 +517,9 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     for (final at in assessmentTypes) {
       final id = (at['id'] ?? '').toString();
       final name = (at['name'] ?? '').toString().toLowerCase().replaceAll(' ', '_');
-      if (scoresJson.containsKey(id)) keys.add(id);
-      else if (scoresJson.containsKey(name)) keys.add(name);
+      if (scoresJson.containsKey(id)) {
+        keys.add(id);
+      } else if (scoresJson.containsKey(name)) keys.add(name);
       else keys.add(id);
     }
     return keys;
@@ -535,16 +535,16 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
 
   static pw.TableRow _pdfInfoRow(String label, String value) {
     return pw.TableRow(children: [
-      pw.Container(color: PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(6), child: pw.Text(label, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900))),
+      pw.Container(color: const PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(6), child: pw.Text(label, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900))),
       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(value, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
     ]);
   }
 
   static pw.TableRow _pdfQuadRow(String l1, String v1, String l2, String v2, {PdfColor? v1Color, PdfColor? v2Color}) {
     return pw.TableRow(children: [
-      pw.Container(color: PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(4), child: pw.Text(l1, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800))),
+      pw.Container(color: const PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(4), child: pw.Text(l1, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800))),
       pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(v1, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: v1Color ?? PdfColors.black))),
-      pw.Container(color: PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(4), child: pw.Text(l2, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800))),
+      pw.Container(color: const PdfColor(0.91, 0.93, 0.97), padding: const pw.EdgeInsets.all(4), child: pw.Text(l2, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800))),
       pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(v2, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: v2Color ?? PdfColors.black))),
     ]);
   }
@@ -629,7 +629,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
           const SizedBox(width: 16),
           Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white.withValues(alpha: 0.7)),
           const SizedBox(width: 4),
-          Text(sessionName + ' \u2014 ' + termName, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
+          Text('$sessionName \u2014 $termName', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
         ]),
       ]),
     );
@@ -643,9 +643,9 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     return Row(children: [
       _metricCard('Total Score', totalScore, const Color(0xFF1A237E), Icons.assessment_outlined),
       const SizedBox(width: 10),
-      _metricCard('Average', avgScore + '%', const Color(0xFF2E7D32), Icons.trending_up_outlined),
+      _metricCard('Average', '$avgScore%', const Color(0xFF2E7D32), Icons.trending_up_outlined),
       const SizedBox(width: 10),
-      _metricCard('Position', _ordinal(pos) + ' of ' + posOf.toString(), const Color(0xFF7B1FA2), Icons.emoji_events_outlined),
+      _metricCard('Position', '${_ordinal(pos)} of $posOf', const Color(0xFF7B1FA2), Icons.emoji_events_outlined),
     ]);
   }
 
@@ -692,7 +692,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     final pass = total >= passMark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(color: i.isEven ? Colors.white : const Color(0xFFFAFBFC), border: Border(bottom: BorderSide(color: const Color(0xFFF0F0F0)))),
+      decoration: BoxDecoration(color: i.isEven ? Colors.white : const Color(0xFFFAFBFC), border: const Border(bottom: BorderSide(color: Color(0xFFF0F0F0)))),
       child: Row(children: [
         Expanded(flex: 3, child: Text(name, style: const TextStyle(fontSize: 12, color: Color(0xFF111827)), overflow: TextOverflow.ellipsis)),
         Expanded(flex: 1, child: Text(total.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111827)), textAlign: TextAlign.center)),
@@ -706,7 +706,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     final headers = <String>['SUBJECT'];
     final flexes = <int>[3];
     for (final col in _dataColumns) {
-      final mx = col.maxScore.isNotEmpty ? ' (' + col.maxScore + ')' : '';
+      final mx = col.maxScore.isNotEmpty ? ' (${col.maxScore})' : '';
       headers.add(col.label.toUpperCase() + mx);
       flexes.add(1);
     }
@@ -747,7 +747,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     cells.add(_passBadge(pass));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(color: i.isEven ? Colors.white : const Color(0xFFFAFBFC), border: Border(bottom: BorderSide(color: const Color(0xFFF0F0F0)))),
+      decoration: BoxDecoration(color: i.isEven ? Colors.white : const Color(0xFFFAFBFC), border: const Border(bottom: BorderSide(color: Color(0xFFF0F0F0)))),
       child: Row(children: [for (int j = 0; j < cells.length; j++) Expanded(flex: flexes[j], child: cells[j])]),
     );
   }
@@ -898,11 +898,11 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     const barGroupH = 28.0, nameW = 100.0, scoreW = 44.0;
     final chartH = display.length * barGroupH;
     final termLabelList = termIds.map((id) => _termNames[id] ?? 'Term').toList();
-    final title = 'REPORT CHART FOR ' + termLabelList.map((t) => t.toUpperCase()).join(', ');
+    final title = 'REPORT CHART FOR ${termLabelList.map((t) => t.toUpperCase()).join(', ')}';
     return ChartTheme.card(title: title, icon: Icons.bar_chart, subtitle: 'End of session comparison', child: LayoutBuilder(builder: (context, constraints) {
       final barAreaW = (constraints.maxWidth - nameW - scoreW - 8).clamp(0.0, double.infinity);
       final barCount = termIds.length;
-      final gap = 2.0;
+      const gap = 2.0;
       final singleBarW = barCount > 0 ? ((barAreaW - gap * (barCount - 1)) / barCount).clamp(0.0, 40.0) : 0.0;
       return Column(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(height: chartH, child: Stack(children: [
@@ -914,7 +914,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
               SizedBox(width: nameW, child: Align(alignment: Alignment.centerRight, child: Padding(padding: const EdgeInsets.only(right: 6), child: Text(display[i], style: TextStyle(fontSize: 10, color: theme.text), overflow: TextOverflow.ellipsis, maxLines: 1)))),
               SizedBox(width: barAreaW, child: Row(children: [
                 for (int t = 0; t < termIds.length; t++) ...[
-                  if (t > 0) SizedBox(width: gap),
+                  if (t > 0) const SizedBox(width: gap),
                   Container(width: singleBarW, height: 16, margin: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(color: (subjectMap[display[i]]?[termIds[t]] ?? 0) > 0 ? termColors[t % termColors.length] : const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(2))),
                 ],
@@ -966,9 +966,9 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
     final grandTotal = termTotals.values.fold(0.0, (a, b) => a + b);
     final termLabelList = termIds.map((id) => _termNames[id] ?? 'Term').toList();
     return ChartTheme.card(
-      title: 'PIE CHART FOR ' + termLabelList.map((t) => t.toUpperCase()).join(', '),
+      title: 'PIE CHART FOR ${termLabelList.map((t) => t.toUpperCase()).join(', ')}',
       icon: Icons.pie_chart,
-      subtitle: 'End of ' + termLabelList.last + ' Summary Chart',
+      subtitle: 'End of ${termLabelList.last} Summary Chart',
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(width: 150, height: 150, child: PieChart(PieChartData(
           sections: [
@@ -976,7 +976,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
               PieChartSectionData(
                 value: termTotals[termIds[i]],
                 color: termColors[i % termColors.length],
-                title: grandTotal > 0 ? (termTotals[termIds[i]]! / grandTotal * 100).toStringAsFixed(0) + '%' : '',
+                title: grandTotal > 0 ? '${(termTotals[termIds[i]]! / grandTotal * 100).toStringAsFixed(0)}%' : '',
                 titleStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                 titlePositionPercentageOffset: 0.5,
                 borderSide: const BorderSide(width: 3, color: Colors.white),
@@ -989,7 +989,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
           Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 14, height: 14, decoration: BoxDecoration(color: termColors[i % termColors.length], borderRadius: BorderRadius.circular(3))),
             const SizedBox(width: 6),
-            Text(termLabelList[i] + ': ' + termTotals[termIds[i]]!.toStringAsFixed(0) + ' (' + (termTotals[termIds[i]]! / grandTotal * 100).toStringAsFixed(0) + '%)',
+            Text('${termLabelList[i]}: ${termTotals[termIds[i]]!.toStringAsFixed(0)} (${(termTotals[termIds[i]]! / grandTotal * 100).toStringAsFixed(0)}%)',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.text)),
           ])),
       ]),

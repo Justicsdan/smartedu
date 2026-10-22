@@ -2,11 +2,10 @@
 // File: lib/features/dashboard/school_admin/pages/page_teachers.dart
 // ==========================================
 import 'dart:typed_data';
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import "package:supabase_flutter/supabase_flutter.dart";
-import "package:share_plus/share_plus.dart";
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'teacher_edit_profile_sheet.dart';
 
@@ -741,7 +740,7 @@ class _PageTeachersState extends State<PageTeachers> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(color: const Color(0xFFF0F4FF), shape: BoxShape.circle),
+                        decoration: const BoxDecoration(color: Color(0xFFF0F4FF), shape: BoxShape.circle),
                         child: passportUrl.isNotEmpty
                             ? CircleAvatar(
                                 radius: 30,
@@ -1051,7 +1050,7 @@ class _ManageSheetState extends State<_ManageSheet> {
                           ),
                           const SizedBox(height: 14),
                           DropdownButtonFormField<String>(
-                            value: formTeacherClassId,
+                            initialValue: formTeacherClassId,
                             decoration: InputDecoration(
                               labelText: 'Select Class (None = Remove)',
                               labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
@@ -1125,7 +1124,7 @@ class _ManageSheetState extends State<_ManageSheet> {
                           ),
                           const SizedBox(height: 14),
                           DropdownButtonFormField<String>(
-                            value: _selectedClassIdForSubject,
+                            initialValue: _selectedClassIdForSubject,
                             decoration: InputDecoration(
                               hintText: 'Step 1: Pick a class',
                               hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),

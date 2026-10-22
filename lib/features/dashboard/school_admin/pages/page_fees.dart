@@ -447,7 +447,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                 _field(descCtrl, 'Description (optional)', ''),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: frequency,
+                  initialValue: frequency,
                   decoration: const InputDecoration(
                     labelText: 'Frequency',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -469,7 +469,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Compulsory', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                   value: compulsory,
-                  activeColor: const Color(0xFF1A237E),
+                  activeThumbColor: const Color(0xFF1A237E),
                   onChanged: (v) => setDlg(() => compulsory = v),
                 ),
               ],
@@ -581,7 +581,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                 _field(descCtrl, 'Description (optional)', ''),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: frequency,
+                  initialValue: frequency,
                   decoration: const InputDecoration(
                     labelText: 'Frequency',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -603,7 +603,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Compulsory', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                   value: compulsory,
-                  activeColor: const Color(0xFF1A237E),
+                  activeThumbColor: const Color(0xFF1A237E),
                   onChanged: (v) => setDlg(() => compulsory = v),
                 ),
               ],
@@ -981,7 +981,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                 itemBuilder: (_) => [
                   const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1A237E)), SizedBox(width: 8), Text('Edit')])),
                   PopupMenuItem(value: 'toggle', child: Row(children: [Icon(active ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: Colors.orange), const SizedBox(width: 8), Text(active ? 'Deactivate' : 'Activate')])),
-                  PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Color(0xFFD32F2F)), SizedBox(width: 8), Text('Delete', style: const TextStyle(color: Color(0xFFD32F2F)))])),
+                  const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Color(0xFFD32F2F)), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Color(0xFFD32F2F)))])),
                 ],
               ),
             ],
@@ -1030,7 +1030,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              value: _postClassId,
+              initialValue: _postClassId,
               decoration: const InputDecoration(
                 labelText: 'Select Class',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1054,7 +1054,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<String>(
-              value: _postFeeTypeId,
+              initialValue: _postFeeTypeId,
               decoration: const InputDecoration(
                 labelText: 'Fee Type',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1223,7 +1223,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: _rpClassId,
+              initialValue: _rpClassId,
               decoration: const InputDecoration(
                 labelText: 'Select Class',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1261,7 +1261,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _rpStudentId,
+              initialValue: _rpStudentId,
               decoration: const InputDecoration(
                 labelText: 'Select Student',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1284,7 +1284,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _rpFeeTypeId,
+              initialValue: _rpFeeTypeId,
               decoration: const InputDecoration(
                 labelText: 'Fee Type',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1348,7 +1348,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _rpMethod,
+              initialValue: _rpMethod,
               decoration: const InputDecoration(
                 labelText: 'Payment Method',
                 border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1454,7 +1454,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _filterClassId,
+                  initialValue: _filterClassId,
                   decoration: const InputDecoration(
                     labelText: 'Class',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1496,7 +1496,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _filterStudentId,
+                  initialValue: _filterStudentId,
                   decoration: const InputDecoration(
                     labelText: 'Student',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1519,7 +1519,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _filterFeeTypeId,
+                  initialValue: _filterFeeTypeId,
                   decoration: const InputDecoration(
                     labelText: 'Fee Type',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1542,7 +1542,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _filterStatus,
+                  initialValue: _filterStatus,
                   decoration: const InputDecoration(
                     labelText: 'Status',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
@@ -1551,7 +1551,7 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
-                  items: [
+                  items: const [
                     DropdownMenuItem<String>(value: null, child: Text('All Status', style: TextStyle(fontSize: 12))),
                     DropdownMenuItem<String>(value: 'pending', child: Text('Pending', style: TextStyle(fontSize: 12, color: Color(0xFFD32F2F)))),
                     DropdownMenuItem<String>(value: 'partial', child: Text('Partial', style: TextStyle(fontSize: 12, color: Color(0xFFE65100)))),
@@ -1633,10 +1633,10 @@ class _PageFeesState extends State<PageFees> with TickerProviderStateMixin {
                                 const SizedBox(height: 2),
                                 Text(ftName, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                                 const SizedBox(height: 2),
-                                Text('Paid: $currency${paid.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: Color(0xFF2E7D32), fontWeight: FontWeight.w600)),
+                                Text('Paid: $currency${paid.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: Color(0xFF2E7D32), fontWeight: FontWeight.w600)),
                                 if (balance > 0) ...[
                                   const SizedBox(height: 2),
-                                  Text('Bal: $currency${balance.toStringAsFixed(0)}', style: TextStyle(fontSize: 12, color: Color(0xFFD32F2F), fontWeight: FontWeight.w600)),
+                                  Text('Bal: $currency${balance.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: Color(0xFFD32F2F), fontWeight: FontWeight.w600)),
                                 ],
                               ],
                             ),

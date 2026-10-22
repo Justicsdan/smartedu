@@ -2,7 +2,6 @@ import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/student/student_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentComplaintsPage extends StatefulWidget {
   const StudentComplaintsPage({super.key});
@@ -56,7 +55,7 @@ class _StudentComplaintsPageState extends State<StudentComplaintsPage> {
       _loadComplaints();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F)));
+        SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F)));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -167,7 +166,7 @@ class _StudentComplaintsPageState extends State<StudentComplaintsPage> {
                 ]),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(labelText: 'Category *', prefixIcon: Icon(Icons.category_outlined), border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'Bullying', child: Text('Bullying')),

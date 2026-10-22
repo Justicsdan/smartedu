@@ -154,7 +154,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(children: [
-          Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF57F17), size: 22)),
+          Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF57F17), size: 22)),
           const SizedBox(width: 12),
           const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
         ]),
@@ -539,7 +539,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       case 'my_classes':
         return const TeacherMyClassesPage();
       case 'enter_scores':
-        return TeacherEnterScoresPage();
+        return const TeacherEnterScoresPage();
       case 'pace_scores':
         return const _TeacherPaceScoresPage();
       case 'assignments':

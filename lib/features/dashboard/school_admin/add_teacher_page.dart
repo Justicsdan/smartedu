@@ -184,7 +184,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Choose from Gallery',
                           style: TextStyle(
                             fontSize: 14,
@@ -240,7 +240,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Take a Photo',
                           style: TextStyle(
                             fontSize: 14,
@@ -300,7 +300,7 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Remove Photo',
                             style: TextStyle(
                               fontSize: 14,
@@ -966,8 +966,9 @@ class _AddTeacherPageState extends State<AddTeacherPage> {
         ),
         validator: validator,
         onSaved: (v) {
-          if (v != null && v.trim().isNotEmpty)
+          if (v != null && v.trim().isNotEmpty) {
             _data[key] = v.trim();
+          }
         },
       ),
     );

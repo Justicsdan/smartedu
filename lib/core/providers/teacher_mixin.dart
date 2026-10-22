@@ -4,11 +4,10 @@
 import 'package:flutter/foundation.dart';
 import '../services/db_proxy.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 mixin TeacherMixin on BaseProvider {
   List<Map<String, dynamic>> _teachers = [];
-  List<Map<String, dynamic>> _teacherCredentials = [];
+  final List<Map<String, dynamic>> _teacherCredentials = [];
 
   @override
   List<Map<String, dynamic>> get teachers => _teachers;
@@ -319,7 +318,7 @@ mixin TeacherMixin on BaseProvider {
       final fn = (teacher['first_name'] ?? 'teacher').toString().toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
       final ln = (teacher['last_name'] ?? '').toString().toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
       final uid = DateTime.now().millisecondsSinceEpoch.toString().substring(5);
-      final username = fn.isNotEmpty ? '${fn}${ln.isNotEmpty ? '_$ln' : ''}_$uid' : 'teacher_$uid';
+      final username = fn.isNotEmpty ? '$fn${ln.isNotEmpty ? '_$ln' : ''}_$uid' : 'teacher_$uid';
       final now = DateTime.now();
       final password = 'Tchr@${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}!';
 
@@ -375,7 +374,7 @@ mixin TeacherMixin on BaseProvider {
   // ==========================================
 
   Map<String, dynamic>? getTeacherById(String teacherId) {
-    if (teacherId == null || teacherId.isEmpty) return null;
+    if (teacherId.isEmpty) return null;
     try {
       return _teachers.cast<Map<String, dynamic>?>().firstWhere(
             (t) => t?['id']?.toString() == teacherId,

@@ -66,7 +66,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
     bool isPinned = false;
     bool publishNow = true;
 
-    final _sid = context.read<SchoolAdminProvider>().schoolId;
+    final sid = context.read<SchoolAdminProvider>().schoolId;
         showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -113,7 +113,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: targetAudience,
+                  initialValue: targetAudience,
                   decoration: const InputDecoration(
                     labelText: 'Target Audience',
                     prefixIcon: Icon(Icons.group_outlined),
@@ -129,7 +129,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                 if (targetAudience == 'students' && provider.classes.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: selectedClassId,
+                    initialValue: selectedClassId,
                     decoration: const InputDecoration(
                       labelText: 'Specific Class (optional)',
                       prefixIcon: Icon(Icons.class_outlined),
@@ -207,8 +207,8 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                       try {
                         final provider = context.read<SchoolAdminProvider>();
                         final insertRow = <String, dynamic>{
-                          'school_id': _sid,
-                          'author_id': _sid,
+                          'school_id': sid,
+                          'author_id': sid,
                           'author_type': 'school_admin',
                           'title': titleCtrl.text.trim(),
                           'content': contentCtrl.text.trim(),
@@ -234,7 +234,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F)),
+                          SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F)),
                         );
                       }
                     },
@@ -282,7 +282,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
               } catch (e) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F)),
+                  SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F)),
                 );
               }
             },
@@ -305,7 +305,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
       _loadAnnouncements();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F)),
+        SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F)),
       );
     }
   }
@@ -318,7 +318,7 @@ class _PageAnnouncementsState extends State<PageAnnouncements> {
       _loadAnnouncements();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e'), backgroundColor: Color(0xFFD32F2F)),
+        SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFD32F2F)),
       );
     }
   }

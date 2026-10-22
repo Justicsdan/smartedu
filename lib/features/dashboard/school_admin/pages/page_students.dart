@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/admin_student_results_sheet.dart';
 
 // ==========================================
@@ -690,7 +689,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
                   children: [
                     Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFF0FFF4), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.trending_up_rounded, size: 22, color: Color(0xFF2E7D32))),
                     const SizedBox(width: 14),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                    const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('Bulk Promote Students', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF111827), letterSpacing: -0.3)),
                       SizedBox(height: 2),
                       Text('Move all students from one class to another', style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
@@ -709,7 +708,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
                 const Align(alignment: Alignment.centerLeft, child: Text('FROM CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF), letterSpacing: 0.5))),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
-                  value: _fromId,
+                  initialValue: _fromId,
                   decoration: InputDecoration(hintText: 'Select source class', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_upward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
                   items: _classes.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (v) { setState(() { _fromId = v; _toId = null; }); },
@@ -725,7 +724,7 @@ class _PromoteSheetBodyState extends State<_PromoteSheetBody> {
                 const Align(alignment: Alignment.centerLeft, child: Text('TO CLASS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF), letterSpacing: 0.5))),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
-                  value: _toId,
+                  initialValue: _toId,
                   decoration: InputDecoration(hintText: _fromId == null ? 'Select source first' : 'Select destination', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: const OutlineInputBorder(), enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE8EAED))), focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2)), prefixIcon: const Icon(Icons.arrow_downward_rounded, color: Color(0xFF2E7D32)), filled: true, fillColor: Colors.white, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), isDense: true),
                   items: _toOptions.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(_label(c), style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: _fromId == null ? null : (v) { setState(() => _toId = v); },
@@ -838,28 +837,28 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
       final studentId = widget.student['id'].toString();
       final ext = image.name.split('.').last.toLowerCase();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final storagePath = 'students/' + studentId + '/' + timestamp.toString() + '.' + ext;
-      final supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
-      final anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
+      final storagePath = 'students/$studentId/$timestamp.$ext';
+      const supabaseUrl = 'https://tcjsmkhmfjigutfhjtem.supabase.co';
+      const anonKey = 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg';
       final mimeMap = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'gif': 'gif', 'webp': 'webp'};
       final mime = mimeMap[ext] ?? 'jpeg';
-      final uploadUrl = supabaseUrl + '/storage/v1/object/passports/' + storagePath;
+      final uploadUrl = '$supabaseUrl/storage/v1/object/passports/$storagePath';
       
       final uploadRes = await http.post(
         Uri.parse(uploadUrl),
         headers: {
           'apikey': anonKey,
-          'Content-Type': 'image/' + mime,
+          'Content-Type': 'image/$mime',
           'x-upsert': 'true',
         },
         body: bytes,
       );
       
       if (uploadRes.statusCode != 200 && uploadRes.statusCode != 201) {
-        throw Exception('Storage upload failed (' + uploadRes.statusCode.toString() + '): ' + uploadRes.body);
+        throw Exception('Storage upload failed (${uploadRes.statusCode}): ${uploadRes.body}');
       }
       
-      final publicUrl = supabaseUrl + '/storage/v1/object/public/passports/' + storagePath;
+      final publicUrl = '$supabaseUrl/storage/v1/object/public/passports/$storagePath';
       
       if (mounted) {
         setState(() {
@@ -867,8 +866,8 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
           _uploading = false;
         });
       }
-    } catch (e, stack) {
-      debugPrint('PASSPORT UPLOAD ERROR: ' + e.toString());
+    } catch (e) {
+      debugPrint('PASSPORT UPLOAD ERROR: $e');
       if (mounted) {
         setState(() => _uploading = false);
         _showErrorDialog('Upload Failed', e.toString());
@@ -1028,7 +1027,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                   _field('Middle Name', 'middle_name'),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _selectedGender,
+                    initialValue: _selectedGender,
                     decoration: InputDecoration(
                       labelText: 'Gender',
                       labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
@@ -1054,7 +1053,7 @@ class _StudentEditSheetState extends State<_StudentEditSheet> {
                   Consumer<SchoolAdminProvider>(
                     builder: (context, p, _) {
                       return DropdownButtonFormField<String>(
-                        value: _selectedClassId,
+                        initialValue: _selectedClassId,
                         decoration: InputDecoration(
                           labelText: 'Class',
                           labelStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),

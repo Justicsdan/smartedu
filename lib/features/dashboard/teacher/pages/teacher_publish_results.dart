@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/teacher/teacher_provider.dart';
 import 'package:smartedu/utils/grading_utils.dart';
@@ -1367,7 +1366,7 @@ class _TeacherStudentEditSheetState
   Widget _ratingDropdown(String label, String value,
       Function(String) onChanged) {
     return DropdownButtonFormField<String>(
-      value: GradingUtils.defaultBehavioralOptions
+      initialValue: GradingUtils.defaultBehavioralOptions
               .any((o) => o['value'] == value)
           ? value
           : 'Good',

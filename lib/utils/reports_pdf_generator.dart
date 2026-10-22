@@ -162,15 +162,21 @@ class ReportsPdfGenerator {
     if (stuList != null && stuList.isNotEmpty) {
       final isCum = d['terms_count'] != null;
       final hdrs = <String>['#', 'Student Name'];
-      if (isAce) hdrs.addAll(['HACS', 'NCE', 'PACEs']);
-      else hdrs.addAll(['Total Score', 'Average', 'Position']);
+      if (isAce) {
+        hdrs.addAll(['HACS', 'NCE', 'PACEs']);
+      } else {
+        hdrs.addAll(['Total Score', 'Average', 'Position']);
+      }
       if (isCum) hdrs.add('Terms');
       final tData = <List<String>>[];
       for (var i = 0; i < stuList.length; i++) {
         final s = stuList[i] as Map<String, dynamic>;
         final row = <String>[(i + 1).toString(), s['student_name']?.toString() ?? 'Unknown'];
-        if (isAce) row.addAll([_fmt(s['hacs_score']), _fmt(s['nce_score']), (s['paces_completed'] ?? 0).toString()]);
-        else row.addAll([_fmt(s['total_score']), _fmt(s['average_score']), (s['position'] ?? '-').toString()]);
+        if (isAce) {
+          row.addAll([_fmt(s['hacs_score']), _fmt(s['nce_score']), (s['paces_completed'] ?? 0).toString()]);
+        } else {
+          row.addAll([_fmt(s['total_score']), _fmt(s['average_score']), (s['position'] ?? '-').toString()]);
+        }
         if (isCum) row.add((s['terms_count'] ?? 0).toString());
         tData.add(row);
       }
@@ -198,7 +204,7 @@ class ReportsPdfGenerator {
       child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
         pw.Text(c.value, style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: c.color)),
         pw.SizedBox(height: 2),
-        pw.Text(c.label, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        pw.Text(c.label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
       ]),
     );
   }
@@ -425,7 +431,7 @@ class ReportsPdfGenerator {
     w.add(pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceAround, children: [
       pw.Text('Students: ${d['total_students']}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
       pw.Text('Avg Rate: ${d['avg_attendance_rate']}%', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.green700)),
-      pw.Text('Most Absent: ${d['most_absent_student']}', style: pw.TextStyle(fontSize: 11, color: PdfColors.red700)),
+      pw.Text('Most Absent: ${d['most_absent_student']}', style: const pw.TextStyle(fontSize: 11, color: PdfColors.red700)),
     ]));
     w.add(pw.SizedBox(height: 10));
     final stuList = (d['students'] as List?)?.cast<Map<String, dynamic>>() ?? [];

@@ -148,7 +148,7 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
                   ),
                 ),
                 Text(
-                  total == 0 ? '—' : '${pct.toStringAsFixed(0)}',
+                  total == 0 ? '—' : pct.toStringAsFixed(0),
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _percentageColor(pct)),
                 ),
               ],

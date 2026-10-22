@@ -15,7 +15,7 @@ class AdminAceSubjectChart extends StatefulWidget {
 class _AdminAceSubjectChartState extends State<AdminAceSubjectChart> {
   bool _isLoading = true;
   Map<String, double> _subjectAverages = {}; 
-  Map<String, String> _subjectNames = {};
+  final Map<String, String> _subjectNames = {};
 
   @override
   void initState() {
@@ -200,7 +200,7 @@ class _AdminAceSubjectChartState extends State<AdminAceSubjectChart> {
                       SizedBox(
                         width: 50,
                         child: Text(
-                          avg.toStringAsFixed(1) + '%',
+                          '${avg.toStringAsFixed(1)}%',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.text),
                           textAlign: TextAlign.right,
                         ),

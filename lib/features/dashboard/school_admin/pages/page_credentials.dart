@@ -208,21 +208,25 @@ class _PageCredentialsState extends State<PageCredentials>
       if (isTeacher) {
         final ids = missing.map((e) => e['id']).toList();
         final fresh = await Supabase.instance.client.from('teachers').select().inFilter('id', ids);
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           for (final f in fresh) {
             final idx = _teachersWithCreds.indexWhere((t) => t['id'] == f['id']);
             if (idx >= 0) _teachersWithCreds[idx] = f;
           }
         });
+        }
       } else {
         final ids = missing.map((e) => e['id']).toList();
         final fresh = await Supabase.instance.client.from('students').select().inFilter('id', ids);
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           for (final f in fresh) {
             final idx = _studentsWithCreds.indexWhere((s) => s['id'] == f['id']);
             if (idx >= 0) _studentsWithCreds[idx] = f;
           }
         });
+        }
       }
       if (mounted) {
         _snack(
@@ -260,7 +264,7 @@ class _PageCredentialsState extends State<PageCredentials>
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
         borderRadius: pw.BorderRadius.circular(6),
-        border: pw.Border.all(color: PdfColor.fromInt(0xFFD0D5DD), width: 0.5),
+        border: pw.Border.all(color: const PdfColor.fromInt(0xFFD0D5DD), width: 0.5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -308,7 +312,7 @@ class _PageCredentialsState extends State<PageCredentials>
                   style: pw.TextStyle(
                     fontSize: 10.5,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF111827),
+                    color: const PdfColor.fromInt(0xFF111827),
                   ),
                 ),
                 if (extra != null)
@@ -316,7 +320,7 @@ class _PageCredentialsState extends State<PageCredentials>
                     padding: const pw.EdgeInsets.only(top: 1),
                     child: pw.Text(
                       extra,
-                      style: pw.TextStyle(
+                      style: const pw.TextStyle(
                         fontSize: 6.5,
                         color: PdfColors.grey600,
                       ),
@@ -326,10 +330,10 @@ class _PageCredentialsState extends State<PageCredentials>
                 pw.Container(
                   padding: const pw.EdgeInsets.all(8),
                   decoration: pw.BoxDecoration(
-                    color: PdfColor.fromInt(0xFFF8F9FC),
+                    color: const PdfColor.fromInt(0xFFF8F9FC),
                     borderRadius: pw.BorderRadius.circular(4),
                     border: pw.Border.all(
-                        color: PdfColor.fromInt(0xFFE8EAED), width: 0.5),
+                        color: const PdfColor.fromInt(0xFFE8EAED), width: 0.5),
                   ),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -369,7 +373,7 @@ class _PageCredentialsState extends State<PageCredentials>
           style: pw.TextStyle(
             fontSize: 5.5,
             fontWeight: pw.FontWeight.bold,
-            color: PdfColor.fromInt(0xFF9CA3AF),
+            color: const PdfColor.fromInt(0xFF9CA3AF),
             letterSpacing: 0.8,
           ),
         ),
@@ -379,7 +383,7 @@ class _PageCredentialsState extends State<PageCredentials>
           style: pw.TextStyle(
             fontSize: 9,
             fontWeight: pw.FontWeight.bold,
-            color: PdfColor.fromInt(0xFF111827),
+            color: const PdfColor.fromInt(0xFF111827),
             letterSpacing: 0.8,
           ),
         ),
@@ -557,7 +561,7 @@ class _PageCredentialsState extends State<PageCredentials>
                 child: TextField(
                   controller: TextEditingController(text: un),
                   readOnly: true,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontSize: 13, color: Color(0xFF111827)),
                   decoration: InputDecoration(
                     labelText: 'Username',
@@ -812,7 +816,7 @@ class _PageCredentialsState extends State<PageCredentials>
                       backgroundColor: const Color(0xFFF0F4FF),
                       child: Text(
                         nm.isNotEmpty ? nm[0].toUpperCase() : '?',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1A237E)),
@@ -825,7 +829,7 @@ class _PageCredentialsState extends State<PageCredentials>
                         children: [
                           Text(
                             nm,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF111827),
@@ -889,7 +893,7 @@ class _PageCredentialsState extends State<PageCredentials>
                         ),
                         child: Text(
                           sec.startsWith('\$2') ? 'Hashed' : 'Weak',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFFE65100)),
@@ -1017,7 +1021,7 @@ class _PageCredentialsState extends State<PageCredentials>
                     underline: const SizedBox(),
                     borderRadius: BorderRadius.circular(8),
                     items: [
-                      DropdownMenuItem(
+                      const DropdownMenuItem(
                         value: null,
                         child: Text(
                           'All Classes',
@@ -1029,7 +1033,7 @@ class _PageCredentialsState extends State<PageCredentials>
                           value: c['id'].toString(),
                           child: Text(
                             c['name'].toString(),
-                            style: TextStyle(fontSize: 12),
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
                     ],
@@ -1054,7 +1058,7 @@ class _PageCredentialsState extends State<PageCredentials>
                   ),
                   child: Text(
                     '$miss pending',
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFE65100)),
@@ -1105,9 +1109,9 @@ class _PageCredentialsState extends State<PageCredentials>
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 2.5,
               labelStyle:
-                  TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               unselectedLabelStyle:
-                  TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               tabs: const [
                 Tab(text: 'Teachers'),

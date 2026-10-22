@@ -7,6 +7,7 @@
 /// - Added credentials export (teachers + students)
 /// - All map access is null-safe
 /// - School branding from multi-source pattern
+library;
 
 class DataExport {
 
@@ -324,8 +325,9 @@ class DataExport {
         // Safely convert to String before toUpperCase
         final status = (attendanceMap[key] ?? '').toString();
         cells.add(_csv(status.toUpperCase()));
-        if (status.toLowerCase() == 'present') presentCount++;
-        else if (status.toLowerCase() == 'absent') absentCount++;
+        if (status.toLowerCase() == 'present') {
+          presentCount++;
+        } else if (status.toLowerCase() == 'absent') absentCount++;
       }
       cells.add(presentCount.toString());
       cells.add(absentCount.toString());

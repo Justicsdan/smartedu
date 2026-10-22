@@ -123,8 +123,9 @@ class DbTableQuery {
     if (_rangeFrom != null && _rangeTo != null) body['range'] = [_rangeFrom, _rangeTo];
     if (data != null) body['data'] = data;
     if (onConflict != null) body['onConflict'] = onConflict;
-    if (singleMode == true) body['single'] = true;
-    else if (singleMode == 'maybe') body['single'] = 'maybe';
+    if (singleMode == true) {
+      body['single'] = true;
+    } else if (singleMode == 'maybe') body['single'] = 'maybe';
     return body;
   }
 

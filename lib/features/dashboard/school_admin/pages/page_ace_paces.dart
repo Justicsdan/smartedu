@@ -113,7 +113,7 @@ class _PageAcePacesState extends State<PageAcePaces> {
                 border: Border.all(color: const Color(0xFFE8EAED)),
               ),
               child: DropdownButtonFormField<String>(
-                value: _selectedClassId,
+                initialValue: _selectedClassId,
                 hint: const Text('Select Class'),
                 isExpanded: true,
                 decoration: const InputDecoration(border: InputBorder.none),

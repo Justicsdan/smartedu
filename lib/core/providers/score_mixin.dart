@@ -3,7 +3,6 @@
 // ==========================================
 import 'package:flutter/foundation.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Mixin for score CRUD, position calculation, and results visibility.
 ///
@@ -175,7 +174,7 @@ mixin ScoreMixin on BaseProvider {
         if (rawJson is Map<String, dynamic>) {
           scoresJson = Map<String, dynamic>.from(rawJson);
         } else if (rawJson is Map) {
-          scoresJson = (rawJson as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+          scoresJson = (rawJson).map((k, v) => MapEntry(k.toString(), v.toString()));
         } else {
           scoresJson = {};
         }
@@ -285,7 +284,7 @@ mixin ScoreMixin on BaseProvider {
     final score = findScore(studentId, subjectId);
     final raw = score?['scores_json'];
     if (raw is Map<String, dynamic>) return Map<String, dynamic>.from(raw);
-    if (raw is Map) return (raw as Map).map((k, v) => MapEntry(k.toString(), v));
+    if (raw is Map) return (raw).map((k, v) => MapEntry(k.toString(), v));
     return {};
   }
 

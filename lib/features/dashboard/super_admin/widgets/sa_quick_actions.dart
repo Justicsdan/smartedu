@@ -25,7 +25,7 @@ class SaQuickActions extends StatelessWidget {
               title: "Register School",
               subtitle: "Add new institution",
               color: const Color(0xFF1E3C72),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManageSchoolsPage())),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageSchoolsPage())),
             ),
             const SizedBox(width: 14),
             _ActionCard(
@@ -33,7 +33,7 @@ class SaQuickActions extends StatelessWidget {
               title: "Manage Schools",
               subtitle: "Edit & configure",
               color: const Color(0xFF6C63FF),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManageSchoolsPage())),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageSchoolsPage())),
             ),
             const SizedBox(width: 14),
             _ActionCard(

@@ -129,30 +129,30 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
             );
           }),
 
-          Positioned(
+          const Positioned(
             top: -100,
             right: -80,
             child: _GlowOrb(
               size: 300,
-              color: const Color(0xFF3F51B5),
+              color: Color(0xFF3F51B5),
               opacity: 0.2,
             ),
           ),
-          Positioned(
+          const Positioned(
             bottom: -120,
             left: -100,
             child: _GlowOrb(
               size: 350,
-              color: const Color(0xFF1A237E),
+              color: Color(0xFF1A237E),
               opacity: 0.25,
             ),
           ),
           Positioned(
             top: size.height * 0.3,
             left: size.width * 0.6,
-            child: _GlowOrb(
+            child: const _GlowOrb(
               size: 180,
-              color: const Color(0xFF7C4DFF),
+              color: Color(0xFF7C4DFF),
               opacity: 0.08,
             ),
           ),
@@ -251,9 +251,9 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final roles = [
-                            _RoleData(
+                            const _RoleData(
                               icon: Icons.school_rounded,
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment(-0.5, -1),
                                 end: Alignment(1, 0.5),
                                 colors: [
@@ -261,14 +261,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                                   Color(0xFF0D47A1)
                                 ],
                               ),
-                              glowColor: const Color(0xFF42A5F5),
+                              glowColor: Color(0xFF42A5F5),
                               title: 'Student',
                               subtitle: 'View results & attendance',
                               route: 'Student',
                             ),
-                            _RoleData(
+                            const _RoleData(
                               icon: Icons.person_rounded,
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment(-0.5, -1),
                                 end: Alignment(1, 0.5),
                                 colors: [
@@ -276,15 +276,15 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                                   Color(0xFF1B5E20)
                                 ],
                               ),
-                              glowColor: const Color(0xFF66BB6A),
+                              glowColor: Color(0xFF66BB6A),
                               title: 'Teacher',
                               subtitle: 'Scores, attendance & more',
                               route: 'Teacher',
                             ),
-                            _RoleData(
+                            const _RoleData(
                               icon:
                                   Icons.admin_panel_settings_rounded,
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment(-0.5, -1),
                                 end: Alignment(1, 0.5),
                                 colors: [
@@ -292,7 +292,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                                   Color(0xFFE65100)
                                 ],
                               ),
-                              glowColor: const Color(0xFFFFB74D),
+                              glowColor: Color(0xFFFFB74D),
                               title: 'School Admin',
                               subtitle: 'Full school management',
                               route: 'School Admin',

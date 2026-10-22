@@ -153,7 +153,9 @@ class AuthService {
     if (!RegExp(r'[a-z]').hasMatch(password)) errors.add('Include lowercase letter');
     if (!RegExp(r'[0-9]').hasMatch(password)) errors.add('Include number');
     String strength;
-    if (score <= 2) strength = 'Weak'; else if (score <= 4) strength = 'Fair'; else if (score <= 6) strength = 'Strong'; else strength = 'Very Strong';
+    if (score <= 2) {
+      strength = 'Weak';
+    } else if (score <= 4) strength = 'Fair'; else if (score <= 6) strength = 'Strong'; else strength = 'Very Strong';
     return {'valid': errors.isEmpty, 'score': score, 'strength': strength, 'errors': errors};
   }
 }

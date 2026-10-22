@@ -9,12 +9,12 @@ class JitsiEmbedView extends StatelessWidget {
   final bool isProctoring;
 
   const JitsiEmbedView({
-    Key? key,
+    super.key,
     required this.roomName,
     required this.userDisplayName,
     required this.schoolName,
     this.isProctoring = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

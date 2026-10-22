@@ -37,7 +37,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
   @override
   /// Maps assessment type IDs to actual scores_json keys with positional fallback
   List<String> _resolveKeys(List<Map<String, dynamic>> assessments, Map<String, dynamic> sj) {
-    final norm = (String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    String norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     final dataKeys = sj.keys.toList();
     final result = <String>[];
     for (final at in assessments) {
@@ -74,6 +74,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
     return {};
   }
 
+  @override
   void initState() {
     super.initState();
     _loadCommentsAndRatings();
@@ -191,12 +192,12 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       children: [
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          color: PdfColor(0.91, 0.93, 0.97),
+          color: const PdfColor(0.91, 0.93, 0.97),
           child: pw.Text(label, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
         ),
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: pw.Text(value, style: pw.TextStyle(fontSize: 8)),
+          child: pw.Text(value, style: const pw.TextStyle(fontSize: 8)),
         ),
       ],
     );
@@ -207,7 +208,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       children: [
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
-          color: PdfColor(0.91, 0.93, 0.97),
+          color: const PdfColor(0.91, 0.93, 0.97),
           child: pw.Text(l1, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
         ),
         pw.Container(
@@ -216,7 +217,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         ),
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
-          color: PdfColor(0.91, 0.93, 0.97),
+          color: const PdfColor(0.91, 0.93, 0.97),
           child: pw.Text(l2, style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
         ),
         pw.Container(
@@ -267,14 +268,14 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       final totalScore = scores.fold<double>(0, (sum, s) => sum + ((s['total'] ?? 0) as num).toDouble());
       final totalStr = totalScore == totalScore.roundToDouble() ? totalScore.toInt().toString() : totalScore.toStringAsFixed(1);
 
-            String _logoUrl = provider.schoolLogoUrl;
-      if (_logoUrl.isEmpty) {
+            String logoUrl = provider.schoolLogoUrl;
+      if (logoUrl.isEmpty) {
         try {
-          final _r = await http.get(Uri.parse('https://tcjsmkhmfjigutfhjtem.supabase.co/rest/v1/schools?select=logo_url&id=eq.' + provider.schoolId), headers: {'apikey': 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg'});
-          if (_r.statusCode == 200) { final list = jsonDecode(_r.body) as List; if (list.isNotEmpty) _logoUrl = (list[0]['logo_url'] ?? '').toString(); }
+          final r = await http.get(Uri.parse('https://tcjsmkhmfjigutfhjtem.supabase.co/rest/v1/schools?select=logo_url&id=eq.${provider.schoolId}'), headers: {'apikey': 'sb_publishable_zWDvjhEldcV8eutnlRypGA_LGpOUhkg'});
+          if (r.statusCode == 200) { final list = jsonDecode(r.body) as List; if (list.isNotEmpty) logoUrl = (list[0]['logo_url'] ?? '').toString(); }
         } catch (_) {}
       }
-      final logoImg = await _fetchImage(_logoUrl);
+      final logoImg = await _fetchImage(logoUrl);
 
       final passportImg = await _fetchImage(provider.passportUrl);
       final sigImg = await _fetchImage(provider.principalSignatureUrl);
@@ -305,7 +306,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         final gradeInfo = GradingUtils.getGradeFromSystem(total, gradingSystem);
         final scoresJson = _parseSj(score['scores_json']);
         final resolvedKeys = _resolveKeys(assessmentTypes, scoresJson);
-        final rowColor = idx.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+        final rowColor = idx.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
         final txtColor = isPass ? PdfColors.green800 : PdfColors.red800;
 
         scoreRows.add(
@@ -344,7 +345,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
         final g = gradingSystem[i];
         final grade = (g['grade'] ?? '').toString();
         final isFail = !GradingUtils.isPassingGrade(grade, gradingSystem);
-        final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+        final rowColor = i.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
         final textColor = isFail ? PdfColors.red800 : PdfColors.black;
         gkRows.add(
           pw.TableRow(
@@ -371,7 +372,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
           final key = _bKeys[i];
           final label = GradingUtils.getBehavioralFieldLabel(key, customLabels: provider.behavioralLabels);
           final value = _behavioralRatings?[key] ?? '';
-          final rowColor = i.isEven ? PdfColors.white : PdfColor(0.95, 0.97, 1.0);
+          final rowColor = i.isEven ? PdfColors.white : const PdfColor(0.95, 0.97, 1.0);
           behavRows.add(
             pw.TableRow(
               decoration: pw.BoxDecoration(color: rowColor),
@@ -408,7 +409,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                   pw.Text("Class Teacher's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                   pw.SizedBox(height: 2),
-                  pw.Text(tc, style: pw.TextStyle(fontSize: 8)),
+                  pw.Text(tc, style: const pw.TextStyle(fontSize: 8)),
                 ]),
               ),
             ]));
@@ -420,7 +421,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                 child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
                   pw.Text("Principal's Comment:", style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                   pw.SizedBox(height: 2),
-                  pw.Text(pc, style: pw.TextStyle(fontSize: 8)),
+                  pw.Text(pc, style: const pw.TextStyle(fontSize: 8)),
                 ]),
               ),
             ]));
@@ -450,13 +451,13 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                       children: [
                         pw.Text(provider.schoolName.toUpperCase(), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                         if (provider.schoolAddress.isNotEmpty)
-                          pw.Text(provider.schoolAddress, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                          pw.Text(provider.schoolAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                         if (provider.schoolMotto.isNotEmpty)
                           pw.Text('"${provider.schoolMotto}"', style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600)),
                         if (provider.schoolPhone.isNotEmpty || provider.schoolEmail.isNotEmpty)
                           pw.Text(
                             [if (provider.schoolPhone.isNotEmpty) 'Tel: ${provider.schoolPhone}', if (provider.schoolEmail.isNotEmpty) 'Email: ${provider.schoolEmail}'].join('  |  '),
-                            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
                           ),
                       ],
                     ),
@@ -491,7 +492,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey600, width: 1)),
                     child: passportImg != null
                         ? pw.Image(passportImg, fit: pw.BoxFit.cover)
-                        : pw.Center(child: pw.Text('No Photo', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
+                        : pw.Center(child: pw.Text('No Photo', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey400))),
                   ),
                   pw.SizedBox(width: 10),
                   pw.Expanded(
@@ -580,10 +581,10 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Column(children: [pw.Text('Class Teacher', style: pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
+                  pw.Column(children: [pw.Text('Class Teacher', style: const pw.TextStyle(fontSize: 9)), pw.SizedBox(height: 30), pw.Container(width: 130, height: 1, color: PdfColors.grey600)]),
                   if (stampImg != null) pw.Container(width: 80, height: 80, child: pw.Image(stampImg, fit: pw.BoxFit.contain)),
                   pw.Column(children: [
-                    pw.Text('Principal', style: pw.TextStyle(fontSize: 9)),
+                    pw.Text('Principal', style: const pw.TextStyle(fontSize: 9)),
                     pw.SizedBox(height: 30),
                     pw.Container(width: 130, height: 1, color: PdfColors.grey600),
                     if (sigImg != null) ...[pw.SizedBox(height: 2), pw.Container(width: 80, height: 30, child: pw.Image(sigImg, fit: pw.BoxFit.contain))],
@@ -593,7 +594,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
             );
 
             pageWidgets.add(pw.SizedBox(height: 12));
-            pageWidgets.add(pw.Center(child: pw.Text('Generated on ${DateTime.now().toString().split('.').first}', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey500))));
+            pageWidgets.add(pw.Center(child: pw.Text('Generated on ${DateTime.now().toString().split('.').first}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500))));
 
             return pageWidgets;
           },
@@ -679,10 +680,10 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
               ],
             ],
           ),
-          if (provider.currentSessionName != null) ...[
-            const SizedBox(height: 4),
-            Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
-          ],
+          ...[
+          const SizedBox(height: 4),
+          Text('${provider.currentSessionName} \u2014 ${provider.classDisplay}', style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+        ],
           const SizedBox(height: 20),
 
           // ── Stat cards ──

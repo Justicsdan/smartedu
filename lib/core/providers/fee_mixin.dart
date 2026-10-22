@@ -4,7 +4,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/db_proxy.dart';
 import 'base_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 mixin FeeMixin on BaseProvider {
   List<Map<String, dynamic>> _feeTypes = [];
@@ -52,7 +51,7 @@ mixin FeeMixin on BaseProvider {
         'frequency': frequency,
         'currency_code': currencyCode,
       });
-      final r = result is List && result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
+      final r = result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
       _feeTypes.add(Map<String, dynamic>.from(r));
       logAudit(action: 'create', tableName: 'fee_types', recordId: r['id']?.toString(), newData: {'name': name, 'amount': amount});
       notifyListeners();
@@ -131,7 +130,7 @@ mixin FeeMixin on BaseProvider {
         'remark': remark,
         'recorded_by': recordedBy,
       });
-      final r = result is List && result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
+      final r = result.isNotEmpty ? Map<String, dynamic>.from(result.first) : <String, dynamic>{};
       _feePayments.insert(0, Map<String, dynamic>.from(r));
       logAudit(action: 'create', tableName: 'fee_payments', recordId: r['id']?.toString(), newData: {'student_id': studentId, 'fee_type_id': feeTypeId, 'amount_paid': amountPaid});
       notifyListeners();

@@ -145,7 +145,7 @@ class _PageComplaintsState extends State<PageComplaints> {
             Text('By: ${_studentName(complaint)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: complaint['status'] ?? 'open',
+              initialValue: complaint['status'] ?? 'open',
               decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
               items: _allStatuses.map((s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s)))).toList(),
               onChanged: null,
