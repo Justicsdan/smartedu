@@ -278,11 +278,13 @@ class _PageDashboardState extends State<PageDashboard> {
     );
   }
 
-  Row _buildSectionHeader(ThemeData theme, String title, IconData icon) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildSectionHeader(ThemeData theme, String title, IconData icon) {
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: const Color(0xFF1A237E), size: 24),
             const SizedBox(width: 12),
@@ -291,6 +293,7 @@ class _PageDashboardState extends State<PageDashboard> {
         ),
         if (title.contains('Progress'))
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text('Hide empty classes', style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
               Switch(

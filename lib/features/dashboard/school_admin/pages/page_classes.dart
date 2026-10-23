@@ -1430,39 +1430,44 @@ class _PageClassesState extends State<PageClasses>
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFE8EAED)),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.class_rounded, size: 22, color: Color(0xFF1A237E)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.class_rounded, size: 22, color: Color(0xFF1A237E)),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("${c['name']} - ${c['section']}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
-                        if (tier.isNotEmpty) ...[const SizedBox(width: 8), _tierPill(tier)],
+                        Text("${c['name']} - ${c['section']}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111827)), overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 4),
+                        Text('$sCount students  \u00B7  $subCount subjects', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text('$sCount students  \u00B7  $subCount subjects', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              _actionBtn(label: 'Subjects', icon: Icons.menu_book_rounded, accentColor: const Color(0xFF2E7D32), onTap: () => _showManageSubjects(c)),
-              const SizedBox(width: 6),
-              _actionBtn(label: 'Students', icon: Icons.people_outline_rounded, accentColor: const Color(0xFF1A237E), onTap: () => _showClassDetails(c)),
-              const SizedBox(width: 6),
-              _actionBtn(label: 'Edit', icon: Icons.edit_outlined, accentColor: const Color(0xFF5C6BC0), onTap: () => _showEditClassDialog(c)),
-              const SizedBox(width: 6),
-              _deleteBtn(() => _confirmDelete('Class', c, () => widget.onDeleteClass(c))),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _actionBtn(label: 'Subjects', icon: Icons.menu_book_rounded, accentColor: const Color(0xFF2E7D32), onTap: () => _showManageSubjects(c)),
+                  _actionBtn(label: 'Students', icon: Icons.people_outline_rounded, accentColor: const Color(0xFF1A237E), onTap: () => _showClassDetails(c)),
+                  _actionBtn(label: 'Edit', icon: Icons.edit_outlined, accentColor: const Color(0xFF5C6BC0), onTap: () => _showEditClassDialog(c)),
+                  _deleteBtn(() => _confirmDelete('Class', c, () => widget.onDeleteClass(c))),
+                ],
+              ),
             ],
           ),
         );

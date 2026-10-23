@@ -761,133 +761,146 @@ class _PageCbtState extends State<PageCbt> {
       ),
       child: InkWell(
         onTap: () => _toggleExpand(examId),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? Colors.green.shade50
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.quiz,
-                  color: isActive ? Colors.green : Colors.grey),
+            // Top Row: Icon + Title + Expand Icon
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.green.shade50
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.quiz,
+                      color: isActive ? Colors.green : Colors.grey),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        e["title"] ?? "CBT Exam",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B2A4A),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "$classLabel \u2022 $subjectName",
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.grey),
+                      ),
+                      if (durShow != null)
+                        Text(
+                          durShow,
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey.shade500),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: Colors.grey.shade600,
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    e["title"] ?? "CBT Exam",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B2A4A),
-                      fontSize: 15,
+            const SizedBox(height: 12),
+            // Bottom Row: Stats + Actions (using Wrap to prevent overflow)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => widget.onToggle(examId),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? Colors.green
+                          : Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "$classLabel \u2022 $subjectName",
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey),
-                  ),
-                  if (durShow != null)
-                    Text(
-                      durShow,
+                    child: Text(
+                      isActive ? "Active" : "Inactive",
                       style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade500),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? Colors.green : Colors.red,
+                      ),
                     ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => widget.onToggle(examId),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? Colors.green
-                      : Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isActive ? "Active" : "Inactive",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isActive ? Colors.green : Colors.red,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            if (qCount > 0) ...[
-              Text(
-                "$qCount Qs",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            if (_attemptCounts.containsKey(examId)) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  "${_attemptCounts[examId]} Attempts",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.w600,
+                if (qCount > 0) 
+                  Text(
+                    "$qCount Qs",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                if (_attemptCounts.containsKey(examId)) 
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "\${_attemptCounts[examId]} Attempts",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.people_alt_outlined,
+                      size: 20, color: Color(0xFF1A237E)),
+                  tooltip: 'View Attempts',
+                  onPressed: () => _showAttemptsDialog(e),
                 ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              isExpanded ? Icons.expand_less : Icons.expand_more,
-              size: 20,
-              color: Colors.grey.shade600,
-            ),
-            const SizedBox(width: 12),
-            IconButton(
-              icon: const Icon(Icons.people_alt_outlined,
-                  size: 20, color: Color(0xFF1A237E)),
-              tooltip: 'View Attempts',
-              onPressed: () => _showAttemptsDialog(e),
-            ),
-            IconButton(
-              icon: const Icon(Icons.sync_alt_rounded,
-                  size: 20, color: Colors.blue),
-              tooltip: 'Sync to Scorebook',
-              onPressed: () => _showSyncDialog(e),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded,
-                  size: 20, color: Colors.orange),
-              tooltip: 'Reset Attempts',
-              onPressed: () => _showResetConfirm(examId, e["title"]),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  size: 20, color: Colors.red),
-              onPressed: () =>
-                  _showDeleteConfirm(examId, e["title"]),
+                IconButton(
+                  icon: const Icon(Icons.sync_alt_rounded,
+                      size: 20, color: Colors.blue),
+                  tooltip: 'Sync to Scorebook',
+                  onPressed: () => _showSyncDialog(e),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded,
+                      size: 20, color: Colors.orange),
+                  tooltip: 'Reset Attempts',
+                  onPressed: () => _showResetConfirm(examId, e["title"]),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      size: 20, color: Colors.red),
+                  onPressed: () =>
+                      _showDeleteConfirm(examId, e["title"]),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+
 
   Future<void> _showSyncDialog(Map<String, dynamic> exam) async {
     final p = context.read<SchoolAdminProvider>();
