@@ -185,7 +185,8 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
   @override
   Widget build(BuildContext context) {
     final p = context.read<TeacherProvider>();
-    
+    final isSmall = MediaQuery.of(context).size.width < 768;
+
     if (_isLive) {
       return Scaffold(
         appBar: AppBar(
@@ -213,169 +214,178 @@ class _TeacherLiveClassPageState extends State<TeacherLiveClassPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Live Classes')),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text('Schedule a Live Class', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 24),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedClassId,
-                      decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
-                      items: p.myClasses.map((c) => DropdownMenuItem<String>(
-                        value: c['id'] as String?, 
-                        child: Text('${c['name']} ${c['section'] ?? ''}')
-                      )).toList(),
-                      onChanged: (val) => setState(() {
-                        _selectedClassId = val;
-                        _selectedSubjectId = null;
-                      }),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedSubjectId,
-                      decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
-                      items: p.mySubjectAssignments.where((s) => s['class_id']?.toString() == _selectedClassId).map((s) {
-                        final subjName = s['subjects']?['name'] ?? 'Subject';
-                        return DropdownMenuItem<String>(
-                          value: s['subject_id'] as String?, 
-                          child: Text(subjName)
-                        );
-                      }).toList(),
-                      onChanged: (val) => setState(() => _selectedSubjectId = val),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.calendar_today),
-                            label: Text(_selectedDate == null ? 'Pick Date' : DateFormat('yyyy-MM-dd').format(_selectedDate!)),
-                            onPressed: () async {
-                              final d = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2100));
-                              if (d != null) setState(() => _selectedDate = d);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_selectedTime == null ? 'Pick Time' : _selectedTime!.format(context)),
-                            onPressed: () async {
-                              final t = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                              if (t != null) setState(() => _selectedTime = t);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: (_selectedClassId != null && _selectedSubjectId != null && _selectedDate != null && _selectedTime != null && !_isSaving) 
-                        ? _scheduleClass 
-                        : null,
-                      icon: _isSaving 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.schedule_send),
-                      label: Text(_isSaving ? 'Scheduling...' : 'Schedule Class'),
-                    ),
-                  ],
-                ),
-              ),
+    // Form widget (reused for both mobile and desktop)
+    final formWidget = SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Schedule a Live Class', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedClassId,
+              decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
+              items: p.myClasses.map((c) => DropdownMenuItem<String>(
+                value: c['id'] as String?,
+                child: Text('${c['name']} ${c['section'] ?? ''}', overflow: TextOverflow.ellipsis)
+              )).toList(),
+              onChanged: (val) => setState(() {
+                _selectedClassId = val;
+                _selectedSubjectId = null;
+              }),
             ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Upcoming & Active Classes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: _loading 
-                      ? const Center(child: CircularProgressIndicator())
-                      : _myClasses.isEmpty
-                          ? const Center(child: Text('No classes scheduled.'))
-                          : ListView.builder(
-                              itemCount: _myClasses.length,
-                              itemBuilder: (context, index) {
-                                final live = _myClasses[index];
-                                final isLive = live['status'] == 'live';
-                                final schedTime = live['scheduled_at'] != null ? DateTime.parse(live['scheduled_at']) : null;
-                                final audience = live['audience'] as String? ?? 'class';
-                                final isOwner = live['teacher_id']?.toString() == p.teacherId;
-                                final dbId = live['id'] as String;
-                                
-                                String title = _getSubjectName(p, live['subject_id']?.toString());
-                                if (audience == 'teachers') title = 'Staff Meeting';
-                                if (audience == 'all') title = 'School-Wide Meeting';
-
-                                return Card(
-                                  elevation: 2,
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: ListTile(
-                                    title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    subtitle: Text(schedTime != null ? DateFormat('MMM d, y - h:mm a').format(schedTime.toLocal()) : 'No time set'),
-                                    trailing: isLive
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ElevatedButton.icon(
-                                              onPressed: () => _joinClass(live['room_name']),
-                                              icon: const Icon(Icons.videocam),
-                                              label: const Text('Join Live'),
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                            ),
-                                            if (isOwner)
-                                              IconButton(
-                                                icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
-                                                tooltip: 'End Class',
-                                                onPressed: () => _endLiveClass(dbId),
-                                              ),
-                                          ],
-                                        )
-                                      : Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (isOwner) ...[
-                                              IconButton(
-                                                icon: const Icon(Icons.play_arrow, color: Colors.green),
-                                                tooltip: 'Start Class',
-                                                onPressed: () => _startScheduledClass(live['room_name'], dbId),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.red),
-                                                tooltip: 'Delete Class',
-                                                onPressed: () => _deleteScheduledClass(dbId, title),
-                                              ),
-                                            ] else 
-                                              const Chip(label: Text('Upcoming')),
-                                          ],
-                                        ),
-                                  ),
-                                );
-                              },
-                            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSubjectId,
+              decoration: const InputDecoration(labelText: 'Select Subject', border: OutlineInputBorder()),
+              items: p.mySubjectAssignments.where((s) => s['class_id']?.toString() == _selectedClassId).map((s) {
+                final subjName = s['subjects']?['name'] ?? 'Subject';
+                return DropdownMenuItem<String>(
+                  value: s['subject_id'] as String?,
+                  child: Text(subjName, overflow: TextOverflow.ellipsis)
+                );
+              }).toList(),
+              onChanged: (val) => setState(() => _selectedSubjectId = val),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(_selectedDate == null ? 'Pick Date' : DateFormat('yyyy-MM-dd').format(_selectedDate!), overflow: TextOverflow.ellipsis),
+                    onPressed: () async {
+                      final d = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2100));
+                      if (d != null) setState(() => _selectedDate = d);
+                    },
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.access_time),
+                    label: Text(_selectedTime == null ? 'Pick Time' : _selectedTime!.format(context), overflow: TextOverflow.ellipsis),
+                    onPressed: () async {
+                      final t = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                      if (t != null) setState(() => _selectedTime = t);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: (_selectedClassId != null && _selectedSubjectId != null && _selectedDate != null && _selectedTime != null && !_isSaving)
+                ? _scheduleClass
+                : null,
+              icon: _isSaving
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Icon(Icons.schedule_send),
+              label: Text(_isSaving ? 'Scheduling...' : 'Schedule Class'),
+            ),
+          ],
+        ),
       ),
     );
+
+    // Classes list widget (reused for both mobile and desktop)
+    final classesWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: const Text('Upcoming & Active Classes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        Expanded(
+          child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _myClasses.isEmpty
+                ? const Center(child: Text('No classes scheduled.'))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _myClasses.length,
+                    itemBuilder: (context, index) {
+                      final live = _myClasses[index];
+                      final isLive = live['status'] == 'live';
+                      final schedTime = live['scheduled_at'] != null ? DateTime.parse(live['scheduled_at']) : null;
+                      final audience = live['audience'] as String? ?? 'class';
+                      final isOwner = live['teacher_id']?.toString() == p.teacherId;
+                      final dbId = live['id'] as String;
+
+                      String title = _getSubjectName(p, live['subject_id']?.toString());
+                      if (audience == 'teachers') title = 'Staff Meeting';
+                      if (audience == 'all') title = 'School-Wide Meeting';
+
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(schedTime != null ? DateFormat('MMM d, y - h:mm a').format(schedTime.toLocal()) : 'No time set'),
+                          trailing: isLive
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () => _joinClass(live['room_name']),
+                                    icon: const Icon(Icons.videocam),
+                                    label: const Text('Join Live'),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                  ),
+                                  if (isOwner)
+                                    IconButton(
+                                      icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+                                      tooltip: 'End Class',
+                                      onPressed: () => _endLiveClass(dbId),
+                                    ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isOwner) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.play_arrow, color: Colors.green),
+                                      tooltip: 'Start Class',
+                                      onPressed: () => _startScheduledClass(live['room_name'], dbId),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: 'Delete Class',
+                                      onPressed: () => _deleteScheduledClass(dbId, title),
+                                    ),
+                                  ] else
+                                    const Chip(label: Text('Upcoming')),
+                                ],
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+        ),
+      ],
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Live Classes')),
+      body: isSmall
+        ? Column(
+            children: [
+              formWidget,
+              const Divider(height: 1),
+              Expanded(child: classesWidget),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 2, child: formWidget),
+              Expanded(flex: 3, child: classesWidget),
+            ],
+          ),
+    );
   }
+
 }

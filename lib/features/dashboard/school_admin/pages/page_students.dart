@@ -444,12 +444,16 @@ class _PageStudentsState extends State<PageStudents> {
                         ],
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
                     _actionChip(icon: Icons.trending_up_rounded, label: 'Promote', onTap: _showPromoteSheet),
-                    const SizedBox(width: 8),
                     _actionChip(icon: Icons.auto_mode_outlined, label: 'Auto-Promote', onTap: _showAutoPromoteDialog),
-                    const SizedBox(width: 8),
                     _actionChip(icon: Icons.download_rounded, label: _isExporting ? '...' : 'Export', onTap: _isExporting ? () {} : _exportCsv),
-                    const SizedBox(width: 8),
                     _actionChip(icon: Icons.search_rounded, label: 'Search', onTap: () {
                       setState(() {
                         _showSearch = !_showSearch;

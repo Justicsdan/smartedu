@@ -1,5 +1,7 @@
 import 'features/dashboard/school_admin/pages/page_live_class.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,6 +41,13 @@ import 'features/dashboard/student/student_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
   FlutterError.onError = (details) {
     if (kDebugMode) FlutterError.dumpErrorToConsole(details);
   };
@@ -551,26 +560,87 @@ class _AdminShellState extends State<_AdminShell> {
         child: Column(
           children: [
             Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
+              height: 72,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(bottom: BorderSide(color: Color(0xFFE8EAED))),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu_rounded, size: 22, color: Color(0xFF111827)),
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  // Menu button (mobile only)
+                  Builder(
+                    builder: (innerContext) => IconButton(
+                      icon: const Icon(Icons.menu_rounded, size: 22, color: Color(0xFF1A237E)),
+                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(_allNavItems[_selectedIndex].label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
-                  const Spacer(),
+                  // School logo (desktop only)
+                  if (p.schoolLogoUrl.isNotEmpty && MediaQuery.of(context).size.width >= 768) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE8EAED), width: 1),
+                      ),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: '${p.schoolLogoUrl}?width=80&height=80',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            color: const Color(0xFF1A237E),
+                            child: const Icon(Icons.school, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  // School name + subtitle
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schoolName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A237E),
+                            letterSpacing: -0.3,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const Text(
+                          'Admin Portal',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // AI Chat button
                   IconButton(
                     icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF1A237E)),
                     tooltip: 'Ask AI',
                     onPressed: _openAiChat,
                   ),
+                  // Logout button
                   IconButton(
                     icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
                     tooltip: 'Logout',

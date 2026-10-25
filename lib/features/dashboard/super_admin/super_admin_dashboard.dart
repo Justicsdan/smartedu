@@ -156,64 +156,118 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> with TickerPr
 
   Widget _buildHeader(SuperAdminProvider provider) {
     return Container(
-      height: 54,
+      height: 72,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Color(0xFF0F172A), Color(0xFF1E293B)]),
-        boxShadow: [BoxShadow(color: const Color(0xFF0F172A).withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF60A5FA), Color(0xFF818CF8)]),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [BoxShadow(color: const Color(0xFF60A5FA).withOpacity(0.3), blurRadius: 8)],
-            ),
-            child: const Icon(Icons.shield_outlined, color: Colors.white, size: 15),
-          ),
-          const SizedBox(width: 10),
-          const Text('Admin Portal', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.2)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(5)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(color: const Color(0xFF4ADE80), shape: BoxShape.circle, boxShadow: [BoxShadow(color: const Color(0xFF4ADE80).withOpacity(0.5), blurRadius: 4)]),
-                ),
-                const SizedBox(width: 6),
-                Text(_getAdminName(provider), style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => context.go('/role-selection'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.red.withOpacity(0.2)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.logout_rounded, size: 12, color: Color(0xFFFCA5A5)),
-                  SizedBox(width: 4),
-                  Text('Logout', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFFCA5A5))),
-                ],
-              ),
-            ),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: true,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              // SmartEdu logo icon (shield, gradient blue)
+              Container(
+                width: 40,
+                height: 40,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.shield_outlined, color: Colors.white, size: 22),
+              ),
+              // Title + subtitle
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SmartEdu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A237E),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const Text(
+                      'Super Admin Portal',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Online status + admin name (preserve)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4ADE80),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _getAdminName(provider),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF1A237E),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Logout button (preserve)
+              GestureDetector(
+                onTap: () => context.go('/role-selection'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.logout_rounded, size: 14, color: Color(0xFFD32F2F)),
+                      SizedBox(width: 4),
+                      Text('Logout', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFD32F2F))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

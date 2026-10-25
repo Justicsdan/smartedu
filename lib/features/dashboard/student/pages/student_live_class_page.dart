@@ -63,7 +63,9 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
             )
           ],
         ),
-        body: Padding(
+        body: SafeArea(
+          top: true,
+          child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(12)),
@@ -74,7 +76,8 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
             ),
           ),
         ),
-      );
+      )
+        );
     }
 
     return Scaffold(
@@ -84,7 +87,9 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: () { setState(() => _loading = true); _fetchClasses(); })
         ],
       ),
-      body: Center(
+      body: SafeArea(
+        top: true,
+        child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),
           padding: const EdgeInsets.all(24),
@@ -133,6 +138,7 @@ class _StudentLiveClassPageState extends State<StudentLiveClassPage> {
                   ),
         ),
       ),
-    );
+    )
+      );
   }
 }

@@ -444,7 +444,9 @@ class _TeacherAcePacesPageState extends State<TeacherAcePacesPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: true,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,7 +543,8 @@ class _TeacherAcePacesPageState extends State<TeacherAcePacesPage> {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _buildStudentCard(Map<String, dynamic> s) {

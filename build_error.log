@@ -1,0 +1,434 @@
+[  +49 ms] executing: uname -m
+[  +12 ms] Exit code 0 from: uname -m
+[        ] x86_64
+[  +19 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[   +1 ms] executing: [/run/media/dutycall/Dutycall 1/flutter_sdk/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[   +8 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-01-08 10:49:17 -0800
+[  +25 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[   +3 ms] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +63 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[  +12 ms] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[   +1 ms] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[ +155 ms] executing: [/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/] /run/media/dutycall/Dutycall 1/flutter_sdk/flutter/bin/cache/dart-sdk/bin/dart pub --suppress-analytics --directory . get --example
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 2.0.1 (2.1.1 available)
+  app_links 7.0.0 (7.2.2 available)
+  app_links_linux 1.0.3 (1.0.4 available)
+  app_links_platform_interface 2.0.2 (2.0.4 available)
+  app_links_web 1.0.4 (1.0.5 available)
+  archive 4.0.9 (4.5.2 available)
+  cached_network_image 3.4.1 (4.0.5 available)
+  cached_network_image_platform_interface 4.1.1 (5.0.3 available)
+  cached_network_image_web 1.3.1 (2.0.3 available)
+  characters 1.4.0 (1.4.1 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dart_jsonwebtoken 3.4.0 (3.4.1 available)
+  equatable 2.1.0 (3.0.0 available)
+  file_picker_darwin 2.2.0 (2.3.2 available)
+  file_picker_platform_interface 4.1.0 (4.2.0 available)
+  file_picker_web 4.1.0 (4.2.0 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+2 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  fl_chart 0.69.2 (1.3.0 available)
+  flutter_cache_manager 3.4.1 (3.4.5 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  flutter_plugin_android_lifecycle 2.0.34 (2.0.35 available)
+  flutter_shaders 0.1.3 (0.1.5 available)
+  flutter_svg 2.2.4 (2.3.0 available)
+  fluttertoast 8.2.14 (10.0.2 available)
+  functions_client 2.5.0 (2.7.1 available)
+  glob 2.1.3 (2.2.0 available)
+  go_router 14.8.1 (18.1.1 available)
+  google_fonts 6.3.3 (9.0.0 available)
+  gotrue 2.19.0 (2.27.3 available)
+  gtk 2.1.0 (2.2.0 available)
+  hooks 1.0.2 (2.2.0 available)
+  image 4.8.0 (4.12.0 available)
+  image_picker 1.2.3 (1.2.4 available)
+  image_picker_android 0.8.13+15 (0.8.13+25 available)
+  image_picker_ios 0.8.13+6 (0.8.13+12 available)
+  image_picker_platform_interface 2.11.1 (2.11.2 available)
+  intl 0.19.0 (0.20.3 available)
+  lints 4.0.0 (6.1.0 available)
+  matcher 0.12.17 (0.12.20 available)
+  material_color_utilities 0.11.1 (0.13.1 available)
+  meta 1.17.0 (1.19.0 available)
+  mime 2.0.0 (2.1.0 available)
+  native_toolchain_c 0.17.6 (0.19.5 available)
+  objective_c 9.3.0 (9.6.2 available)
+  octo_image 2.1.0 (2.1.2 available)
+  path_provider_android 2.2.23 (2.3.1 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  pdf 3.12.0 (3.13.1 available)
+  permission_handler 11.4.0 (13.0.2 available)
+  permission_handler_android 12.1.0 (14.1.0 available)
+  permission_handler_apple 9.4.7 (9.6.3 available)
+  permission_handler_html 0.1.3+5 (0.1.4+1 available)
+  permission_handler_platform_interface 4.3.0 (4.4.1 available)
+  permission_handler_windows 0.2.1 (0.2.2 available)
+  petitparser 7.0.2 (7.1.0 available)
+  platform 3.1.6 (3.2.0 available)
+  posix 6.5.0 (6.5.2 available)
+  postgrest 2.6.0 (2.9.1 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  realtime_client 2.7.1 (2.13.2 available)
+  shared_preferences 2.5.5 (2.5.6 available)
+  shared_preferences_android 2.4.23 (2.5.3 available)
+  shared_preferences_foundation 2.5.6 (2.6.0 available)
+  sqflite 2.4.2 (2.4.5 available)
+  sqflite_android 2.4.2+3 (2.4.5 available)
+  sqflite_common 2.5.6 (2.5.14 available)
+  sqflite_darwin 2.4.2 (2.4.4+1 available)
+  sqflite_platform_interface 2.4.0 (2.4.3 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  storage_client 2.5.1 (2.8.1 available)
+  supabase 2.10.4 (2.16.5 available)
+  supabase_flutter 2.12.2 (2.18.3 available)
+  synchronized 3.4.0 (3.5.0 available)
+  test_api 0.7.7 (0.7.15 available)
+  url_launcher 6.3.2 (6.3.3 available)
+  url_launcher_android 6.3.29 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_web 2.4.2 (2.4.3 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_graphics 1.1.20 (1.2.4 available)
+  vector_graphics_compiler 1.2.0 (1.3.2 available)
+  vector_math 2.2.0 (2.4.3 available)
+  vm_service 15.0.2 (15.4.0 available)
+  webview_flutter_android 4.12.0 (4.14.1 available)
+  webview_flutter_wkwebview 3.25.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+  yaml 3.1.3 (3.1.4 available)
+  yet_another_json_isolate 2.1.0 (2.1.1 available)
+Got dependencies!
+97 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+[+1824 ms] Found plugin webview_flutter at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter-4.14.1/
+[   +9 ms] Found plugin webview_flutter_wkwebview at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_wkwebview-3.25.1/
+[  +10 ms] Found plugin webview_flutter_android at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_android-4.12.0/
+[   +7 ms] Found plugin url_launcher at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +5 ms] Found plugin url_launcher_windows at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[  +10 ms] Found plugin url_launcher_web at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[  +10 ms] Found plugin url_launcher_macos at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +4 ms] Found plugin url_launcher_linux at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +6 ms] Found plugin url_launcher_ios at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_ios-6.4.1/
+[   +3 ms] Found plugin url_launcher_android at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.29/
+[  +63 ms] Found plugin shared_preferences at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences-2.5.5/
+[   +4 ms] Found plugin shared_preferences_windows at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +7 ms] Found plugin path_provider_windows at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[  +12 ms] Found plugin shared_preferences_web at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +3 ms] Found plugin shared_preferences_linux at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +5 ms] Found plugin path_provider_linux at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +5 ms] Found plugin shared_preferences_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.6/
+[   +3 ms] Found plugin shared_preferences_android at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.23/
+[   +5 ms] Found plugin path_provider at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider-2.1.6/
+[   +4 ms] Found plugin path_provider_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_foundation-2.6.0/
+[  +28 ms] Found plugin path_provider_android at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_android-2.2.23/
+[   +4 ms] Found plugin app_links at /home/dutycall/.pub-cache/hosted/pub.dev/app_links-7.0.0/
+[   +5 ms] Found plugin app_links_web at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_web-1.0.4/
+[   +3 ms] Found plugin app_links_linux at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_linux-1.0.3/
+[   +2 ms] Found plugin gtk at /home/dutycall/.pub-cache/hosted/pub.dev/gtk-2.1.0/
+[   +6 ms] Found plugin share_plus at /home/dutycall/.pub-cache/hosted/pub.dev/share_plus-13.3.1/
+[  +21 ms] Found plugin permission_handler at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +4 ms] Found plugin permission_handler_windows at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[   +4 ms] Found plugin permission_handler_html at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +2 ms] Found plugin permission_handler_apple at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +2 ms] Found plugin permission_handler_android at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[  +30 ms] Found plugin image_picker at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker-1.2.3/
+[   +2 ms] Found plugin image_picker_windows at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_windows-0.2.2/
+[   +4 ms] Found plugin file_selector_windows at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_windows-0.9.3+5/
+[   +3 ms] Found plugin image_picker_macos at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_macos-0.2.2+1/
+[   +3 ms] Found plugin file_selector_macos at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_macos-0.9.5/
+[   +2 ms] Found plugin image_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_linux-0.2.2/
+[   +2 ms] Found plugin file_selector_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_linux-0.9.4/
+[   +2 ms] Found plugin image_picker_ios at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_ios-0.8.13+6/
+[   +5 ms] Found plugin image_picker_for_web at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_for_web-3.1.1/
+[   +1 ms] Found plugin image_picker_android at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_android-0.8.13+15/
+[   +2 ms] Found plugin flutter_plugin_android_lifecycle at /home/dutycall/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.34/
+[  +19 ms] Found plugin fluttertoast at /home/dutycall/.pub-cache/hosted/pub.dev/fluttertoast-8.2.14/
+[  +10 ms] Found plugin file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker-13.1.0/
+[   +2 ms] Found plugin windows_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/windows_file_picker-2.0.1/
+[   +3 ms] Found plugin file_picker_web at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_web-4.1.0/
+[   +1 ms] Found plugin file_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_linux-2.0.2/
+[   +7 ms] Found plugin file_picker_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_darwin-2.2.0/
+[   +7 ms] Found plugin android_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/android_file_picker-2.0.1/
+[   +7 ms] Found plugin sqflite at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite-2.4.2/
+[   +7 ms] Found plugin sqflite_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_darwin-2.4.2/
+[   +1 ms] Found plugin sqflite_android at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_android-2.4.2+3/
+[ +109 ms] Found plugin webview_flutter at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter-4.14.1/
+[   +1 ms] Found plugin webview_flutter_wkwebview at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_wkwebview-3.25.1/
+[   +4 ms] Found plugin webview_flutter_android at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_android-4.12.0/
+[   +1 ms] Found plugin url_launcher at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +2 ms] Found plugin url_launcher_windows at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +4 ms] Found plugin url_launcher_web at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +6 ms] Found plugin url_launcher_macos at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +1 ms] Found plugin url_launcher_ios at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_ios-6.4.1/
+[   +3 ms] Found plugin url_launcher_android at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.29/
+[  +29 ms] Found plugin shared_preferences at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences-2.5.5/
+[   +2 ms] Found plugin shared_preferences_windows at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +3 ms] Found plugin path_provider_windows at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +9 ms] Found plugin shared_preferences_web at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_linux at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +1 ms] Found plugin path_provider_linux at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +6 ms] Found plugin shared_preferences_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.6/
+[   +2 ms] Found plugin shared_preferences_android at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.23/
+[   +2 ms] Found plugin path_provider at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider-2.1.6/
+[   +2 ms] Found plugin path_provider_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_foundation-2.6.0/
+[  +13 ms] Found plugin path_provider_android at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_android-2.2.23/
+[   +1 ms] Found plugin app_links at /home/dutycall/.pub-cache/hosted/pub.dev/app_links-7.0.0/
+[   +1 ms] Found plugin app_links_web at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_web-1.0.4/
+[   +1 ms] Found plugin app_links_linux at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_linux-1.0.3/
+[   +1 ms] Found plugin gtk at /home/dutycall/.pub-cache/hosted/pub.dev/gtk-2.1.0/
+[   +1 ms] Found plugin share_plus at /home/dutycall/.pub-cache/hosted/pub.dev/share_plus-13.3.1/
+[  +13 ms] Found plugin permission_handler at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +1 ms] Found plugin permission_handler_windows at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[   +4 ms] Found plugin permission_handler_html at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +2 ms] Found plugin permission_handler_apple at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +1 ms] Found plugin permission_handler_android at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[  +14 ms] Found plugin image_picker at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker-1.2.3/
+[   +1 ms] Found plugin image_picker_windows at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_windows-0.2.2/
+[   +2 ms] Found plugin file_selector_windows at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_windows-0.9.3+5/
+[   +2 ms] Found plugin image_picker_macos at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_macos-0.2.2+1/
+[   +1 ms] Found plugin file_selector_macos at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_macos-0.9.5/
+[   +1 ms] Found plugin image_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_linux-0.2.2/
+[   +3 ms] Found plugin file_selector_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_linux-0.9.4/
+[   +2 ms] Found plugin image_picker_ios at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_ios-0.8.13+6/
+[   +1 ms] Found plugin image_picker_for_web at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_for_web-3.1.1/
+[   +2 ms] Found plugin image_picker_android at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_android-0.8.13+15/
+[   +2 ms] Found plugin flutter_plugin_android_lifecycle at /home/dutycall/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.34/
+[  +16 ms] Found plugin fluttertoast at /home/dutycall/.pub-cache/hosted/pub.dev/fluttertoast-8.2.14/
+[   +4 ms] Found plugin file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker-13.1.0/
+[   +2 ms] Found plugin windows_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/windows_file_picker-2.0.1/
+[   +3 ms] Found plugin file_picker_web at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_web-4.1.0/
+[   +1 ms] Found plugin file_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_linux-2.0.2/
+[   +2 ms] Found plugin file_picker_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_darwin-2.2.0/
+[   +1 ms] Found plugin android_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/android_file_picker-2.0.1/
+[   +4 ms] Found plugin sqflite at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite-2.4.2/
+[   +6 ms] Found plugin sqflite_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_darwin-2.4.2/
+[   +1 ms] Found plugin sqflite_android at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_android-2.4.2+3/
+[  +64 ms] Found plugin webview_flutter at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter-4.14.1/
+[   +1 ms] Found plugin webview_flutter_wkwebview at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_wkwebview-3.25.1/
+[   +5 ms] Found plugin webview_flutter_android at /home/dutycall/.pub-cache/hosted/pub.dev/webview_flutter_android-4.12.0/
+[   +1 ms] Found plugin url_launcher at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher-6.3.2/
+[   +1 ms] Found plugin url_launcher_windows at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.5/
+[   +4 ms] Found plugin url_launcher_web at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_web-2.4.2/
+[   +4 ms] Found plugin url_launcher_macos at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.5/
+[   +2 ms] Found plugin url_launcher_linux at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.2/
+[   +1 ms] Found plugin url_launcher_ios at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_ios-6.4.1/
+[   +1 ms] Found plugin url_launcher_android at /home/dutycall/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.29/
+[  +19 ms] Found plugin shared_preferences at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences-2.5.5/
+[   +1 ms] Found plugin shared_preferences_windows at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/
+[   +2 ms] Found plugin path_provider_windows at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+[   +4 ms] Found plugin shared_preferences_web at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.3/
+[   +1 ms] Found plugin shared_preferences_linux at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/
+[   +2 ms] Found plugin path_provider_linux at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
+[   +2 ms] Found plugin shared_preferences_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.6/
+[   +3 ms] Found plugin shared_preferences_android at /home/dutycall/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.23/
+[   +4 ms] Found plugin path_provider at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider-2.1.6/
+[   +1 ms] Found plugin path_provider_foundation at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_foundation-2.6.0/
+[   +8 ms] Found plugin path_provider_android at /home/dutycall/.pub-cache/hosted/pub.dev/path_provider_android-2.2.23/
+[   +2 ms] Found plugin app_links at /home/dutycall/.pub-cache/hosted/pub.dev/app_links-7.0.0/
+[   +2 ms] Found plugin app_links_web at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_web-1.0.4/
+[   +2 ms] Found plugin app_links_linux at /home/dutycall/.pub-cache/hosted/pub.dev/app_links_linux-1.0.3/
+[   +2 ms] Found plugin gtk at /home/dutycall/.pub-cache/hosted/pub.dev/gtk-2.1.0/
+[   +3 ms] Found plugin share_plus at /home/dutycall/.pub-cache/hosted/pub.dev/share_plus-13.3.1/
+[  +13 ms] Found plugin permission_handler at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler-11.4.0/
+[   +1 ms] Found plugin permission_handler_windows at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/
+[   +1 ms] Found plugin permission_handler_html at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/
+[   +1 ms] Found plugin permission_handler_apple at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.7/
+[   +1 ms] Found plugin permission_handler_android at /home/dutycall/.pub-cache/hosted/pub.dev/permission_handler_android-12.1.0/
+[  +11 ms] Found plugin image_picker at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker-1.2.3/
+[   +1 ms] Found plugin image_picker_windows at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_windows-0.2.2/
+[   +1 ms] Found plugin file_selector_windows at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_windows-0.9.3+5/
+[   +2 ms] Found plugin image_picker_macos at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_macos-0.2.2+1/
+[   +2 ms] Found plugin file_selector_macos at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_macos-0.9.5/
+[   +2 ms] Found plugin image_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_linux-0.2.2/
+[   +1 ms] Found plugin file_selector_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_selector_linux-0.9.4/
+[        ] Found plugin image_picker_ios at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_ios-0.8.13+6/
+[   +1 ms] Found plugin image_picker_for_web at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_for_web-3.1.1/
+[   +1 ms] Found plugin image_picker_android at /home/dutycall/.pub-cache/hosted/pub.dev/image_picker_android-0.8.13+15/
+[   +1 ms] Found plugin flutter_plugin_android_lifecycle at /home/dutycall/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.34/
+[  +12 ms] Found plugin fluttertoast at /home/dutycall/.pub-cache/hosted/pub.dev/fluttertoast-8.2.14/
+[   +5 ms] Found plugin file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker-13.1.0/
+[   +1 ms] Found plugin windows_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/windows_file_picker-2.0.1/
+[   +2 ms] Found plugin file_picker_web at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_web-4.1.0/
+[   +2 ms] Found plugin file_picker_linux at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_linux-2.0.2/
+[   +2 ms] Found plugin file_picker_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/file_picker_darwin-2.2.0/
+[   +1 ms] Found plugin android_file_picker at /home/dutycall/.pub-cache/hosted/pub.dev/android_file_picker-2.0.1/
+[   +5 ms] Found plugin sqflite at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite-2.4.2/
+[   +6 ms] Found plugin sqflite_darwin at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_darwin-2.4.2/
+[   +4 ms] Found plugin sqflite_android at /home/dutycall/.pub-cache/hosted/pub.dev/sqflite_android-2.4.2+3/
+[  +16 ms] Generating /run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[   +6 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[  +19 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[   +2 ms] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +2 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[  +82 ms] Top-level Gradle build file not found, skipping migration of task "clean".
+[   +1 ms] Android Studio version could not be detected, skipping Gradle-Java version compatibility check.
+[  +39 ms] CMake project not found, skipping support Android 15 16k page size migration.
+[  +12 ms] Using gradle from /run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/gradlew.
+[  +32 ms] LocalFile: '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/build.gradle.kts' doesn't provide an AGP version. Checking settings.
+[   +2 ms] LocalFile: '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/settings.gradle.kts' provides AGP version: 8.11.1
+[  +39 ms] Running Gradle task 'assembleRelease'...
+[   +2 ms] executing: [/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/] /run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/gradlew --full-stacktrace --info -Pverbose=true -Ptarget-platform=android-arm,android-arm64,android-x64 -Ptarget=lib/main.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuMzguNg==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049OGI4NzI4Njg0OQ==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049NzhmYzMwMTJlNA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMC43 -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=true assembleRelease
+[+1155 ms] Initialized native services in: /home/dutycall/.gradle/native
+[   +1 ms] Initialized jansi services in: /home/dutycall/.gradle/native
+[ +548 ms] The client will now receive all logging from the daemon (pid: 35181). The daemon log file: /home/dutycall/.gradle/daemon/8.14/daemon-35181.out.log
+[        ] Starting 3rd build in daemon [uptime: 1 hrs 46 mins 20.891 secs, performance: 99%, GC rate: 0.00/s, heap usage: 0% of 8 GiB, non-heap usage: 2% of 4 GiB]
+[        ] Using 4 worker leases.
+[        ] Not watching /run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android since the file system is not supported
+[        ] Watching the file system is configured to be enabled if available
+[        ] File system watching is active
+[        ] Starting Build
+[  +98 ms] Not watching /run/media/dutycall/Dutycall 1/flutter_sdk/flutter/packages/flutter_tools/gradle since the file system is not supported
+[ +401 ms] > Configure project :gradle
+[   +6 ms] Evaluating project ':gradle' using build file '/run/media/dutycall/Dutycall 1/flutter_sdk/flutter/packages/flutter_tools/gradle/build.gradle.kts'.
+[        ] Resolved plugin [id: 'org.gradle.java-gradle-plugin']
+[        ] Resolved plugin [id: 'org.gradle.groovy']
+[        ] Resolved plugin [id: 'org.gradle.kotlin.kotlin-dsl', version: '5.2.0']
+[        ] Resolved plugin [id: 'org.jetbrains.kotlin.jvm', version: '1.9.20']
+[        ] Using Kotlin Gradle Plugin gradle85 variant
+[        ] kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+[        ] kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[   +3 ms] file or directory '/run/media/dutycall/Dutycall 1/flutter_sdk/flutter/packages/flutter_tools/gradle/src/main/java', not found
+[        ] Resolved plugin [id: 'dev.flutter.flutter-plugin-loader', version: '1.0.0']
+[        ] Resolved plugin [id: 'com.android.application', version: '8.11.1', apply: false]
+[        ] Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.2.20', apply: false]
+[  +87 ms] Resolve mutations for :gradle:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+[        ] :gradle:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+[        ] > Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[   +1 ms] Skipping task ':gradle:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+[   +1 ms] Resolve mutations for :gradle:compileKotlin (Thread[included builds,5,main]) started.
+[        ] :gradle:compileKotlin (Thread[Execution worker,5,main]) started.
+[ +193 ms] > Task :gradle:compileKotlin UP-TO-DATE
+[        ] Caching disabled for task ':gradle:compileKotlin' because:
+[   +3 ms]   Build cache is disabled
+[        ] Skipping task ':gradle:compileKotlin' as it is up-to-date.
+[        ] Resolve mutations for :gradle:compileJava (Thread[Execution worker Thread 2,5,main]) started.
+[        ] :gradle:compileJava (Thread[Execution worker Thread 2,5,main]) started.
+[        ] > Task :gradle:compileJava NO-SOURCE
+[   +3 ms] Skipping task ':gradle:compileJava' as it has no source files and no previous output files.
+[        ] Resolve mutations for :gradle:compileGroovy (Thread[Execution worker,5,main]) started.
+[   +2 ms] :gradle:compileGroovy (Thread[Execution worker,5,main]) started.
+[        ] > Task :gradle:compileGroovy NO-SOURCE
+[        ] Skipping task ':gradle:compileGroovy' as it has no source files and no previous output files.
+[        ] Resolve mutations for :gradle:pluginDescriptors (Thread[Execution worker Thread 2,5,main]) started.
+[        ] :gradle:pluginDescriptors (Thread[included builds,5,main]) started.
+[        ] > Task :gradle:pluginDescriptors UP-TO-DATE
+[        ] Caching disabled for task ':gradle:pluginDescriptors' because:
+[        ]   Build cache is disabled
+[        ]   Not worth caching
+[        ] Skipping task ':gradle:pluginDescriptors' as it is up-to-date.
+[        ] Resolve mutations for :gradle:processResources (Thread[Execution worker Thread 2,5,main]) started.
+[        ] :gradle:processResources (Thread[included builds,5,main]) started.
+[        ] > Task :gradle:processResources UP-TO-DATE
+[        ] Caching disabled for task ':gradle:processResources' because:
+[        ]   Build cache is disabled
+[        ]   Not worth caching
+[        ] Skipping task ':gradle:processResources' as it is up-to-date.
+[        ] Resolve mutations for :gradle:classes (Thread[Execution worker Thread 2,5,main]) started.
+[        ] :gradle:classes (Thread[Execution worker Thread 2,5,main]) started.
+[        ] > Task :gradle:classes UP-TO-DATE
+[        ] Skipping task ':gradle:classes' as it has no actions.
+[        ] Resolve mutations for :gradle:jar (Thread[Execution worker Thread 2,5,main]) started.
+[        ] :gradle:jar (Thread[included builds,5,main]) started.
+[   +4 ms] > Task :gradle:jar UP-TO-DATE
+[        ] Caching disabled for task ':gradle:jar' because:
+[        ]   Build cache is disabled
+[        ]   Not worth caching
+[        ] Skipping task ':gradle:jar' as it is up-to-date.
+[ +370 ms] Settings evaluated using settings file '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/settings.gradle.kts'.
+[   +3 ms] Projects loaded. Root project using build file '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/build.gradle.kts'.
+[   +1 ms] Included projects: [root project 'android', project ':android_file_picker', project ':app', project ':app_links', project ':flutter_plugin_android_lifecycle', project ':fluttertoast', project ':image_picker_android', project ':path_provider_android', project ':permission_handler_android', project ':share_plus', project ':shared_preferences_android', project ':sqflite_android', project ':url_launcher_android', project ':webview_flutter_android']
+[+1995 ms] > Configure project :
+[        ] Evaluating root project 'android' using build file '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/build.gradle.kts'.
+[+28098 ms] > Configure project :app
+[   +1 ms] Evaluating project ':app' using build file '/run/media/dutycall/Dutycall 1/Pro_Jects/smartedu/android/app/build.gradle.kts'.
+[   +2 ms] Caching disabled for Kotlin DSL script compilation (Project/TopLevel/stage1) because:
+[        ]   Build cache is disabled
+[   +1 ms] Resolved plugin [id: 'com.android.application']
+[        ] Resolved plugin [id: 'kotlin-android']
+[        ] Resolved plugin [id: 'dev.flutter.flutter-gradle-plugin']
+[        ] Using default execution profile
+[        ] Build 7401b3c5-3dc4-45a5-b37e-7f52c5d237d5 is started
+[        ] Using Kotlin Gradle Plugin gradle813 variant
+[        ] Caching disabled for Kotlin DSL script compilation (Project/TopLevel/stage2) because:
+[        ]   Build cache is disabled
+[        ] w: file:///run/media/dutycall/Dutycall%201/Pro_Jects/smartedu/android/app/build.gradle.kts:19:9: 'jvmTarget: String' is deprecated. Please migrate to the compilerOptions DSL. More details are here: https://kotl.in/u1r8ln
+[   +4 ms] C/C++: android.ndkVersion from module build.gradle is [27.0.12077973]
+[        ] C/C++: android.ndkPath from module build.gradle is not set
+[        ] C/C++: ndk.dir in local.properties is not set
+[        ] C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+[        ] C/C++: sdkFolder is /home/dutycall/Android/Sdk
+[        ] C/C++: Folder /home/dutycall/Android/Sdk/ndk/27.0.12077973 does not exist. Ignoring.
+[        ] C/C++: Folder /home/dutycall/Android/Sdk/ndk-bundle does not exist. Ignoring.
+[        ] C/C++: No NDK was found. Trying to download it now.
+[   +2 ms] Parsing legacy package: /home/dutycall/Android/Sdk/cmdline-tools/latest
+[        ] SDK Manager found the following installed packages: build-tools;34.0.0 platform-tools platforms;android-34
+[        ] Checking the license for package NDK (Side by side) 27.0.12077973 in /home/dutycall/Android/Sdk/licenses
+[        ] License for package NDK (Side by side) 27.0.12077973 accepted.
+[        ] Preparing "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973".

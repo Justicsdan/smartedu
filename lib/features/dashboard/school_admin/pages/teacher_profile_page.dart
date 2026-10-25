@@ -111,7 +111,9 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
         backgroundColor: const Color(0xFF00C9A7),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: true,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +204,8 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _InfoRow(IconData icon, String label, String value) {

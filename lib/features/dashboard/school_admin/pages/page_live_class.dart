@@ -353,7 +353,9 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
         backgroundColor: const Color(0xFF1A237E),
         foregroundColor: Colors.white,
       ),
-      body: Center(
+      body: SafeArea(
+        top: true,
+        child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 800),
           padding: const EdgeInsets.all(24),
@@ -425,6 +427,7 @@ class _AdminLiveClassPageState extends State<AdminLiveClassPage> {
                   ),
         ),
       ),
-    );
+    )
+      );
   }
 }

@@ -571,6 +571,13 @@ class _RoleCardState extends State<_RoleCard> {
   @override
   Widget build(BuildContext context) {
     final r = widget.role;
+    final isSmall = MediaQuery.of(context).size.width < 420;
+    final padding = isSmall ? 18.0 : 26.0;
+    final iconSize = isSmall ? 42.0 : 54.0;
+    final iconRadius = isSmall ? 12.0 : 15.0;
+    final iconInnerSize = isSmall ? 22.0 : 27.0;
+    final titleSize = isSmall ? 16.0 : 19.0;
+    final spacing = isSmall ? 14.0 : 20.0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -588,7 +595,7 @@ class _RoleCardState extends State<_RoleCard> {
               : Matrix4.identity(),
           transformAlignment: Alignment.center,
           child: Container(
-            padding: const EdgeInsets.all(26),
+            padding: EdgeInsets.all(padding),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
@@ -636,11 +643,11 @@ class _RoleCardState extends State<_RoleCard> {
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 280),
-                  width: 54,
-                  height: 54,
+                  width: iconSize,
+                  height: iconSize,
                   decoration: BoxDecoration(
                     gradient: r.gradient,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(iconRadius),
                     boxShadow: [
                       BoxShadow(
                         color: r.glowColor
@@ -651,13 +658,13 @@ class _RoleCardState extends State<_RoleCard> {
                     ],
                   ),
                   child:
-                      Icon(r.icon, color: Colors.white, size: 27),
+                      Icon(r.icon, color: Colors.white, size: iconInnerSize),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: spacing),
                 Text(
                   r.title,
-                  style: const TextStyle(
-                    fontSize: 19,
+                  style: TextStyle(
+                    fontSize: titleSize,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     letterSpacing: -0.3,

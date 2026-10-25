@@ -1,0 +1,6 @@
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/logo_clean.png"
+  min_sdk_android: 21
+  android_name: "ic_launcher"

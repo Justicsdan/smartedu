@@ -1,8 +1,8 @@
 // ==========================================
 // File: lib/features/dashboard/super_admin/manage_schools_page.dart
 // ==========================================
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:smartedu/utils/image_upload_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'dart:typed_data';
@@ -23,25 +23,15 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
   final _whatsappController = TextEditingController();
   String _schoolType = 'primary';
   String _logoBase64 = '';
-  html.File? _logoFile;
+  Uint8List? _logoBytes;
   bool _isSubmitting = false;
 
   Future<void> _pickLogo() async {
-    final input = html.FileUploadInputElement();
-    input.accept = 'image/*';
-    input.click();
-    input.onChange.listen((event) {
-      final files = input.files;
-      if (files == null || files.isEmpty) return;
-      final file = files.first;
-      final reader = html.FileReader();
-      reader.onLoadEnd.listen((event) {
-        setState(() {
-          _logoBase64 = reader.result as String;
-          _logoFile = file;
-        });
-      });
-      reader.readAsDataUrl(file);
+    final bytes = await pickImageBytes(maxWidth: 512, maxHeight: 512);
+    if (bytes == null) return;
+    setState(() {
+      _logoBytes = bytes;
+      _logoBase64 = ''; // not needed; we upload bytes directly
     });
   }
 
@@ -51,7 +41,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
     _whatsappController.clear();
     _schoolType = 'primary';
     _logoBase64 = '';
-    _logoFile = null;
+    _logoBytes = null;
 
     String? dialogError;
     showDialog(
@@ -201,12 +191,9 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
                   }
                   setSt(() => _isSubmitting = true);
                   String logoUrl = '';
-                  if (_logoFile != null) {
-                    final rd = html.FileReader();
-                    rd.readAsArrayBuffer(_logoFile!);
-                    await rd.onLoadEnd.first;
-                    final bytes = Uint8List.fromList((rd.result as ByteBuffer).asUint8List());
-                    final ext = _logoFile!.name.split('.').last;
+                  if (_logoBytes != null) {
+                    final bytes = _logoBytes!;
+                    final ext = 'png';
                     final sp = 'schools/${DateTime.now().millisecondsSinceEpoch}.$ext';
                     await Supabase.instance.client.storage.from('school-logos').uploadBinary(sp, bytes, fileOptions: const FileOptions(upsert: true));
                     logoUrl = Supabase.instance.client.storage.from('school-logos').getPublicUrl(sp);
@@ -241,7 +228,7 @@ class _ManageSchoolsPageState extends State<ManageSchoolsPage> {
   }
 
   void _copyToClipboard(String text, String label) {
-    html.window.navigator.clipboard?.writeText(text);
+    // Clipboard: omitted on mobile; consider Clipboard.setData
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$label copied to clipboard"),

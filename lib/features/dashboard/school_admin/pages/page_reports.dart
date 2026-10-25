@@ -323,7 +323,9 @@ class _PageReportsState extends State<PageReports> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: SafeArea(
+        top: true,
+        child: Container(
         color: const Color(0xFFF5F6FA),
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -349,7 +351,8 @@ class _PageReportsState extends State<PageReports> {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _headerBar() {

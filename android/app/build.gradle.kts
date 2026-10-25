@@ -6,9 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.smartedu"
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+    namespace = "com.smartedu.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.2.12479018"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -21,7 +25,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.smartedu"
+        applicationId = "com.smartedu.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

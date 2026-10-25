@@ -379,149 +379,223 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Widget _buildTopBar(TeacherProvider provider, List<_NavItem> items,
       bool isSmall) {
     return Container(
-      height: 64,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          if (isSmall)
-            IconButton(
-                icon: const Icon(Icons.menu, color: Color(0xFF0D47A1)),
-                onPressed: () => Scaffold.of(context).openDrawer()),
-          if (isSmall)
-            const Text('Teacher Portal',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0D47A1))),
-          if (!isSmall)
-            Text(_currentPageLabel(items),
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
-                    letterSpacing: -0.5)),
-          const Spacer(),
-          if (!isSmall)
-            Consumer<TeacherProvider>(
-              builder: (context, p, _) {
-                if (p.terms.isEmpty) return const SizedBox.shrink();
-                final currentName = p.currentTerm?['name'] ?? 'Term';
-                return PopupMenuButton<String>(
-                  offset: const Offset(0, 40),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  color: Colors.white,
-                  elevation: 4,
-                  onSelected: (v) {
-                    p.setCurrentTerm(v);
-                    _setRoleDefault(p);
-                  },
-                  itemBuilder: (ctx) => p.terms.map((t) {
-                    final id = t['id']?.toString() ?? '';
-                    final name = t['name'] ?? '';
-                    final selected =
-                        id == (p.currentTerm?['id']?.toString() ?? '');
-                    return PopupMenuItem<String>(
-                      value: id,
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle,
-                              size: 16,
-                              color: selected
-                                  ? const Color(0xFF1A237E)
-                                  : Colors.transparent),
-                          const SizedBox(width: 8),
-                          Text(name,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: selected
-                                      ? const Color(0xFF1A237E)
-                                      : const Color(0xFF111827))),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 16),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE8EAED)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today,
-                            size: 14, color: Color(0xFF1A237E)),
-                        const SizedBox(width: 6),
-                        Text(currentName,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF1A237E),
-                                fontWeight: FontWeight.w500)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down,
-                            size: 16, color: Color(0xFF1A237E)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          IconButton(
-            icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF0D47A1)),
-            tooltip: 'Ask AI',
-            onPressed: _openAiChat,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          GestureDetector(
-            onTap: () =>
-                context.go('/teacher-profile', extra: provider.currentTeacher),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade400,
-                    borderRadius: BorderRadius.circular(10),
+        ],
+      ),
+      child: SafeArea(
+        top: true,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              // Menu button (mobile only) - keep working
+              if (isSmall)
+                Builder(
+                  builder: (innerContext) => IconButton(
+                    icon: const Icon(Icons.menu, color: Color(0xFF0D47A1)),
+                    onPressed: () => Scaffold.of(innerContext).openDrawer(),
                   ),
-                  child: Center(
-                      child: Text(_getInitials(provider),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14))),
                 ),
-                const SizedBox(width: 12),
-                Column(
+              // School logo (desktop only)
+              if (provider.schoolLogoUrl.isNotEmpty && !isSmall)
+                Container(
+                  width: 40,
+                  height: 40,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE8EAED), width: 1),
+                  ),
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: '${provider.schoolLogoUrl}?width=80&height=80',
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        color: const Color(0xFF0D47A1),
+                        child: const Icon(Icons.school, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ),
+                ),
+              // School name + subtitle
+              Expanded(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(provider.teacherName,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0D47A1))),
                     Text(
-                        provider.staffId.isNotEmpty
-                            ? provider.staffId
-                            : 'Teacher',
-                        style:
-                            const TextStyle(fontSize: 11, color: Colors.grey)),
+                      provider.schoolName.isNotEmpty ? provider.schoolName : 'SmartEdu',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0D47A1),
+                        letterSpacing: -0.3,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const Text(
+                      'Teacher Portal',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-              ],
-            ),
+              ),
+              // Term selector (desktop only) - keep existing
+              if (!isSmall)
+                Consumer<TeacherProvider>(
+                  builder: (context, p, _) {
+                    if (p.terms.isEmpty) return const SizedBox.shrink();
+                    final currentName = p.currentTerm?['name'] ?? 'Term';
+                    return PopupMenuButton<String>(
+                      offset: const Offset(0, 40),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      color: Colors.white,
+                      elevation: 4,
+                      onSelected: (v) {
+                        p.setCurrentTerm(v);
+                        _setRoleDefault(p);
+                      },
+                      itemBuilder: (ctx) => p.terms.map((t) {
+                        final id = t['id']?.toString() ?? '';
+                        final name = t['name'] ?? '';
+                        final selected =
+                            id == (p.currentTerm?['id']?.toString() ?? '');
+                        return PopupMenuItem<String>(
+                          value: id,
+                          height: 38,
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle,
+                                  size: 16,
+                                  color: selected
+                                      ? const Color(0xFF1A237E)
+                                      : Colors.transparent),
+                              const SizedBox(width: 8),
+                              Text(name,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: selected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                      color: selected
+                                          ? const Color(0xFF1A237E)
+                                          : const Color(0xFF111827))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFFE8EAED)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_today,
+                                size: 14, color: Color(0xFF1A237E)),
+                            const SizedBox(width: 6),
+                            Text(currentName,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF1A237E),
+                                    fontWeight: FontWeight.w500)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_drop_down,
+                                size: 16, color: Color(0xFF1A237E)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              // AI Chat button - keep existing
+              IconButton(
+                icon: const Icon(Icons.smart_toy_outlined, size: 21, color: Color(0xFF0D47A1)),
+                tooltip: 'Ask AI',
+                onPressed: _openAiChat,
+              ),
+              // User avatar + name + role - keep existing
+              GestureDetector(
+                onTap: () =>
+                    context.go('/teacher-profile', extra: provider.currentTeacher),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade400,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                          child: Text(_getInitials(provider),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14))),
+                    ),
+                    if (!isSmall) ...[
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(provider.teacherName,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF0D47A1))),
+                          Text(
+                              provider.staffId.isNotEmpty
+                                  ? provider.staffId
+                                  : 'Teacher',
+                              style:
+                                  const TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      // Logout button (desktop)
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                        tooltip: 'Logout',
+                        onPressed: () => context.go('/role-selection'),
+                      ),
+                    ],
+                    // Logout button (mobile - always visible)
+                    if (isSmall)
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                        tooltip: 'Logout',
+                        onPressed: () => context.go('/role-selection'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1227,8 +1301,8 @@ class _TeacherRecordingProgressCardState extends State<_TeacherRecordingProgress
           lastAttendance: lastAtt[cid], isFormMaster: isFM, hasBehavioral: behavClasses.contains(cid), hasDraft: draftClasses.contains(cid), isPublished: pubClasses.contains(cid),
         ));
       }
-      setState(() { _classes = result; _loading = false; });
-    } catch (_) { setState(() => _loading = false); }
+      if (mounted) setState(() { _classes = result; _loading = false; });
+    } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
   @override

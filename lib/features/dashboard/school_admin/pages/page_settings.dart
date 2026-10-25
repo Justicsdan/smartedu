@@ -2,9 +2,9 @@
 // File: lib/features/dashboard/school_admin/pages/page_settings.dart
 // ==========================================
 import 'dart:async';
-import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:smartedu/utils/image_upload_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
@@ -1930,19 +1930,6 @@ class _PageSettingsState extends State<PageSettings>
 
   Future<void> _pickAndUploadLogo(SchoolAdminProvider provider) async {
     try {
-      final input = html.FileUploadInputElement()..accept = 'image/*';
-      html.document.body!.append(input);
-      final completer = Completer<void>();
-      input.addEventListener('change', (_) => completer.complete());
-      input.click();
-      await completer.future;
-      if (input.files == null || input.files!.isEmpty) { input.remove(); return; }
-      final file = input.files!.first;
-      input.remove();
-      if (file.size > 2 * 1024 * 1024) {
-        _snack('Image too large. Max 2MB allowed.', success: false);
-        return;
-      }
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1963,33 +1950,17 @@ class _PageSettingsState extends State<PageSettings>
           ),
         );
       }
-      final bytes = await _readFileBytes(file);
+      final bytes = await pickImageBytes();
       if (bytes == null) {
-        _snack('Failed to read file', success: false);
+        if (mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
         return;
       }
-      await _uploadBytes(provider, bytes, file.name);
+      await _uploadBytes(provider, bytes, 'logo.png');
       if (mounted) setState(() {});
     } catch (e) {
       _snack('Error: $e', success: false);
     }
   }
-
-  Future<Uint8List?> _readFileBytes(html.File file) async {
-    final c = Completer<Uint8List?>();
-    final r = html.FileReader();
-    r.onLoadEnd.listen((_) {
-      c.complete(r.result != null
-          ? (r.result is Uint8List ? r.result as Uint8List : (r.result as ByteBuffer).asUint8List())
-          : null);
-    });
-    r.onError.listen((_) {
-      c.completeError(Exception('FileReader error'));
-    });
-    r.readAsArrayBuffer(file);
-    return c.future;
-  }
-
   Future<void> _uploadBytes(SchoolAdminProvider provider,
       Uint8List bytes, String name) async {
     try {

@@ -23,7 +23,9 @@ class SchoolAdminProfilePage extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: true,
+        child: SingleChildScrollView(
         child: Column(
           children: [
             // Header Section
@@ -119,7 +121,8 @@ class SchoolAdminProfilePage extends StatelessWidget {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _buildInfoCard(IconData icon, String title, String subtitle) {

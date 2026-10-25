@@ -1,6 +1,6 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:smartedu/utils/download_utils.dart' as dl;
 import 'package:provider/provider.dart';
 import 'package:smartedu/core/services/db_proxy.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
@@ -278,7 +278,7 @@ class _PageResultsState extends State<PageResults> {
     );
   }
 
-  void _exportCsv() {
+  Future<void> _exportCsv() async {
     if (_studentsInClass.isEmpty) return;
     setState(() => _isExporting = true);
     try {
@@ -323,13 +323,11 @@ class _PageResultsState extends State<PageResults> {
       }
       final bytes =
           Uint8List.fromList(buffer.toString().codeUnits);
-      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download',
-            '${className.replaceAll(' ', '_')}_${subjectName.replaceAll(' ', '_')}_scores.csv')
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      if (kIsWeb) {
+        dl.downloadBytesWeb(bytes, '${className.replaceAll(' ', '_')}_${subjectName.replaceAll(' ', '_')}_scores.csv', mimeType: 'text/csv');
+      } else {
+        await dl.downloadAndShareMobile(bytes, '${className.replaceAll(' ', '_')}_${subjectName.replaceAll(' ', '_')}_scores.csv', mimeType: 'text/csv');
+      }
       _snack('CSV exported successfully!');
     } catch (e) {
       debugPrint('CSV EXPORT ERR: $e');
@@ -339,7 +337,7 @@ class _PageResultsState extends State<PageResults> {
     }
   }
 
-  void _printBlankSheet() {
+  Future<void> _printBlankSheet()  async {
     if (_studentsInClass.isEmpty) return;
     final provider = context.read<SchoolAdminProvider>();
     final className = _getClassName();
@@ -389,10 +387,11 @@ tr:nth-child(even) td{background:#F9FAFB}
 <div class="footer"><div>Assessment: $assessmentSummary = $_totalMaxScore</div><div>${sortedStudents.length} students</div><div>Printed: ${DateTime.now().toString().split('.').first}</div></div>
 <div class="signature"><div class="sig-line"><div class="line"></div><div class="label">Class Teacher</div></div><div class="sig-line"><div class="line"></div><div class="label">Subject Teacher</div></div><div class="sig-line"><div class="line"></div><div class="label">Principal</div></div></div>
 </body></html>''';
-    final blob = html.Blob([htmlContent], 'text/html');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.window.open(url, '_blank');
-    html.Url.revokeObjectUrl(url);
+    if (kIsWeb) {
+      dl.openHtmlInNewTabWeb(htmlContent);
+    } else {
+      await dl.downloadAndShareTextMobile(htmlContent, 'results.html', mimeType: 'text/html');
+    }
   }
 
   Future<void> _save() async {

@@ -24,7 +24,9 @@ class StudentProfilePage extends StatelessWidget {
         backgroundColor: const Color(0xFF1A237E),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: true,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +98,8 @@ class StudentProfilePage extends StatelessWidget {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _InfoRow(IconData icon, String label, String value) {

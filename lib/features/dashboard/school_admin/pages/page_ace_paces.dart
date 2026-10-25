@@ -100,7 +100,9 @@ class _PageAcePacesState extends State<PageAcePaces> {
       appBar: AppBar(
         title: const Text('PACE Scores'),
       ),
-      body: Padding(
+      body: SafeArea(
+        top: true,
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +217,8 @@ class _PageAcePacesState extends State<PageAcePaces> {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   void _openPaceSheet(Map<String, dynamic> student) {

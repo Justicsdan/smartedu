@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:smartedu/utils/image_upload_utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:smartedu/core/services/db_proxy.dart';
@@ -49,43 +49,14 @@ class _TeacherEditProfileSheetState extends State<TeacherEditProfileSheet> {
   }
 
   Future<void> _changePhoto() async {
-    final input = html.FileUploadInputElement()..accept = 'image/*';
-    html.document.body!.append(input);
-    final completer = Completer<void>();
-    input.addEventListener('change', (_) => completer.complete());
-    input.click();
-    await completer.future;
-    if (input.files == null || input.files!.isEmpty) {
-      input.remove();
-      return;
-    }
-    final file = input.files!.first;
-    input.remove();
-    if (file.size > 2 * 1024 * 1024) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Image must be less than 2MB'),
-          backgroundColor: Color(0xFFD32F2F),
-          behavior: SnackBarBehavior.floating,
-        ));
-      }
-      return;
-    }
     setState(() => _uploading = true);
     try {
-      final reader = html.FileReader();
-      final readC = Completer<Uint8List?>();
-      reader.onLoadEnd.listen((_) {
-        final r = reader.result;
-        readC.complete(r != null
-            ? (r is Uint8List ? r : (r as ByteBuffer).asUint8List())
-            : null);
-      });
-      reader.onError.listen((_) => readC.complete(null));
-      reader.readAsArrayBuffer(file);
-      final bytes = await readC.future;
-      if (bytes == null) return;
-      final ext = file.name.split('.').last.toLowerCase();
+      final bytes = await pickImageBytes();
+      if (bytes == null) {
+        if (mounted) setState(() => _uploading = false);
+        return;
+      }
+      final ext = 'png';
       final safeExt =
           (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) ? ext : 'jpg';
       final pth =

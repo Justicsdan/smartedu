@@ -264,14 +264,17 @@ class _PageAcademicState extends State<PageAcademic>
           ],
         ),
       ),
-      body: TabBarView(
+      body: SafeArea(
+        top: true,
+        child: TabBarView(
         controller: _tabController,
         children: [
           _buildSessionsTab(),
           _buildTermsTab(),
         ],
       ),
-    );
+    )
+      );
   }
 
   Widget _buildSessionsTab() {

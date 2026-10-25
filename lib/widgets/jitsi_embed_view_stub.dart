@@ -1,5 +1,20 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-Widget buildJitsiView(String roomName, String userDisplayName, String schoolName, bool isProctoring) {
-  return const Center(child: Text('Platform not supported'));
+class JitsiEmbedView extends StatelessWidget {
+  final String roomName;
+  final String? displayName;
+  final String? userDisplayName;
+  final String? schoolName;
+  final bool isProctoring;
+  const JitsiEmbedView({
+    Key? key,
+    required this.roomName,
+    this.displayName,
+    this.userDisplayName,
+    this.schoolName,
+    this.isProctoring = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

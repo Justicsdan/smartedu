@@ -307,7 +307,9 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
     if (_selectedClassId == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
-        body: Center(
+        body: SafeArea(
+          top: true,
+          child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -354,7 +356,8 @@ class _TeacherAttendancePageState extends State<TeacherAttendancePage>
             ],
           ),
         ),
-      );
+      )
+        );
     }
 
     return Scaffold(

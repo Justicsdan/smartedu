@@ -280,119 +280,199 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildTopBar(bool isSmall) {
     return Container(
-      height: 64,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Consumer<StudentProvider>(
-        builder: (context, provider, _) {
-          return Row(
-            children: [
-              if (isSmall)
-                IconButton(
-                  icon: const Icon(Icons.menu, color: Color(0xFF2E7D32)),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              if (isSmall)
-                const Text('Student Portal',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32))),
-              if (!isSmall)
-                Text(_sidebarItems[_selectedIndex].label,
-                    style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E7D32))),
-              const Spacer(),
-              if (!isSmall) ...[
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A237E).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButton<String>(
-                    value: provider.currentSession?['id'] as String?,
-                    underline: const SizedBox(),
-                    isDense: true,
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF1A237E)),
-                    items: provider.sessions
-                        .map((s) => DropdownMenuItem(
-                            value: s['id'] as String?,
-                            child: Text('${s['name']}',
-                                style: const TextStyle(fontSize: 12, color: Color(0xFF1A237E)))))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) provider.setCurrentSession(value);
-                    },
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButton<String>(
-                    value: provider.currentTerm?['id'] as String?,
-                    underline: const SizedBox(),
-                    isDense: true,
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF2E7D32)),
-                    items: provider.terms
-                        .map((t) => DropdownMenuItem(
-                            value: t['id'] as String?,
-                            child: Text('${t['name']}',
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF2E7D32)))))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) provider.setCurrentTerm(value);
-                    },
-                  ),
-                ),
-              ],
-              const Icon(Icons.notifications_outlined, color: Colors.grey, size: 24),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => setState(() => _selectedIndex = 8),
-                child: provider.passportUrl.isNotEmpty
-                    ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.passportUrl}?width=80&height=80', width: 48, height: 48, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox()))
-                    : CircleAvatar(
-                        radius: 24,
-                        backgroundColor:
-                            const Color(0xFF2E7D32).withOpacity(0.1),
-                        child: Text(_getInitials(provider),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2E7D32),
-                                fontSize: 14)),
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: true,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Consumer<StudentProvider>(
+            builder: (context, provider, _) {
+              return Row(
+                children: [
+                  // Menu button (mobile only) - keep working
+                  if (isSmall)
+                    Builder(
+                      builder: (innerContext) => IconButton(
+                        icon: const Icon(Icons.menu, color: Color(0xFF2E7D32)),
+                        onPressed: () => Scaffold.of(innerContext).openDrawer(),
                       ),
-                ),
-              if (!isSmall) ...[
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => setState(() => _selectedIndex = 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_getStudentName(provider),
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1B2A4A))),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                    ),
+                  // School logo (desktop only)
+                  if (provider.schoolLogoUrl.isNotEmpty && !isSmall)
+                    Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE8EAED), width: 1),
+                      ),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: '${provider.schoolLogoUrl}?width=80&height=80',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            color: const Color(0xFF2E7D32),
+                            child: const Icon(Icons.school, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // School name + subtitle
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          provider.schoolName.isNotEmpty ? provider.schoolName : 'SmartEdu',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2E7D32),
+                            letterSpacing: -0.3,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const Text(
+                          'Student Portal',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Session selector (desktop only) - keep existing
+                  if (!isSmall) ...[
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A237E).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButton<String>(
+                        value: provider.currentSession?['id'] as String?,
+                        underline: const SizedBox(),
+                        isDense: true,
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF1A237E)),
+                        items: provider.sessions
+                            .map((s) => DropdownMenuItem(
+                                value: s['id'] as String?,
+                                child: Text('${s['name']}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF1A237E)))))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) provider.setCurrentSession(value);
+                        },
+                      ),
+                    ),
+                    // Term selector (desktop only) - keep existing
+                    Container(
+                      margin: const EdgeInsets.only(right: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButton<String>(
+                        value: provider.currentTerm?['id'] as String?,
+                        underline: const SizedBox(),
+                        isDense: true,
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF2E7D32)),
+                        items: provider.terms
+                            .map((t) => DropdownMenuItem(
+                                value: t['id'] as String?,
+                                child: Text('${t['name']}',
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF2E7D32)))))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) provider.setCurrentTerm(value);
+                        },
+                      ),
+                    ),
                   ],
-                ),
-              ),
-              ],
-            ],
-          );
-        },
+                  // Notifications icon - keep existing
+                  const Icon(Icons.notifications_outlined, color: Colors.grey, size: 24),
+                  const SizedBox(width: 12),
+                  // User avatar - keep existing
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedIndex = 8),
+                    child: provider.passportUrl.isNotEmpty
+                        ? ClipOval(child: CachedNetworkImage(imageUrl: '${provider.passportUrl}?width=80&height=80', width: 48, height: 48, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox()))
+                        : CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                const Color(0xFF2E7D32).withOpacity(0.1),
+                            child: Text(_getInitials(provider),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2E7D32),
+                                    fontSize: 14)),
+                          ),
+                  ),
+                  if (!isSmall) ...[
+                    const SizedBox(width: 12),
+                    // User name - keep existing
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedIndex = 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_getStudentName(provider),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1B2A4A))),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Logout button (always visible on desktop)
+                    IconButton(
+                      icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                      tooltip: 'Logout',
+                      onPressed: () async {
+                        await AuthService.logout();
+                        if (mounted) context.go('/role-selection');
+                      },
+                    ),
+                  ],
+                  // Logout button (mobile - in top bar)
+                  if (isSmall)
+                    IconButton(
+                      icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFF9CA3AF)),
+                      tooltip: 'Logout',
+                      onPressed: () async {
+                        await AuthService.logout();
+                        if (mounted) context.go('/role-selection');
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

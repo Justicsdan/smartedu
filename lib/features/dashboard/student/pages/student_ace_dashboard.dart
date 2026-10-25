@@ -76,10 +76,13 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFFF7F8FA),
-        body: Center(
+        body: SafeArea(
+          top: true,
+          child: Center(
           child: CircularProgressIndicator(color: Color(0xFF1A237E)),
         ),
-      );
+      )
+        );
     }
 
     if (report == null) {
@@ -92,7 +95,9 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
           foregroundColor: Colors.white,
           elevation: 0,
         ),
-        body: Center(
+        body: SafeArea(
+          top: true,
+          child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -104,7 +109,8 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
             ],
           ),
         ),
-      );
+      )
+        );
     }
 
     return Scaffold(
@@ -139,7 +145,9 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: true,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +163,8 @@ class _StudentAceDashboardState extends State<StudentAceDashboard> {
           ],
         ),
       ),
-    );
+    )
+      );
   }
 
   Widget _buildHeaderCard(StudentProvider p, Map<String, dynamic> r) {

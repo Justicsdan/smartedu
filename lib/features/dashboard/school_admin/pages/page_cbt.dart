@@ -861,7 +861,7 @@ class _PageCbtState extends State<PageCbt> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      "\${_attemptCounts[examId]} Attempts",
+                      "${_attemptCounts[examId]} Attempts",
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.blue.shade700,
@@ -1407,13 +1407,16 @@ class _MonitorStudentScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF1A237E),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: JitsiEmbedView(
+      body: SafeArea(
+        top: true,
+        child: JitsiEmbedView(
         roomName: roomName,
         userDisplayName: 'Proctor',
         schoolName: schoolName,
         isProctoring: true, // Disable chat/screenshare for proctor too
       ),
-    );
+    )
+      );
   }
 }
 

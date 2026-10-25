@@ -109,7 +109,9 @@ class _PageAceReportsState extends State<PageAceReports> {
   Widget build(BuildContext context) {
     final p = context.watch<SchoolAdminProvider>();
     return Scaffold(
-      body: Column(
+      body: SafeArea(
+        top: true,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -206,7 +208,8 @@ class _PageAceReportsState extends State<PageAceReports> {
           ),
         ],
       ),
-    );
+    )
+      );
   }
 }
 
