@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:smartedu/utils/download_utils.dart' as dl;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +90,7 @@ class _PageStudentsState extends State<PageStudents> {
     return value;
   }
 
-  void _exportCsv() {
+  Future<void> _exportCsv() async {
     if (_filteredStudents.isEmpty) return;
     setState(() => _isExporting = true);
     try {
@@ -106,10 +107,11 @@ class _PageStudentsState extends State<PageStudents> {
         ].join(','));
       }
       final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)..setAttribute('download', 'students.csv')..click();
-      html.Url.revokeObjectUrl(url);
+      if (kIsWeb) {
+        dl.downloadBytesWeb(bytes, 'students.csv', mimeType: 'text/csv');
+      } else {
+        await dl.downloadAndShareMobile(bytes, 'students.csv', mimeType: 'text/csv');
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export successful', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)), backgroundColor: Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)))));
       }

@@ -1,12 +1,24 @@
 import 'dart:typed_data';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-void downloadCsv(List<String> headers, List<List<dynamic>> rows, [String fileName = 'report.csv']) {
+Future<void> downloadCsvBytes(Uint8List bytes, String fileName) async {
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/$fileName');
+  await file.writeAsBytes(bytes);
+  await Share.shareXFiles(
+    [XFile(file.path, mimeType: 'text/csv', name: fileName)],
+    text: fileName,
+  );
+}
+
+Future<void> downloadCsv(List<dynamic> headers, List<List<dynamic>> rows, String fileName) async {
   final buffer = StringBuffer();
-  buffer.writeln(headers.join(','));
+  buffer.writeln(headers.map((h) => '"${h.toString().replaceAll('"', '""')}"').join(','));
   for (final row in rows) {
-    buffer.writeln(row.map((e) => e?.toString() ?? '').join(','));
+    buffer.writeln(row.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
   }
   final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-  Share.shareXFiles([XFile.fromData(bytes, name: fileName, mimeType: 'text/csv')]);
+  await downloadCsvBytes(bytes, fileName);
 }

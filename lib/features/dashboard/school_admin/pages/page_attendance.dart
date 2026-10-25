@@ -1,6 +1,6 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:smartedu/utils/download_utils.dart' as dl;
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:smartedu/core/providers/school_admin_provider.dart';
@@ -141,7 +141,7 @@ class _PageAttendanceState extends State<PageAttendance> {
     }
   }
 
-  void _exportSummaryCsv() {
+  Future<void> _exportSummaryCsv() async {
     if (_summaryData.isEmpty) return;
     setState(() => _isExporting = true);
     try {
@@ -165,10 +165,11 @@ class _PageAttendanceState extends State<PageAttendance> {
         buf.writeln([i + 1, escaped, adm, d['present'], d['absent'], d['late'], d['excused'], d['total_days'], d['attended'], '$pct%', status].join(','));
       }
       final bytes = Uint8List.fromList(buf.toString().codeUnits);
-      final blob = html.Blob([bytes], 'text/csv;charset=utf-8;');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)..setAttribute('download', '${className.replaceAll(' ', '_')}_attendance_summary.csv')..click();
-      html.Url.revokeObjectUrl(url);
+      if (kIsWeb) {
+        dl.downloadBytesWeb(bytes, '${className.replaceAll(' ', '_')}_attendance_summary.csv', mimeType: 'text/csv');
+      } else {
+        await dl.downloadAndShareMobile(bytes, '${className.replaceAll(' ', '_')}_attendance_summary.csv', mimeType: 'text/csv');
+      }
       _snack('Exported!');
     } catch (e) {
       _snack('Export failed: $e', success: false);

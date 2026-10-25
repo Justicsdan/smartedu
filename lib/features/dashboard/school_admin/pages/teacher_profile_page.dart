@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:smartedu/utils/image_upload_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -30,19 +30,10 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
   }
 
   Future<void> _pickPhoto() async {
-    final input = html.FileUploadInputElement()..accept = 'image/*';
-    html.document.body!.append(input);
-    final completer = Completer<void>();
-    input.addEventListener('change', (_) => completer.complete());
-    input.click();
-    await completer.future;
-    if (input.files == null || input.files!.isEmpty) {
-      input.remove();
-      return;
-    }
-    final file = input.files!.first;
-    input.remove();
-    if (file.size > 2 * 1024 * 1024) {
+    final bytes = await pickImageBytes(maxWidth: 512, maxHeight: 512);
+    if (bytes == null) return;
+    
+    if (bytes.length > 2 * 1024 * 1024) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Image must be less than 2MB'),
@@ -50,25 +41,13 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
       }
       return;
     }
-    final readC = Completer<Uint8List?>();
-    final reader = html.FileReader();
-    reader.onLoadEnd.listen((_) {
-      try {
-        final r = reader.result;
-        readC.complete(r != null ? (r is Uint8List ? r : (r as ByteBuffer).asUint8List()) : null);
-      } catch (_) {
-        readC.complete(null);
-      }
-    });
-    reader.onError.listen((_) => readC.complete(null));
-    reader.readAsArrayBuffer(file);
-    final bytes = await readC.future;
-    if (bytes == null) return;
+    
     setState(() => _uploading = true);
     try {
-      final ext = file.name.split('.').last;
+      final ext = 'png';
       final tid = widget.teacherData['id'].toString();
-      final ts = DateTime.now().millisecondsSinceEpoch; final path = 'teachers/$tid/${tid}_$ts.$ext';
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final path = 'teachers/$tid/${tid}_$ts.$ext';
       final url = Supabase.instance.client.storage.from('passports').getPublicUrl(path);
       final uploadUrl = url.replaceAll('/object/public/', '/object/');
       final uri = Uri.parse(uploadUrl);

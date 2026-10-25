@@ -676,39 +676,44 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 ),
               ),
               const SizedBox(height: 12),
-              ...items.map((item) {
-                if (item.isHeader) {
-                  return Padding(
-                    padding:
-                        const EdgeInsets.only(left: 20, top: 12, bottom: 4),
-                    child: Text(item.label,
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2)),
-                  );
-                }
-                final selected = _selectedNavId == item.id;
-                return ListTile(
-                  dense: true,
-                  selected: selected,
-                  selectedTileColor: Colors.orange.shade400,
-                  leading: Icon(item.icon,
-                      color: selected ? Colors.white : Colors.white54,
-                      size: 20),
-                  title: Text(item.label,
-                      style: TextStyle(
-                          color:
-                              selected ? Colors.white : Colors.white70,
-                          fontSize: 14)),
-                  onTap: () {
-                    setState(() => _selectedNavId = item.id);
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-              const Spacer(),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: items.map((item) {
+                    if (item.isHeader) {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(left: 20, top: 12, bottom: 4),
+                        child: Text(item.label,
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2)),
+                      );
+                    }
+                    final selected = _selectedNavId == item.id;
+                    return ListTile(
+                      dense: true,
+                      selected: selected,
+                      selectedTileColor: Colors.orange.shade400,
+                      leading: Icon(item.icon,
+                          color: selected ? Colors.white : Colors.white54,
+                          size: 20),
+                      title: Text(item.label,
+                          style: TextStyle(
+                              color:
+                                  selected ? Colors.white : Colors.white70,
+                              fontSize: 14)),
+                      onTap: () {
+                        setState(() => _selectedNavId = item.id);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              const Divider(color: Colors.white24, height: 1),
               ListTile(
                 leading:
                     const Icon(Icons.logout, color: Colors.redAccent, size: 20),
