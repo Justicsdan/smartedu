@@ -1,24 +1,5 @@
-import 'dart:typed_data';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-
-Future<void> downloadCsvBytes(Uint8List bytes, String fileName) async {
-  final dir = await getTemporaryDirectory();
-  final file = File('${dir.path}/$fileName');
-  await file.writeAsBytes(bytes);
-  await Share.shareXFiles(
-    [XFile(file.path, mimeType: 'text/csv', name: fileName)],
-    text: fileName,
-  );
-}
-
-Future<void> downloadCsv(List<dynamic> headers, List<List<dynamic>> rows, String fileName) async {
-  final buffer = StringBuffer();
-  buffer.writeln(headers.map((h) => '"${h.toString().replaceAll('"', '""')}"').join(','));
-  for (final row in rows) {
-    buffer.writeln(row.map((v) => '"${v.toString().replaceAll('"', '""')}"').join(','));
-  }
-  final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-  await downloadCsvBytes(bytes, fileName);
-}
+// Cross-platform CSV download utility.
+// Web: uses dart:html for browser download.
+// Mobile: uses path_provider + share_plus for native share sheet.
+export 'csv_download_utils_stub.dart'
+    if (dart.library.html) 'csv_download_utils_web_impl.dart';

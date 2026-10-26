@@ -3,10 +3,10 @@
 // ==========================================
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import "package:supabase_flutter/supabase_flutter.dart";
 import 'package:smartedu/core/providers/school_admin_provider.dart';
+import 'package:smartedu/utils/csv_download_utils.dart';
 import 'teacher_edit_profile_sheet.dart';
 
 class PageTeachers extends StatefulWidget {
@@ -79,7 +79,7 @@ class _PageTeachersState extends State<PageTeachers> {
     return value;
   }
 
-  void _exportCsv() {
+  Future<void> _exportCsv() async {
     if (_filteredTeachers.isEmpty) return;
     setState(() => _isExporting = true);
     try {
@@ -107,7 +107,7 @@ class _PageTeachersState extends State<PageTeachers> {
       }
       final bytes = Uint8List.fromList(buffer.toString().codeUnits);
       final suffix = _searchQuery.isNotEmpty ? '_filtered' : '';
-      Share.shareXFiles([XFile.fromData(bytes, name: 'teachers$suffix.csv', mimeType: 'text/csv')]);
+      await downloadCsvBytes(bytes, 'teachers$suffix.csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
