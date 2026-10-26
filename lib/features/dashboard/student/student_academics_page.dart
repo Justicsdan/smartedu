@@ -100,7 +100,7 @@ class _StudentAcademicsPageState extends State<StudentAcademicsPage>
       );
 
       final bytes = await pdf.save();
-      downloadPdfBytes(bytes, '${studentName}_results.pdf');
+      await downloadPdfBytes(bytes, '${studentName}_results.pdf');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

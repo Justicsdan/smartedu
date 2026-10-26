@@ -476,7 +476,7 @@ class _AdminStudentResultsPageState extends State<AdminStudentResultsPage> {
       final bytes = await pdf.save();
       final studentName = "${widget.student['first_name']}_${widget.student['last_name']}";
       final termName = provider.currentTerm?['name'] ?? 'Term';
-      downloadPdfBytes(bytes, '${studentName}_${termName}_Result.pdf');
+      await downloadPdfBytes(bytes, '${studentName}_${termName}_Result.pdf');
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to generate PDF: $e')));
     } finally {

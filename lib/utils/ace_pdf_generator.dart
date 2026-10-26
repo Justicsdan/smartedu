@@ -43,7 +43,7 @@ class AcePdfGenerator {
     ));
     final bytes = await pdf.save();
     final fileName = '${studentName.replaceAll(' ', '_')}_${term?['name'] ?? 'term'}_ACE_Report.pdf';
-    downloadPdfBytes(bytes, fileName);
+    await downloadPdfBytes(bytes, fileName);
   }
   static pw.Widget _watermark(pw.ImageProvider? logoImg, String schoolName) {
     if (logoImg == null) return pw.SizedBox();

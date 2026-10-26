@@ -423,7 +423,7 @@ class _PageCredentialsState extends State<PageCredentials>
           ),
         ),
       );
-      downloadPdfBytes(
+      await downloadPdfBytes(
           await pdf.save(), '${nm.replaceAll(' ', '_')}_creds.pdf');
     } catch (e) {
       if (mounted) _snack('Print error: $e', ok: false);
@@ -492,7 +492,7 @@ class _PageCredentialsState extends State<PageCredentials>
           ),
         );
       }
-      downloadPdfBytes(await pdf.save(),
+      await downloadPdfBytes(await pdf.save(),
           '${isTeacher ? 'Teachers' : 'Students'}_Creds.pdf');
       if (mounted) _snack('Printed ${have.length} credential(s)');
     } catch (e) {

@@ -6,12 +6,19 @@ import 'package:share_plus/share_plus.dart';
 Future<void> downloadPdfBytes(Uint8List bytes, String fileName) async {
   // Write to a temp file with the proper filename
   final dir = await getTemporaryDirectory();
-  final file = File('\${dir.path}/\$fileName');
+  final filePath = '${dir.path}/$fileName';
+  final file = File(filePath);
   await file.writeAsBytes(bytes);
   
-  // Share the file path (preserves the filename when saved)
+  // Verify the file was written
+  final exists = await file.exists();
+  if (!exists) {
+    throw Exception('Failed to write PDF file: $filePath');
+  }
+  
+  // Share the file (this opens the share dialog)
   await Share.shareXFiles(
-    [XFile(file.path, mimeType: 'application/pdf', name: fileName)],
+    [XFile(filePath, mimeType: 'application/pdf', name: fileName)],
     text: fileName,
   );
 }

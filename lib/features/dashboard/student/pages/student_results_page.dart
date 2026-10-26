@@ -602,7 +602,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
       );
 
       final bytes = await pdf.save();
-      downloadPdfBytes(bytes, '${provider.fullName}_${provider.currentTermName ?? "result"}.pdf');
+      await downloadPdfBytes(bytes, '${provider.fullName}_${provider.currentTermName ?? "result"}.pdf');
     } catch (e) {
       debugPrint('PDF generation error: $e');
       if (mounted) {

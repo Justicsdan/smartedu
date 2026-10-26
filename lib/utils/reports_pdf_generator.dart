@@ -49,7 +49,7 @@ class ReportsPdfGenerator {
 
     final bytes = await pdf.save();
     final safeName = reportType.toLowerCase().replaceAll(' ', '_');
-    downloadPdfBytes(bytes, '${safeName}_report.pdf');
+    await downloadPdfBytes(bytes, '${safeName}_report.pdf');
   }
 
   // ═══ HEADER ═══
